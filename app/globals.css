@@ -3194,3 +3194,290 @@ footer p {
     transform: none;
   }
 }
+
+/* ===========================================================
+   MOTION PASS 2
+   Scroll-driven, staggered card reveals (pure CSS, Chrome/Edge;
+   degrades to fully-visible elsewhere) + a richer hover pass
+   across dishes, reviews, menu rows, timeline, map and buttons.
+   =========================================================== */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    /* sections that carry their own card stagger shouldn't also
+       slide in as one block */
+    main > section > .container:has(.dish-grid),
+    main > section > .container:has(.specialities),
+    main > section > .container:has(.offers),
+    main > section > .container:has(.notes),
+    main > section > .container:has(.peek),
+    main > section > .container:has(.timeline) {
+      animation: none;
+    }
+
+    .specialities > *,
+    .offers > *,
+    .dish-grid > *,
+    .notes > *,
+    .timeline .step,
+    .peek a,
+    .menu-block {
+      animation: riseIn linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 16%;
+    }
+    /* stagger — each sibling begins a little later in the scroll */
+    .specialities > *:nth-child(2),
+    .offers > *:nth-child(2),
+    .dish-grid > *:nth-child(2),
+    .notes > *:nth-child(2),
+    .timeline .step:nth-child(2),
+    .peek a:nth-child(2) {
+      animation-range: entry 5% cover 21%;
+    }
+    .specialities > *:nth-child(3),
+    .offers > *:nth-child(3),
+    .dish-grid > *:nth-child(3),
+    .notes > *:nth-child(3),
+    .timeline .step:nth-child(3),
+    .peek a:nth-child(3) {
+      animation-range: entry 10% cover 26%;
+    }
+    .specialities > *:nth-child(4),
+    .dish-grid > *:nth-child(4),
+    .timeline .step:nth-child(4),
+    .peek a:nth-child(4) {
+      animation-range: entry 15% cover 31%;
+    }
+    .dish-grid > *:nth-child(5),
+    .peek a:nth-child(5) {
+      animation-range: entry 20% cover 36%;
+    }
+    .dish-grid > *:nth-child(6),
+    .peek a:nth-child(6) {
+      animation-range: entry 25% cover 41%;
+    }
+
+    /* section accent line draws itself in */
+    .section-head .rule {
+      animation: ruleGrow linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 12%;
+      transform-origin: center;
+    }
+  }
+
+  /* gentle float on the hero review chip (only where it overlaps
+     the photo) */
+  @media (min-width: 901px) {
+    .hero-chip {
+      animation: floaty 6s ease-in-out infinite;
+    }
+    .hero-media:hover .hero-chip {
+      animation-play-state: paused;
+    }
+  }
+}
+
+/* uses the `translate` property (not `transform`) so element hover
+   transforms still compose cleanly */
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    translate: 0 24px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes ruleGrow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* ---- hover pass ---- */
+.btn {
+  position: relative;
+  overflow: hidden;
+}
+.btn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    rgba(255, 255, 255, 0.28),
+    transparent
+  );
+  transform: skewX(-18deg);
+  transition: left 0.6s var(--ease-out-soft);
+  pointer-events: none;
+}
+.btn:hover::after {
+  left: 135%;
+}
+
+/* testimonials */
+.note {
+  transition:
+    transform 0.38s var(--ease-out-soft),
+    box-shadow 0.38s var(--ease-out-soft),
+    border-color 0.38s var(--ease-out-soft);
+}
+.note:hover {
+  transform: translateY(-6px);
+  border-color: rgba(232, 178, 76, 0.35);
+  box-shadow:
+    0 26px 46px -26px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(232, 178, 76, 0.12);
+}
+.note .stars {
+  display: inline-block;
+  transform-origin: left center;
+  transition: transform 0.4s var(--ease-back);
+}
+.note:hover .stars {
+  transform: scale(1.09);
+}
+
+/* menu rows */
+.menu-row {
+  border-radius: 8px;
+  transition: background 0.25s ease;
+}
+.menu-row .n,
+.menu-row .p {
+  transition:
+    transform 0.25s var(--ease-out-soft),
+    color 0.25s ease;
+}
+.menu-row:hover {
+  background: rgba(232, 178, 76, 0.08);
+}
+.menu-row:hover .n {
+  transform: translateX(3px);
+}
+.menu-row:hover .p {
+  color: var(--marigold);
+  transform: scale(1.05);
+}
+
+/* about-page timeline */
+.timeline .step {
+  transition: transform 0.38s var(--ease-out-soft);
+}
+.timeline .step h3 {
+  transition: color 0.3s ease;
+}
+.timeline .step::before {
+  transition:
+    transform 0.4s var(--ease-back),
+    box-shadow 0.4s ease;
+}
+.timeline .step:hover {
+  transform: translateX(5px);
+}
+.timeline .step:hover h3 {
+  color: var(--marigold);
+}
+.timeline .step:hover::before {
+  transform: scale(1.35);
+  box-shadow: 0 0 0 5px rgba(212, 42, 59, 0.16);
+}
+
+/* find-us block + maps */
+.findus {
+  transition:
+    box-shadow 0.42s var(--ease-out-soft),
+    border-color 0.42s ease;
+}
+.findus:hover {
+  border-color: rgba(232, 178, 76, 0.25);
+  box-shadow: 0 30px 55px -30px rgba(0, 0, 0, 0.55);
+}
+.map-frame {
+  transition: box-shadow 0.42s ease;
+}
+.map-frame:hover {
+  box-shadow: 0 30px 55px -26px rgba(0, 0, 0, 0.5);
+}
+
+/* editorial image zooms */
+.split-media img,
+.menu-teaser-media img,
+.hero-art img {
+  transition: transform 0.7s var(--ease-out-soft);
+}
+.split-media:hover img,
+.menu-teaser-media:hover img,
+.hero-art:hover img {
+  transform: scale(1.05);
+}
+
+/* FAQ */
+.faq summary {
+  transition: color 0.25s ease;
+}
+.faq summary::after {
+  transition:
+    transform 0.32s var(--ease-back),
+    color 0.25s ease;
+}
+.faq summary:hover,
+.faq details[open] summary {
+  color: var(--marigold);
+}
+.faq summary:hover::after,
+.faq details[open] summary::after {
+  color: var(--marigold);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn::after {
+    display: none;
+  }
+  .note,
+  .note .stars,
+  .menu-row,
+  .menu-row .n,
+  .menu-row .p,
+  .timeline .step,
+  .timeline .step::before,
+  .findus,
+  .split-media img,
+  .menu-teaser-media img,
+  .hero-art img {
+    transition: none;
+  }
+  .note:hover,
+  .note:hover .stars,
+  .menu-row:hover .n,
+  .menu-row:hover .p,
+  .timeline .step:hover,
+  .timeline .step:hover::before,
+  .split-media:hover img,
+  .menu-teaser-media:hover img,
+  .hero-art:hover img {
+    transform: none;
+  }
+  .hero-chip {
+    animation: none;
+  }
+}
