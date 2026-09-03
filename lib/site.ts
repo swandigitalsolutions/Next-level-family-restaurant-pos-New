@@ -4,9 +4,9 @@
 
 export const site = {
   name: "Next Level Family Restaurant",
-  tagline: "& Dhaba",
+  tagline: "",
   blurb:
-    "A family-run dhaba serving home-style South & North Indian food, tandoor grills and fresh juice — with hand-painted Warli walls and a garden to sit in.",
+    "A family-run restaurant serving home-style South & North Indian food, tandoor grills and fresh juice — with hand-painted folk-art walls and a garden to sit in.",
   phoneDisplay: "+91 90710 80138",
   phoneHref: "tel:+919071080138",
   whatsappHref: "https://wa.me/919071080138",
@@ -14,9 +14,9 @@ export const site = {
   domain: "nextlevelfamilyrestaurant.com",
   url: "https://nextlevelfamilyrestaurant.com",
   address: {
-    line1: "Next Level Family Restaurant & Dhaba",
+    line1: "Next Level Family Restaurant",
     line2: "Highway-side, near Bengaluru — full address on request",
-    mapQuery: "Next Level Family Restaurant & Dhaba",
+    mapQuery: "Next Level Family Restaurant",
   },
   hours: [
     { day: "Monday – Friday", time: "11:00 AM – 10:30 PM" },

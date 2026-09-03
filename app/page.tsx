@@ -10,9 +10,8 @@ import Offers from "@/components/Offers";
 import FindUs from "@/components/FindUs";
 import GalleryPeek from "@/components/GalleryPeek";
 import Faq from "@/components/Faq";
-import WarliFrieze from "@/components/decor/WarliFrieze";
-import Garland from "@/components/decor/Garland";
-import Seal from "@/components/decor/Seal";
+import CountUp from "@/components/CountUp";
+import Reveal from "@/components/Reveal";
 import { img } from "@/lib/images";
 
 const dishes: Dish[] = [
@@ -30,74 +29,75 @@ export default function HomePage() {
       {/* HERO */}
       <section className="hero">
         <div className="hero-inner">
-          <div>
-            <p className="hero-eyebrow">
-              <Image src="/logo.jpeg" alt="" width={30} height={30} />
-              A highway-side family dhaba near Bengaluru
-            </p>
+          <div className="hero-copy">
+            <span className="hero-eyebrow">
+              Family-run · near Bengaluru · since day one
+            </span>
             <h1>
-              Home cooking, <em>next level.</em>
+              Home-style Indian,
+              <br />
+              <em>done properly.</em>
             </h1>
-            <Swoosh />
             <p className="lede">
-              Real thalis, slow-cooked curries, tandoor smoke and clay-pot
-              chai — served the way a family dhaba should feel: unhurried,
-              generous and genuinely warm. Hand-painted Warli walls, a
-              garden to sit in, no stiff tablecloths.
+              Slow-cooked curries, tandoor grills, unlimited thalis and
+              clay-pot chai — generous portions in a warm family room, with a
+              garden to sit in.
             </p>
             <div className="hero-actions">
               <Link href="/contact#reserve" className="btn btn-primary">
                 Reserve a table
               </Link>
               <Link href="/menu" className="btn btn-ghost">
-                Open the menu
+                View the menu
               </Link>
             </div>
-            <div className="hero-stats">
+            <dl className="hero-stats">
               <div>
-                <strong>25+</strong>
-                <span>years cooking for regulars</span>
+                <dt>
+                  <CountUp value={25} suffix="+" />
+                </dt>
+                <dd>years cooking for regulars</dd>
               </div>
               <div>
-                <strong>60+</strong>
-                <span>dishes made fresh daily</span>
+                <dt>
+                  <CountUp value={60} suffix="+" />
+                </dt>
+                <dd>dishes made fresh daily</dd>
               </div>
               <div>
-                <strong>4.6★</strong>
-                <span>from regulars, not critics</span>
+                <dt>
+                  <CountUp value={4.6} decimals={1} suffix="★" />
+                </dt>
+                <dd>rated by our regulars</dd>
               </div>
-            </div>
+            </dl>
           </div>
 
-          <div className="hero-art panel-frame">
-            <Image
-              src={img.venueHero.src}
-              alt={img.venueHero.alt}
-              fill
-              priority
-              sizes="(max-width: 900px) 100vw, 560px"
-              style={{ objectFit: "cover" }}
-            />
-            <div className="hero-badge">
-              <span className="stars">★★★★★</span>
-              <p>
-                &ldquo;Feels like eating at my grandmother&rsquo;s table — just
-                faster service.&rdquo;
-              </p>
+          <div className="hero-media">
+            <div className="hero-art">
+              <Image
+                src={img.venueHero.src}
+                alt={img.venueHero.alt}
+                fill
+                priority
+                sizes="(max-width: 900px) 100vw, 560px"
+                style={{ objectFit: "cover" }}
+              />
             </div>
-            <div style={{ position: "absolute", right: 14, top: 14 }}>
-              <Seal top="Family run" big="est." bottom="same kitchen" />
-            </div>
+            <figure className="hero-chip">
+              <span className="stars" aria-hidden="true">
+                ★★★★★
+              </span>
+              <figcaption>
+                &ldquo;Feels like eating at my grandmother&rsquo;s table.&rdquo;
+              </figcaption>
+            </figure>
           </div>
         </div>
       </section>
 
-      <div className="frieze-divider">
-        <WarliFrieze />
-      </div>
-
       {/* SPECIALITIES */}
-      <section style={{ paddingBottom: "1rem" }}>
+      <section>
         <div className="container">
           <SectionHead
             kicker="Why people stop here"
@@ -109,11 +109,11 @@ export default function HomePage() {
       </section>
 
       {/* SIGNATURE DISHES */}
-      <section>
+      <section className="section-alt">
         <div className="container">
           <SectionHead kicker="What we're known for" title="The dishes people drive across town for">
-            A working menu of family favourites — this is a preview. The full
-            menu with prices lives on its own page.
+            A working menu of family favourites. The full menu with prices
+            lives on its own page.
           </SectionHead>
           <DishGrid dishes={dishes} />
           <div className="tac" style={{ marginTop: "2rem" }}>
@@ -124,22 +124,18 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* STORY SPLIT */}
-      <section style={{ background: "var(--cream-dim)" }}>
-        <div className="container">
-          <Garland />
-        </div>
-        <div className="container split" style={{ marginTop: "2rem" }}>
+      {/* STORY */}
+      <section>
+        <div className="container split">
           <div className="dropcap">
             <p className="kicker">Since day one</p>
             <h2>Still run by the same family that opened the door</h2>
             <Swoosh />
             <p>
-              What started as a small kitchen table has grown into a full
-              dhaba — brick facade, red tin roof, tricolour pillars and walls
-              our family painted by hand. The spice blends, the slow-cooked
-              dals and the habit of feeding regulars a little extra haven&rsquo;t
-              changed.
+              What started as a kitchen table has grown into a full family restaurant —
+              brick facade, red tin roof, tricolour pillars and walls our
+              family painted by hand. The spice blends and the slow-cooked
+              dals haven&rsquo;t changed.
             </p>
             <p className="pull-quote">
               &ldquo;We cook the way we&rsquo;d feed our own kids. That&rsquo;s
@@ -154,7 +150,7 @@ export default function HomePage() {
               src={img.muralWarliWoman.src}
               alt={img.muralWarliWoman.alt}
               fill
-              sizes="(max-width: 860px) 100vw, 560px"
+              sizes="(max-width: 860px) 100vw, 540px"
               style={{ objectFit: "cover" }}
             />
           </div>
@@ -163,8 +159,7 @@ export default function HomePage() {
 
       {/* OFFERS / COMBOS */}
       <section className="band-dark">
-        <WarliFrieze />
-        <div className="container" style={{ marginTop: "2.4rem" }}>
+        <div className="container">
           <SectionHead kicker="Come as a crowd" title="Family combos & celebration tables" center>
             <span style={{ color: "rgba(251,243,231,0.75)" }}>
               Built for a full table. Sample pricing — confirm on the day.
@@ -196,7 +191,6 @@ export default function HomePage() {
             <p>
               Starters, tandoor grills, South and North Indian mains, biryani,
               Chinese, breads, and our clay-pot chai and fresh juice counter.
-              Prices included, no PDF required.
             </p>
             <Link href="/menu" className="btn btn-primary mt-lg">
               Open the full menu
@@ -206,7 +200,7 @@ export default function HomePage() {
       </section>
 
       {/* TESTIMONIALS */}
-      <section style={{ background: "var(--cream-dim)" }}>
+      <section className="section-alt">
         <div className="container">
           <SectionHead
             kicker="In our guests' words"
@@ -220,12 +214,13 @@ export default function HomePage() {
       {/* FIND US */}
       <section>
         <div className="container">
+          <SectionHead kicker="Getting here" title="Find us, check the timings" center />
           <FindUs />
         </div>
       </section>
 
       {/* GALLERY PEEK */}
-      <section style={{ paddingTop: 0 }}>
+      <section className="section-alt">
         <div className="container">
           <SectionHead kicker="A look inside" title="The walls, the garden, the table" center />
           <GalleryPeek />
@@ -238,7 +233,7 @@ export default function HomePage() {
       </section>
 
       {/* FAQ */}
-      <section style={{ background: "var(--cream-dim)" }}>
+      <section>
         <div className="container">
           <SectionHead kicker="Good to know" title="Before you come" center />
           <Faq />

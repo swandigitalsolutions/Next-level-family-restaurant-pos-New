@@ -47,7 +47,7 @@ export const timeline = [
   },
   {
     yr: "Today",
-    title: "A dhaba with a garden",
+    title: "A restaurant with a garden",
     text: "Tricolour pillars, hanging pots, a fresh-juice counter — and the same hands in the kitchen.",
   },
 ];

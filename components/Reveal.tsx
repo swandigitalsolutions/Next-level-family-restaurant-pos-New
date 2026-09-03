@@ -2,33 +2,33 @@
 
 import { useEffect, useRef, useState } from "react";
 
-/* Fades its children up into place the first time they scroll near
-   the viewport. Respects prefers-reduced-motion (renders visible
-   immediately). One IntersectionObserver per instance, disconnected
-   after it fires. */
+/* Fades + lifts its children into view once, when scrolled near.
+   Bulletproof: shows immediately if IO is unavailable or reduced
+   motion is set, and a timeout guarantees it never stays hidden. */
 export default function Reveal({
   children,
-  as: Tag = "div",
+  delay = 0,
   className = "",
 }: {
   children: React.ReactNode;
-  as?: keyof React.JSX.IntrinsicElements;
+  delay?: number;
   className?: string;
 }) {
-  const ref = useRef<HTMLElement | null>(null);
+  const ref = useRef<HTMLDivElement | null>(null);
   const [shown, setShown] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (
-      typeof window === "undefined" ||
-      !("IntersectionObserver" in window) ||
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
+
+    const reduce = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    if (reduce || typeof IntersectionObserver === "undefined") {
       setShown(true);
       return;
     }
+
     const io = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
@@ -36,19 +36,25 @@ export default function Reveal({
           io.disconnect();
         }
       },
-      { rootMargin: "0px 0px -10% 0px" }
+      { rootMargin: "0px 0px -8% 0px" }
     );
     io.observe(el);
-    return () => io.disconnect();
+
+    // never leave content hidden
+    const t = window.setTimeout(() => setShown(true), 1400);
+    return () => {
+      io.disconnect();
+      window.clearTimeout(t);
+    };
   }, []);
 
-  const Comp = Tag as React.ElementType;
   return (
-    <Comp
+    <div
       ref={ref}
       className={`reveal${shown ? " in" : ""} ${className}`.trim()}
+      style={delay ? { transitionDelay: `${delay}ms` } : undefined}
     >
       {children}
-    </Comp>
+    </div>
   );
 }

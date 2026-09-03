@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Swoosh from "@/components/Swoosh";
+import PageIntro from "@/components/PageIntro";
 import ReservationForm from "@/components/ReservationForm";
 import Faq from "@/components/Faq";
 import SectionHead from "@/components/SectionHead";
@@ -9,7 +10,7 @@ import { site } from "@/lib/site";
 export const metadata: Metadata = {
   title: "Visit Us",
   description:
-    "Find Next Level Family Restaurant & Dhaba, check our hours, call or WhatsApp us, and book a table.",
+    "Find Next Level Family Restaurant, check our hours, call or WhatsApp us, and book a table.",
 };
 
 export default function ContactPage() {
@@ -19,24 +20,14 @@ export default function ContactPage() {
 
   return (
     <>
-      <section style={{ paddingBottom: "1rem" }}>
-        <div className="container section-head center">
-          <p className="kicker">Come hungry</p>
-          <h1 style={{ fontSize: "clamp(2.2rem,4.5vw,3.2rem)" }}>
-            Find us, or book ahead
-          </h1>
-          <Swoosh className="center" />
-          <p>
-            Walk-ins welcome any time — a call ahead helps on weekends and
-            holidays.
-          </p>
-        </div>
-      </section>
+      <PageIntro kicker="Come hungry" title="Find us, or book ahead">
+        Walk-ins welcome any time — a call ahead helps on weekends and holidays.
+      </PageIntro>
 
-      <section style={{ paddingTop: 0 }}>
+      <section className="section--flush-top">
         <div className="container loc-grid">
           <div>
-            <h2 style={{ fontSize: "1.5rem" }}>Hours</h2>
+            <h2 className="loc-h">Hours</h2>
             <table className="hours-table">
               <tbody>
                 {site.hours.map((h) => (
@@ -49,7 +40,7 @@ export default function ContactPage() {
             </table>
             <p className="placeholder-flag">{site.hoursNote}</p>
 
-            <h2 style={{ fontSize: "1.5rem", marginTop: "2rem" }}>Get in touch</h2>
+            <h2 className="loc-h" style={{ marginTop: "2rem" }}>Get in touch</h2>
             <div className="info-line">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
@@ -88,13 +79,13 @@ export default function ContactPage() {
               allowFullScreen
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
-              title="Map to Next Level Family Restaurant & Dhaba"
+              title="Map to Next Level Family Restaurant"
             />
           </div>
         </div>
       </section>
 
-      <section id="reserve" style={{ background: "var(--cream-dim)", scrollMarginTop: "90px" }}>
+      <section id="reserve" className="section-alt" style={{ scrollMarginTop: "90px" }}>
         <div className="container">
           <div className="section-head center">
             <p className="kicker">Reserve a table</p>

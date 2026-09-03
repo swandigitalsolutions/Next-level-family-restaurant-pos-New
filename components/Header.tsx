@@ -44,7 +44,7 @@ export default function Header() {
           <span>
             Next Level
             <br />
-            <small>FAMILY RESTAURANT &amp; DHABA</small>
+            <small>FAMILY RESTAURANT</small>
           </span>
         </Link>
 

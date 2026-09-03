@@ -13,7 +13,7 @@ import { timeline } from "@/lib/content";
 export const metadata: Metadata = {
   title: "Our Story",
   description:
-    "How Next Level Family Restaurant & Dhaba grew from a family kitchen table into a highway-side dhaba with hand-painted Warli walls and a garden.",
+    "How Next Level Family Restaurant grew from a family kitchen table into a highway-side family restaurant with hand-painted Warli walls and a garden.",
 };
 
 const values: Dish[] = [
@@ -29,14 +29,14 @@ export default function AboutPage() {
         <div className="container split">
           <div className="dropcap">
             <p className="kicker">Our story</p>
-            <h1>A family table that grew into a dhaba</h1>
+            <h1>A family table that grew into a family restaurant</h1>
             <Swoosh />
             <p>
               Next Level Family Restaurant didn&rsquo;t start with a business
               plan — it started with a family that liked cooking too much food
               for too many people. Neighbours became regulars, regulars asked
               for a proper menu, and eventually a proper menu needed a proper
-              kitchen — and then a proper dhaba.
+              kitchen — and then a proper dining room.
             </p>
             <p>
               What hasn&rsquo;t changed is who&rsquo;s doing the cooking: the
@@ -65,7 +65,7 @@ export default function AboutPage() {
       {/* TIMELINE */}
       <section>
         <div className="container">
-          <SectionHead kicker="How we got here" title="Four steps from kitchen table to dhaba" center />
+          <SectionHead kicker="How we got here" title="Four steps from kitchen table to restaurant" center />
           <div className="timeline">
             {timeline.map((s) => (
               <div className="step" key={s.title}>
@@ -78,7 +78,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section style={{ background: "var(--cream-dim)" }}>
+      <section className="section-alt">
         <div className="container split reverse">
           <div className="split-media panel-frame">
             <Image

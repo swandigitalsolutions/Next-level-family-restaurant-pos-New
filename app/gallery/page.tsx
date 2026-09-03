@@ -1,33 +1,24 @@
 import type { Metadata } from "next";
-import Swoosh from "@/components/Swoosh";
+import PageIntro from "@/components/PageIntro";
 import GalleryGrid from "@/components/GalleryGrid";
 import CtaBand from "@/components/CtaBand";
 
 export const metadata: Metadata = {
   title: "Gallery",
   description:
-    "A look inside Next Level Family Restaurant & Dhaba — the painted Warli walls, the garden seating, the tricolour verandah and the dining hall.",
+    "A look inside Next Level Family Restaurant — the painted folk-art walls, the garden seating, the tricolour verandah and the dining hall.",
 };
 
 export default function GalleryPage() {
   return (
     <>
-      <section style={{ paddingBottom: "1rem" }}>
-        <div className="container section-head center">
-          <p className="kicker">A look inside</p>
-          <h1 style={{ fontSize: "clamp(2.2rem,4.5vw,3.2rem)" }}>
-            The walls, the garden, the table
-          </h1>
-          <Swoosh className="center" />
-          <p>
-            Every wall here is hand-painted — Warli figures, folk murals, a
-            temple-and-forest scene in the dining hall. Tap any photo to view
-            it full-size.
-          </p>
-        </div>
-      </section>
+      <PageIntro kicker="A look inside" title="The walls, the garden, the table">
+        Every wall here is hand-painted — folk figures, murals, and a
+        temple-and-forest scene in the dining hall. Tap any photo to view it
+        full-size.
+      </PageIntro>
 
-      <section style={{ paddingTop: 0 }}>
+      <section className="section--flush-top">
         <div className="container">
           <GalleryGrid />
         </div>

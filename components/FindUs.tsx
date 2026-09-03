@@ -35,7 +35,7 @@ export default function FindUs() {
           src={mapSrc}
           loading="lazy"
           referrerPolicy="no-referrer-when-downgrade"
-          title="Map to Next Level Family Restaurant & Dhaba"
+          title="Map to Next Level Family Restaurant"
         />
       </div>
     </div>

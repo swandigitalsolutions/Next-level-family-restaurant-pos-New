@@ -17,7 +17,7 @@ export default function MobileBar() {
         WhatsApp
       </a>
       <Link className="book" href="/contact#reserve">
-        Book a table
+        Book
       </Link>
     </div>
   );

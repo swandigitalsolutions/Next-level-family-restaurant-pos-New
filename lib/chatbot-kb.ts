@@ -1,6 +1,6 @@
 /* On-page assistant — a small retrieval engine that answers from the
    site's OWN data: the menu in lib/menu.ts and the details in
-   lib/site.ts, plus a set of curated facts about the dhaba. Fully
+   lib/site.ts, plus a set of curated facts about the restaurant. Fully
    client-side, no API key: it tokenises the question, scores it against
    intents and every menu item, and returns the best match.
 
@@ -36,7 +36,7 @@ const FACTS: {
   {
     id: "location",
     triggers: ["where", "address", "location", "located", "directions", "map", "how to reach", "how do i get", "find you", "area", "bengaluru", "bangalore", "highway"],
-    text: `We're a highway-side family dhaba near Bengaluru. ${site.address.line2}. Tap below for the map.`,
+    text: `We're a highway-side family restaurant near Bengaluru. ${site.address.line2}. Tap below for the map.`,
     action: { label: "Open map", href: "/contact" },
   },
   {
@@ -77,7 +77,7 @@ const FACTS: {
   {
     id: "delivery",
     triggers: ["delivery", "deliver", "takeaway", "take away", "parcel", "online order", "swiggy", "zomato", "home delivery"],
-    text: "We're focused on dine-in and the dhaba experience. For takeaway, call us directly and we'll sort it out.",
+    text: "We're focused on dine-in and the sit-down experience. For takeaway, call us directly and we'll sort it out.",
     action: { label: "Call us", href: site.phoneHref },
   },
   {
@@ -112,7 +112,7 @@ const FACTS: {
   {
     id: "about",
     triggers: ["story", "history", "who owns", "family owned", "warli", "mural", "murals", "painting", "paintings", "art", "about", "who runs", "how old"],
-    text: "We started as a family cooking too much food for too many people. It grew into a dhaba with hand-painted Warli walls, folk murals and a garden. Same family, same recipes.",
+    text: "We started as a family cooking too much food for too many people. It grew into a family restaurant with hand-painted Warli walls, folk murals and a garden. Same family, same recipes.",
     action: { label: "Read our story", href: "/about" },
   },
   {

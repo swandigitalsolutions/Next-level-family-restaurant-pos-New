@@ -16,19 +16,19 @@ export const img = {
   // ---- The venue (real photos of the restaurant) ----
   venueHero: {
     src: "/images/venue-hero.jpg",
-    alt: "The Next Level Family Restaurant & Dhaba building with its red roof and painted mural wall",
+    alt: "The Next Level Family Restaurant building with its red roof and painted mural wall",
     w: 1600,
     h: 1200,
   },
   venueFacade: {
     src: "/images/venue-facade.jpg",
-    alt: "Brick front of the dhaba with the Indian tricolour painted pillars and red tin roof",
+    alt: "Brick front of the restaurant with the Indian tricolour painted pillars and red tin roof",
     w: 1200,
     h: 1400,
   },
   venueGate: {
     src: "/images/venue-gate.jpg",
-    alt: "Entrance archway with the bilingual Next Level Family Restaurant & Dhaba sign",
+    alt: "Entrance archway with the bilingual Next Level Family Restaurant sign",
     w: 1600,
     h: 1000,
   },

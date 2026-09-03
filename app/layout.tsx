@@ -1,37 +1,36 @@
 import type { Metadata } from "next";
-import { Fraunces, Work_Sans } from "next/font/google";
+import { Poppins, Inter } from "next/font/google";
 import "./globals.css";
 import { site } from "@/lib/site";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Chatbot from "@/components/Chatbot";
 import MobileBar from "@/components/MobileBar";
+import PageTransition from "@/components/PageTransition";
 
-const fraunces = Fraunces({
+const poppins = Poppins({
   subsets: ["latin"],
   weight: ["500", "600", "700"],
-  style: ["normal", "italic"],
-  variable: "--font-fraunces",
+  variable: "--font-heading",
   display: "swap",
 });
 
-const workSans = Work_Sans({
+const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-work-sans",
+  variable: "--font-sans",
   display: "swap",
 });
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: `${site.name} ${site.tagline} — home-style dining, taken up a notch`,
+    default: `${site.name} — home-style South & North Indian food`,
     template: `%s — ${site.name}`,
   },
   description: site.blurb,
-  icons: { icon: "/logo.jpeg" },
   openGraph: {
-    title: `${site.name} ${site.tagline}`,
+    title: site.name,
     description: site.blurb,
     type: "website",
   },
@@ -43,13 +42,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${workSans.variable}`}>
+    <html lang="en" className={`${poppins.variable} ${inter.variable}`}>
       <body>
         <a href="#main" className="skip-link">
           Skip to content
         </a>
         <Header />
-        <main id="main">{children}</main>
+        <main id="main">
+          <PageTransition>{children}</PageTransition>
+        </main>
         <Footer />
         <MobileBar />
         <Chatbot />

@@ -21,45 +21,118 @@ export default function Chatbot() {
   const [listening, setListening] = useState(false);
   const [input, setInput] = useState("");
   const [micSupported, setMicSupported] = useState(false);
-  const [speechSupported, setSpeechSupported] = useState(false);
+  const [ttsSupported, setTtsSupported] = useState(false);
 
   const greetedRef = useRef(false);
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const recognitionRef = useRef<any>(null);
-  const speechOnRef = useRef(speechOn);
+  const recRef = useRef<any>(null);
+  const speechOnRef = useRef(true);
+  const listeningRef = useRef(false);
   speechOnRef.current = speechOn;
+  listeningRef.current = listening;
 
-  /* ---- feature detection + speech recognition wiring (once) ---- */
+  function stopSpeaking() {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+  }
+
+  function speak(text: string) {
+    if (!speechOnRef.current || listeningRef.current) return;
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1;
+      u.pitch = 1;
+      const voices = window.speechSynthesis.getVoices();
+      const en =
+        voices.find((v) => /en[-_]?IN/i.test(v.lang)) ||
+        voices.find((v) => /^en\b/i.test(v.lang));
+      if (en) u.voice = en;
+      window.speechSynthesis.speak(u);
+    } catch {
+      /* no-op */
+    }
+  }
+
+  function push(m: Omit<Msg, "id">) {
+    setMessages((prev) => [...prev, { ...m, id: nextId++ }]);
+  }
+
+  function respond(text: string) {
+    setTyping(true);
+    window.setTimeout(() => {
+      setTyping(false);
+      const a = answer(text);
+      push({ sender: "bot", text: a.text, action: a.action });
+      speak(a.text);
+    }, 420 + Math.random() * 280);
+  }
+
+  function send(raw: string) {
+    const text = raw.trim();
+    if (!text) return;
+    stopSpeaking(); // never talk over the user
+    push({ sender: "user", text });
+    setInput("");
+    respond(text);
+  }
+
+  /* ---- set up speech recognition + TTS once ---- */
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setSpeechSupported("speechSynthesis" in window);
+    setTtsSupported("speechSynthesis" in window);
 
     const Ctor =
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
-    if (Ctor) {
-      setMicSupported(true);
-      const rec = new Ctor();
-      rec.lang = "en-IN";
-      rec.interimResults = false;
-      rec.maxAlternatives = 1;
-      rec.addEventListener("result", (e: any) => {
-        const transcript = e.results?.[0]?.[0]?.transcript ?? "";
-        if (transcript) send(transcript);
-      });
-      const stop = () => setListening(false);
-      rec.addEventListener("end", stop);
-      rec.addEventListener("error", stop);
-      recognitionRef.current = rec;
-    }
+    if (!Ctor) return;
+
+    setMicSupported(true);
+    const rec = new Ctor();
+    rec.lang = "en-IN";
+    rec.interimResults = false;
+    rec.continuous = false;
+    rec.maxAlternatives = 1;
+
+    rec.onstart = () => setListening(true);
+    rec.onend = () => setListening(false);
+    rec.onresult = (e: any) => {
+      const transcript = e.results?.[0]?.[0]?.transcript?.trim();
+      if (transcript) send(transcript);
+    };
+    rec.onerror = (e: any) => {
+      setListening(false);
+      if (e?.error === "not-allowed" || e?.error === "service-not-allowed") {
+        push({
+          sender: "bot",
+          text: "I need microphone access to hear you. Tap the mic icon in your browser's address bar to allow it, then try again.",
+        });
+      } else if (e?.error === "no-speech") {
+        push({
+          sender: "bot",
+          text: "I didn't catch that — tap the mic and speak again, or type your question.",
+        });
+      }
+    };
+    recRef.current = rec;
+
+    return () => {
+      try {
+        rec.abort();
+      } catch {
+        /* no-op */
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     const el = messagesRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [messages, typing]);
+  }, [messages, typing, listening]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -70,49 +143,13 @@ export default function Chatbot() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  function speak(text: string) {
-    if (!speechOnRef.current || typeof window === "undefined") return;
-    if (!("speechSynthesis" in window)) return;
-    try {
-      window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.rate = 1;
-      u.pitch = 1;
-      const voices = window.speechSynthesis.getVoices();
-      const en = voices.find((v) => /^en(-|_)?(IN|GB|US)?/i.test(v.lang));
-      if (en) u.voice = en;
-      window.speechSynthesis.speak(u);
-    } catch {
-      /* environments without TTS */
-    }
-  }
-
-  function push(m: Omit<Msg, "id">) {
-    setMessages((prev) => [...prev, { ...m, id: nextId++ }]);
-  }
-
-  function send(raw: string) {
-    const text = raw.trim();
-    if (!text) return;
-    push({ sender: "user", text });
-    setInput("");
-    setTyping(true);
-    window.setTimeout(() => {
-      setTyping(false);
-      const a = answer(text);
-      push({ sender: "bot", text: a.text, action: a.action });
-      speak(a.text);
-    }, 420 + Math.random() * 300);
-  }
-
   function openPanel() {
     setOpen(true);
     if (!greetedRef.current) {
       greetedRef.current = true;
       push({ sender: "bot", text: GREETING });
-      // Prime the voice list (some browsers load it lazily).
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        window.speechSynthesis.getVoices();
+        window.speechSynthesis.getVoices(); // prime lazy voice list
       }
       speak(GREETING);
     }
@@ -121,23 +158,27 @@ export default function Chatbot() {
 
   function closePanel() {
     setOpen(false);
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
+    stopSpeaking();
+    try {
+      recRef.current?.abort();
+    } catch {
+      /* no-op */
     }
   }
 
   function toggleMic() {
-    const rec = recognitionRef.current;
+    const rec = recRef.current;
     if (!rec) return;
-    if (listening) {
+    if (listeningRef.current) {
       rec.stop();
       return;
     }
+    stopSpeaking(); // stop the assistant so it doesn't talk over you
     try {
       rec.start();
       setListening(true);
     } catch {
-      /* already started */
+      /* already running — ignore */
     }
   }
 
@@ -177,18 +218,17 @@ export default function Chatbot() {
           <Image src="/logo.jpeg" alt="" width={36} height={36} />
           <div className="grow">
             <strong>Next Level Assistant</strong>
-            <span>Menu, prices, hours &amp; bookings</span>
+            <span>{listening ? "Listening…" : "Menu, prices, hours & bookings"}</span>
           </div>
-          {speechSupported && (
+          {ttsSupported && (
             <button
               className="nl-icon-btn"
               type="button"
               aria-pressed={speechOn}
-              title="Toggle spoken replies"
+              title={speechOn ? "Turn off spoken replies" : "Turn on spoken replies"}
               onClick={() => {
                 setSpeechOn((v) => {
-                  if (v && "speechSynthesis" in window)
-                    window.speechSynthesis.cancel();
+                  if (v) stopSpeaking();
                   return !v;
                 });
               }}
@@ -226,6 +266,11 @@ export default function Chatbot() {
               <span />
             </div>
           )}
+          {listening && (
+            <div className="nl-listening" aria-live="assertive">
+              <span className="nl-listening-dot" /> Listening — speak now
+            </div>
+          )}
         </div>
 
         <div className="nl-suggestions">
@@ -248,20 +293,18 @@ export default function Chatbot() {
             send(input);
           }}
         >
-          <button
-            type="button"
-            className={`nl-icon-btn${listening ? " listening" : ""}`}
-            aria-label="Speak your question"
-            title={
-              micSupported
-                ? "Speak your question"
-                : "Voice input needs Chrome or Edge"
-            }
-            disabled={!micSupported}
-            onClick={toggleMic}
-          >
-            &#127908;
-          </button>
+          {micSupported && (
+            <button
+              type="button"
+              className={`nl-icon-btn${listening ? " listening" : ""}`}
+              aria-label={listening ? "Stop listening" : "Speak your question"}
+              aria-pressed={listening}
+              title={listening ? "Stop listening" : "Speak your question"}
+              onClick={toggleMic}
+            >
+              {listening ? "⏹" : "🎤"}
+            </button>
+          )}
           <input
             ref={inputRef}
             type="text"

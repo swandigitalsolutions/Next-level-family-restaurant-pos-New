@@ -11,7 +11,7 @@ export default function Footer() {
           <div>
             <div className="foot-brand">
               <Image src="/logo.jpeg" alt="" width={42} height={42} />
-              {site.name} {site.tagline}
+              {site.name}
             </div>
             <p>{site.blurb}</p>
             <div className="social-row" aria-label="Social links">
@@ -66,7 +66,7 @@ export default function Footer() {
 
         <div className="foot-bottom">
           <span>
-            © {year} {site.name} {site.tagline}. All rights reserved.
+            © {year} {site.name}. All rights reserved.
           </span>
           <span>{site.credit}</span>
         </div>
