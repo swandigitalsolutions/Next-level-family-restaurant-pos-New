@@ -111,12 +111,11 @@ export default function HomePage() {
       {/* SIGNATURE DISHES */}
       <section className="section-alt">
         <div className="container">
-          <SectionHead kicker="What we're known for" title="The dishes people drive across town for">
-            A working menu of family favourites. The full menu with prices
-            lives on its own page.
+          <SectionHead kicker="What we're known for" title="The dishes people come back for">
+            A preview of the menu — family favourites, made fresh to order.
           </SectionHead>
           <DishGrid dishes={dishes} />
-          <div className="tac" style={{ marginTop: "2rem" }}>
+          <div className="tac" style={{ marginTop: "2.25rem" }}>
             <Link href="/menu" className="btn btn-gold">
               See the full menu &amp; prices
             </Link>
@@ -127,14 +126,14 @@ export default function HomePage() {
       {/* STORY */}
       <section>
         <div className="container split">
-          <div className="dropcap">
+          <div>
             <p className="kicker">Since day one</p>
-            <h2>Still run by the same family that opened the door</h2>
+            <h2>Run by the same family that opened the door</h2>
             <Swoosh />
             <p>
-              What started as a kitchen table has grown into a full family restaurant —
-              brick facade, red tin roof, tricolour pillars and walls our
-              family painted by hand. The spice blends and the slow-cooked
+              What started as a kitchen table has grown into a full dining
+              room — brick facade, red tin roof, tricolour pillars and walls
+              the family painted by hand. The spice blends and the slow-cooked
               dals haven&rsquo;t changed.
             </p>
             <p className="pull-quote">
@@ -145,7 +144,7 @@ export default function HomePage() {
               Read our story
             </Link>
           </div>
-          <div className="split-media panel-frame">
+          <div className="split-media">
             <Image
               src={img.muralWarliWoman.src}
               alt={img.muralWarliWoman.alt}
@@ -177,12 +176,14 @@ export default function HomePage() {
       {/* MENU TEASER */}
       <section>
         <div className="container menu-teaser">
-          <div className="book-peek">
-            <div className="cover">
-              <Image src="/logo.jpeg" alt="" width={64} height={64} />
-              <h3>The Menu</h3>
-              <span>SOUTH • NORTH • TANDOOR • CHAI</span>
-            </div>
+          <div className="menu-teaser-media">
+            <Image
+              src={img.foodBiryani.src}
+              alt={img.foodBiryani.alt}
+              fill
+              sizes="(max-width: 860px) 100vw, 520px"
+              style={{ objectFit: "cover" }}
+            />
           </div>
           <div>
             <p className="kicker">Browse before you arrive</p>
@@ -190,7 +191,8 @@ export default function HomePage() {
             <Swoosh />
             <p>
               Starters, tandoor grills, South and North Indian mains, biryani,
-              Chinese, breads, and our clay-pot chai and fresh juice counter.
+              Chinese, breads, and our clay-pot chai and fresh-juice counter —
+              with prices, on one page.
             </p>
             <Link href="/menu" className="btn btn-primary mt-lg">
               Open the full menu
@@ -214,7 +216,7 @@ export default function HomePage() {
       {/* FIND US */}
       <section>
         <div className="container">
-          <SectionHead kicker="Getting here" title="Find us, check the timings" center />
+          <SectionHead kicker="Getting here" title="Find us & opening hours" center />
           <FindUs />
         </div>
       </section>

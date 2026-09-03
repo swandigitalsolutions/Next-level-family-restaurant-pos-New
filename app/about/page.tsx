@@ -1,19 +1,17 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
+import PageIntro from "@/components/PageIntro";
 import SectionHead from "@/components/SectionHead";
 import Swoosh from "@/components/Swoosh";
 import DishGrid, { type Dish } from "@/components/DishGrid";
 import CtaBand from "@/components/CtaBand";
-import WarliFrieze from "@/components/decor/WarliFrieze";
-import Garland from "@/components/decor/Garland";
 import { img } from "@/lib/images";
 import { timeline } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "Our Story",
   description:
-    "How Next Level Family Restaurant grew from a family kitchen table into a highway-side family restaurant with hand-painted Warli walls and a garden.",
+    "How Next Level Family Restaurant grew from a family kitchen table into a full dining room with hand-painted folk-art walls and a garden.",
 };
 
 const values: Dish[] = [
@@ -25,11 +23,15 @@ const values: Dish[] = [
 export default function AboutPage() {
   return (
     <>
-      <section>
+      <PageIntro kicker="Our story" title="A family table that grew into a restaurant">
+        The same hands in the kitchen, the same recipes — just a bigger room now.
+      </PageIntro>
+
+      <section className="section--flush-top">
         <div className="container split">
-          <div className="dropcap">
-            <p className="kicker">Our story</p>
-            <h1>A family table that grew into a family restaurant</h1>
+          <div>
+            <p className="kicker">Where it started</p>
+            <h2>Cooking for a crowd, long before there was a menu</h2>
             <Swoosh />
             <p>
               Next Level Family Restaurant didn&rsquo;t start with a business
@@ -45,7 +47,7 @@ export default function AboutPage() {
               try.&rdquo;
             </p>
           </div>
-          <div className="split-media panel-frame">
+          <div className="split-media">
             <Image
               src={img.venueGate.src}
               alt={img.venueGate.alt}
@@ -58,14 +60,9 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <div className="frieze-divider">
-        <WarliFrieze />
-      </div>
-
-      {/* TIMELINE */}
-      <section>
+      <section className="section-alt">
         <div className="container">
-          <SectionHead kicker="How we got here" title="Four steps from kitchen table to restaurant" center />
+          <SectionHead kicker="How we got here" title="From kitchen table to dining room" center />
           <div className="timeline">
             {timeline.map((s) => (
               <div className="step" key={s.title}>
@@ -78,9 +75,9 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="section-alt">
+      <section>
         <div className="container split reverse">
-          <div className="split-media panel-frame">
+          <div className="split-media">
             <Image
               src={img.muralWarliWoman.src}
               alt={img.muralWarliWoman.alt}
@@ -101,9 +98,9 @@ export default function AboutPage() {
             </p>
             <p>
               The murals are part of that. A local artist and the family painted
-              the Warli figures, the folk landscapes and the temple scene in the
-              hall over a few months. It makes the place feel like somewhere,
-              not anywhere.
+              the folk figures, the landscapes and the temple scene in the hall
+              over a few months. It makes the place feel like somewhere, not
+              anywhere.
             </p>
             <p className="pull-quote">
               &ldquo;You should leave a little too full and already planning your
@@ -113,11 +110,8 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section>
+      <section className="section-alt">
         <div className="container">
-          <Garland />
-        </div>
-        <div className="container" style={{ marginTop: "2rem" }}>
           <SectionHead kicker="How we run it" title="A few things we don't compromise on" center />
           <DishGrid dishes={values} />
         </div>

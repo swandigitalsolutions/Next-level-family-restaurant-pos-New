@@ -2388,3 +2388,461 @@ footer {
     box-shadow: var(--card-shadow);
   }
 }
+
+/* ===========================================================
+   SECTIONS PASS 2 — story, menu teaser, dishes, testimonials
+   =========================================================== */
+
+/* Kicker: plain, clean — no decorative dashes */
+.kicker::before,
+.section-head.center .kicker::after {
+  display: none;
+}
+.kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  color: var(--cardinal-deep);
+}
+
+/* Split (story / about) */
+.split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: center;
+}
+.split.reverse .split-media {
+  order: 2;
+}
+.split-media {
+  border-radius: 18px;
+  overflow: hidden;
+  aspect-ratio: 4 / 3.2;
+  box-shadow: 0 30px 60px -34px rgba(43, 33, 26, 0.4);
+}
+.split-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pull-quote {
+  border-left: 3px solid var(--marigold);
+  padding-left: 1.1rem;
+  margin: 1.35rem 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.15rem;
+  line-height: 1.5;
+  color: var(--cardinal-deep);
+}
+@media (max-width: 860px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+  .split.reverse .split-media {
+    order: 0;
+  }
+}
+
+/* Menu teaser — clean image + copy, no 3D book */
+.menu-teaser {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: center;
+}
+.menu-teaser-media {
+  position: relative;
+  aspect-ratio: 4 / 3.4;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 30px 60px -34px rgba(43, 33, 26, 0.4);
+}
+.menu-teaser-media img {
+  object-fit: cover;
+}
+@media (max-width: 860px) {
+  .menu-teaser {
+    grid-template-columns: 1fr;
+  }
+  .menu-teaser-media {
+    order: -1;
+    aspect-ratio: 16 / 10;
+  }
+}
+
+/* Dish grid — same asymmetric layout, tidier */
+.dish-grid {
+  gap: 1rem;
+}
+.dish {
+  border-radius: 14px;
+}
+.dish .tag {
+  top: 12px;
+  left: 12px;
+  font-size: 0.68rem;
+  padding: 0.28rem 0.6rem;
+  background: #fff;
+}
+.dish .cap {
+  padding: 1.4rem 1.1rem 1rem;
+}
+.dish .cap h3 {
+  font-size: 1.02rem;
+  margin: 0 0 0.1rem;
+}
+.dish .cap span {
+  font-size: 0.76rem;
+}
+
+/* Testimonials */
+.notes {
+  gap: 1.1rem;
+}
+.note {
+  padding: 1.6rem 1.4rem;
+  border-radius: 14px;
+}
+.note p {
+  font-size: 0.95rem;
+  color: var(--ink);
+  margin: 0.7rem 0 1rem;
+}
+.note .stars {
+  font-size: 0.82rem;
+}
+.note .who {
+  font-size: 0.85rem;
+}
+
+/* Offers band cards */
+.offers {
+  gap: 1rem;
+}
+.offer {
+  padding: 1.5rem 1.4rem;
+}
+.offer h3 {
+  font-size: 1.15rem;
+}
+.offer .tagline {
+  font-size: 0.68rem;
+}
+
+/* Section CTA button spacing */
+.section-alt .tac,
+section .tac {
+  margin-top: 2rem;
+}
+
+/* ===========================================================
+   DARK THEME — warm near-black with the logo's colours
+   (cardinal red, marigold + sunflower yellow, basil green)
+   Appended last so it wins the cascade.
+   =========================================================== */
+:root {
+  --cream: #171310;        /* page background */
+  --cream-dim: #1f1914;    /* alternating sections */
+  --surface: #241d16;      /* cards / raised */
+  --surface-2: #2c231b;
+  --ink: #f5ecdd;          /* primary text */
+  --ink-soft: #c3b4a1;     /* secondary text */
+  --paper-line: rgba(245, 236, 221, 0.13);
+  --cardinal: #d42a3b;     /* brighter red for contrast on dark */
+  --cardinal-deep: #b01f2c;
+  --marigold: #e8b24c;
+  --sunflower: #f7cb57;
+  --basil: #7fb562;
+}
+
+body {
+  background: var(--cream);
+  color: var(--ink);
+}
+body::before {
+  opacity: 0.35;
+}
+
+/* surfaces that were white */
+.section-alt,
+.spec,
+.note,
+.findus,
+.menu-nav a,
+.hero-eyebrow,
+.hero-chip,
+.nl-typing,
+.nl-msg.bot .nl-bubble,
+.nl-form,
+.nl-form input,
+.nl-chip {
+  background: var(--surface);
+  border-color: var(--paper-line);
+  color: var(--ink);
+}
+.section-alt {
+  border-block: 1px solid var(--paper-line);
+}
+
+/* header / nav */
+.site-header {
+  background: rgba(23, 19, 16, 0.92);
+  border-bottom: 1px solid var(--paper-line);
+  backdrop-filter: saturate(1.2) blur(6px);
+}
+.brand {
+  color: var(--sunflower);
+}
+.brand small {
+  color: var(--ink-soft);
+}
+.nav-links a {
+  color: var(--ink);
+}
+
+/* hero */
+.hero {
+  background: linear-gradient(180deg, var(--surface) 0%, var(--cream) 100%);
+  border-bottom: 1px solid var(--paper-line);
+}
+.hero-eyebrow {
+  color: var(--sunflower);
+}
+.hero-chip figcaption {
+  color: var(--ink-soft);
+}
+.hero-stats dt {
+  color: var(--sunflower);
+}
+
+/* kickers + leads */
+.kicker {
+  color: var(--sunflower);
+}
+.section-head p,
+.hero .lede {
+  color: var(--ink-soft);
+}
+
+/* buttons */
+.btn {
+  box-shadow: none;
+}
+.btn-primary {
+  background: var(--cardinal);
+}
+.btn-primary:hover {
+  background: var(--cardinal-deep);
+}
+.btn-ghost {
+  color: var(--ink);
+  border-color: rgba(245, 236, 221, 0.3);
+}
+.btn-ghost:hover {
+  background: var(--ink);
+  color: var(--cream);
+  border-color: var(--ink);
+}
+
+/* specialities icon */
+.spec .ico {
+  background: rgba(212, 42, 59, 0.16);
+  color: var(--marigold);
+}
+.spec:hover .ico {
+  background: var(--cardinal);
+  color: #fff;
+}
+.spec:hover {
+  border-color: rgba(212, 42, 59, 0.4);
+}
+
+/* forms */
+input,
+select,
+textarea {
+  background: var(--surface);
+  border-color: var(--paper-line);
+  color: var(--ink);
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--ink-soft);
+}
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--cardinal);
+  box-shadow: 0 0 0 4px rgba(212, 42, 59, 0.18);
+}
+
+/* menu list */
+.menu-block h3 {
+  color: var(--marigold);
+}
+.menu-block h3::after {
+  background: var(--paper-line);
+}
+.menu-row {
+  border-bottom-color: var(--paper-line);
+}
+.menu-row .n {
+  color: var(--ink);
+}
+.menu-row .d {
+  color: var(--ink-soft);
+}
+.menu-row .p {
+  color: var(--sunflower);
+}
+.menu-nav a:hover {
+  color: var(--sunflower);
+  border-color: var(--cardinal);
+}
+
+/* pull quote / testimonials */
+.pull-quote {
+  color: var(--sunflower);
+}
+.note p {
+  color: var(--ink);
+}
+.note .who {
+  color: var(--ink);
+}
+.note .who span {
+  color: var(--ink-soft);
+}
+
+/* timeline */
+.timeline .step::before {
+  border-color: var(--cream);
+}
+.timeline .step p {
+  color: var(--ink-soft);
+}
+
+/* find us / hours */
+.findus .rows div {
+  border-bottom-color: var(--paper-line);
+}
+.hours-table td {
+  border-bottom-color: var(--paper-line);
+}
+.hours-table td:last-child {
+  color: var(--sunflower);
+}
+.info-line svg {
+  color: var(--cardinal);
+}
+.map-frame {
+  border: 1px solid var(--paper-line);
+}
+
+/* offers band — a hair lighter than page so it reads as a block */
+.band-dark {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.offer {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* faq */
+.faq details {
+  border-bottom-color: var(--paper-line);
+}
+.faq details p {
+  color: var(--ink-soft);
+}
+
+/* placeholder flag */
+.placeholder-flag {
+  background: rgba(232, 178, 76, 0.16);
+  color: var(--sunflower);
+}
+
+/* footer */
+footer {
+  background: #110d0a;
+  border-top: 1px solid var(--paper-line);
+  color: var(--ink-soft);
+}
+footer h4 {
+  color: var(--ink);
+}
+footer a,
+footer p {
+  color: var(--ink-soft);
+}
+.foot-grid {
+  border-bottom-color: var(--paper-line);
+}
+.social-row a {
+  border-color: var(--paper-line);
+}
+
+/* chatbot */
+.nl-panel {
+  background: var(--cream);
+  border-color: var(--paper-line);
+}
+.nl-messages {
+  background: var(--cream);
+}
+.nl-msg.bot .nl-bubble {
+  color: var(--ink);
+}
+.nl-form {
+  border-top-color: var(--paper-line);
+}
+.nl-chip {
+  color: var(--ink);
+}
+.nl-chip:hover {
+  background: var(--surface-2);
+}
+
+/* mobile action bar */
+.mobile-bar {
+  background: var(--cream);
+  border-top-color: var(--paper-line);
+}
+.mobile-bar .call {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--paper-line);
+}
+
+/* page cross-fade wrapper shouldn't flash white */
+.page-tx {
+  background: var(--cream);
+}
+
+/* dark-theme fixups */
+.band-dark {
+  border-block: 1px solid var(--paper-line);
+}
+.band-dark h2 {
+  color: var(--ink);
+}
+.band-dark .kicker {
+  color: var(--sunflower);
+}
+.band-dark .section-head p,
+.band-dark .section-head p span {
+  color: var(--ink-soft) !important;
+}
+.hero-chip {
+  background: var(--surface-2);
+  border-color: var(--paper-line);
+}
+.hero-chip figcaption {
+  color: var(--ink);
+}
+.dish .tag {
+  background: var(--surface-2);
+  color: var(--sunflower);
+}
