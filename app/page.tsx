@@ -5,6 +5,14 @@ import Swoosh from "@/components/Swoosh";
 import DishGrid, { type Dish } from "@/components/DishGrid";
 import Testimonials from "@/components/Testimonials";
 import CtaBand from "@/components/CtaBand";
+import Specialities from "@/components/Specialities";
+import Offers from "@/components/Offers";
+import FindUs from "@/components/FindUs";
+import GalleryPeek from "@/components/GalleryPeek";
+import Faq from "@/components/Faq";
+import WarliFrieze from "@/components/decor/WarliFrieze";
+import Garland from "@/components/decor/Garland";
+import Seal from "@/components/decor/Seal";
 import { img } from "@/lib/images";
 
 const dishes: Dish[] = [
@@ -61,7 +69,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="hero-art">
+          <div className="hero-art panel-frame">
             <Image
               src={img.venueHero.src}
               alt={img.venueHero.alt}
@@ -77,7 +85,26 @@ export default function HomePage() {
                 faster service.&rdquo;
               </p>
             </div>
+            <div style={{ position: "absolute", right: 14, top: 14 }}>
+              <Seal top="Family run" big="est." bottom="same kitchen" />
+            </div>
           </div>
+        </div>
+      </section>
+
+      <div className="frieze-divider">
+        <WarliFrieze />
+      </div>
+
+      {/* SPECIALITIES */}
+      <section style={{ paddingBottom: "1rem" }}>
+        <div className="container">
+          <SectionHead
+            kicker="Why people stop here"
+            title="A few things you'll only get at ours"
+            center
+          />
+          <Specialities />
         </div>
       </section>
 
@@ -89,13 +116,21 @@ export default function HomePage() {
             menu with prices lives on its own page.
           </SectionHead>
           <DishGrid dishes={dishes} />
+          <div className="tac" style={{ marginTop: "2rem" }}>
+            <Link href="/menu" className="btn btn-gold">
+              See the full menu &amp; prices
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* STORY SPLIT */}
       <section style={{ background: "var(--cream-dim)" }}>
-        <div className="container split">
-          <div>
+        <div className="container">
+          <Garland />
+        </div>
+        <div className="container split" style={{ marginTop: "2rem" }}>
+          <div className="dropcap">
             <p className="kicker">Since day one</p>
             <h2>Still run by the same family that opened the door</h2>
             <Swoosh />
@@ -114,7 +149,7 @@ export default function HomePage() {
               Read our story
             </Link>
           </div>
-          <div className="split-media">
+          <div className="split-media panel-frame">
             <Image
               src={img.muralWarliWoman.src}
               alt={img.muralWarliWoman.alt}
@@ -126,8 +161,26 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* MENU TEASER */}
+      {/* OFFERS / COMBOS */}
       <section className="band-dark">
+        <WarliFrieze />
+        <div className="container" style={{ marginTop: "2.4rem" }}>
+          <SectionHead kicker="Come as a crowd" title="Family combos & celebration tables" center>
+            <span style={{ color: "rgba(251,243,231,0.75)" }}>
+              Built for a full table. Sample pricing — confirm on the day.
+            </span>
+          </SectionHead>
+          <Offers />
+          <div className="tac" style={{ marginTop: "2rem" }}>
+            <Link href="/contact#reserve" className="btn btn-gold">
+              Reserve a celebration table
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* MENU TEASER */}
+      <section>
         <div className="container menu-teaser">
           <div className="book-peek">
             <div className="cover">
@@ -137,17 +190,15 @@ export default function HomePage() {
             </div>
           </div>
           <div>
-            <p className="kicker" style={{ color: "var(--sunflower)" }}>
-              Browse before you arrive
-            </p>
+            <p className="kicker">Browse before you arrive</p>
             <h2>Everything from thali to tandoori chai</h2>
             <Swoosh />
-            <p style={{ color: "rgba(251,243,231,0.78)" }}>
+            <p>
               Starters, tandoor grills, South and North Indian mains, biryani,
               Chinese, breads, and our clay-pot chai and fresh juice counter.
               Prices included, no PDF required.
             </p>
-            <Link href="/menu" className="btn btn-gold mt-lg">
+            <Link href="/menu" className="btn btn-primary mt-lg">
               Open the full menu
             </Link>
           </div>
@@ -155,7 +206,7 @@ export default function HomePage() {
       </section>
 
       {/* TESTIMONIALS */}
-      <section>
+      <section style={{ background: "var(--cream-dim)" }}>
         <div className="container">
           <SectionHead
             kicker="In our guests' words"
@@ -163,6 +214,34 @@ export default function HomePage() {
             center
           />
           <Testimonials />
+        </div>
+      </section>
+
+      {/* FIND US */}
+      <section>
+        <div className="container">
+          <FindUs />
+        </div>
+      </section>
+
+      {/* GALLERY PEEK */}
+      <section style={{ paddingTop: 0 }}>
+        <div className="container">
+          <SectionHead kicker="A look inside" title="The walls, the garden, the table" center />
+          <GalleryPeek />
+          <div className="tac" style={{ marginTop: "1.6rem" }}>
+            <Link href="/gallery" className="btn btn-ghost">
+              See the full gallery
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section style={{ background: "var(--cream-dim)" }}>
+        <div className="container">
+          <SectionHead kicker="Good to know" title="Before you come" center />
+          <Faq />
         </div>
       </section>
 

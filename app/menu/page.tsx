@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import Swoosh from "@/components/Swoosh";
-import MenuList from "@/components/MenuList";
+import MenuList, { slug } from "@/components/MenuList";
 import CtaBand from "@/components/CtaBand";
+import WarliFrieze from "@/components/decor/WarliFrieze";
+import { menu } from "@/lib/menu";
 
 export const metadata: Metadata = {
   title: "Menu",
@@ -15,7 +18,7 @@ export default function MenuPage() {
       <section style={{ paddingBottom: "1rem" }}>
         <div className="container section-head center">
           <p className="kicker">Take your time</p>
-          <h1 style={{ fontSize: "clamp(2.2rem,4.5vw,3.2rem)" }}>The full menu</h1>
+          <h1>The full menu</h1>
           <Swoosh className="center" />
           <p>
             Cooked to order in small batches — expect a short wait on weekends,
@@ -28,8 +31,19 @@ export default function MenuPage() {
         </div>
       </section>
 
-      <section style={{ paddingTop: 0 }}>
+      <div className="frieze-divider">
+        <WarliFrieze />
+      </div>
+
+      <section>
         <div className="container">
+          <nav className="menu-nav" aria-label="Menu sections">
+            {menu.map((s) => (
+              <a key={s.category} href={`#${slug(s.category)}`}>
+                {s.category}
+              </a>
+            ))}
+          </nav>
           <MenuList />
         </div>
       </section>

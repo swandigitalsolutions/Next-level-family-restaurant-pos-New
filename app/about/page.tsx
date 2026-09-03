@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import SectionHead from "@/components/SectionHead";
 import Swoosh from "@/components/Swoosh";
 import DishGrid, { type Dish } from "@/components/DishGrid";
 import CtaBand from "@/components/CtaBand";
+import WarliFrieze from "@/components/decor/WarliFrieze";
+import Garland from "@/components/decor/Garland";
 import { img } from "@/lib/images";
+import { timeline } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "Our Story",
@@ -23,11 +27,9 @@ export default function AboutPage() {
     <>
       <section>
         <div className="container split">
-          <div>
+          <div className="dropcap">
             <p className="kicker">Our story</p>
-            <h1 style={{ fontSize: "clamp(2.2rem,4.5vw,3.2rem)" }}>
-              A family table that grew into a dhaba
-            </h1>
+            <h1>A family table that grew into a dhaba</h1>
             <Swoosh />
             <p>
               Next Level Family Restaurant didn&rsquo;t start with a business
@@ -43,7 +45,7 @@ export default function AboutPage() {
               try.&rdquo;
             </p>
           </div>
-          <div className="split-media">
+          <div className="split-media panel-frame">
             <Image
               src={img.venueGate.src}
               alt={img.venueGate.alt}
@@ -56,12 +58,32 @@ export default function AboutPage() {
         </div>
       </section>
 
+      <div className="frieze-divider">
+        <WarliFrieze />
+      </div>
+
+      {/* TIMELINE */}
+      <section>
+        <div className="container">
+          <SectionHead kicker="How we got here" title="Four steps from kitchen table to dhaba" center />
+          <div className="timeline">
+            {timeline.map((s) => (
+              <div className="step" key={s.title}>
+                <span className="yr">{s.yr}</span>
+                <h3>{s.title}</h3>
+                <p>{s.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section style={{ background: "var(--cream-dim)" }}>
         <div className="container split reverse">
-          <div className="split-media">
+          <div className="split-media panel-frame">
             <Image
-              src={img.venueInterior.src}
-              alt={img.venueInterior.alt}
+              src={img.muralWarliWoman.src}
+              alt={img.muralWarliWoman.alt}
               fill
               sizes="(max-width: 860px) 100vw, 560px"
               style={{ objectFit: "cover" }}
@@ -93,6 +115,9 @@ export default function AboutPage() {
 
       <section>
         <div className="container">
+          <Garland />
+        </div>
+        <div className="container" style={{ marginTop: "2rem" }}>
           <SectionHead kicker="How we run it" title="A few things we don't compromise on" center />
           <DishGrid dishes={values} />
         </div>

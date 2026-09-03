@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Swoosh from "@/components/Swoosh";
 import ReservationForm from "@/components/ReservationForm";
+import Faq from "@/components/Faq";
+import SectionHead from "@/components/SectionHead";
+import WarliFrieze from "@/components/decor/WarliFrieze";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -103,6 +106,17 @@ export default function ContactPage() {
             </p>
           </div>
           <ReservationForm />
+        </div>
+      </section>
+
+      <div className="frieze-divider">
+        <WarliFrieze />
+      </div>
+
+      <section>
+        <div className="container">
+          <SectionHead kicker="Good to know" title="Questions we get a lot" center />
+          <Faq />
         </div>
       </section>
     </>
