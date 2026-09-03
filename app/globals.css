@@ -2907,3 +2907,290 @@ footer p {
     font-size: 0.95rem;
   }
 }
+
+/* ===========================================================
+   PREMIUM CARDS — Specialities + Family combos
+   Ambient section light, layered cards, richer hover motion.
+   Appended last so it wins the cascade.
+   =========================================================== */
+:root {
+  --ease-out-soft: cubic-bezier(0.22, 0.68, 0.24, 1);
+  --ease-back: cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+
+/* ---- ambient light on both bands ---- */
+.section-spec {
+  position: relative;
+  background:
+    radial-gradient(
+      1100px 420px at 50% -6%,
+      rgba(232, 178, 76, 0.1),
+      transparent 70%
+    ),
+    transparent;
+}
+.band-dark {
+  background:
+    radial-gradient(
+      1200px 420px at 50% -12%,
+      rgba(232, 178, 76, 0.08),
+      transparent 72%
+    ),
+    var(--surface-2);
+}
+
+/* ---- Specialities ---- */
+.specialities {
+  gap: 1.25rem;
+}
+.spec {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 2.1rem 1.25rem 1.9rem;
+  border-radius: 18px;
+  background: linear-gradient(180deg, var(--surface) 0%, var(--cream-dim) 100%);
+  border: 1px solid var(--paper-line);
+  box-shadow:
+    0 1px 0 rgba(245, 236, 221, 0.04) inset,
+    0 14px 30px -22px rgba(0, 0, 0, 0.6);
+  transition:
+    transform 0.42s var(--ease-out-soft),
+    box-shadow 0.42s var(--ease-out-soft),
+    border-color 0.42s var(--ease-out-soft);
+}
+/* top accent bar */
+.spec::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--cardinal), var(--marigold));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.42s var(--ease-out-soft);
+}
+/* soft sheen that lifts in on hover */
+.spec::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    120% 80% at 50% 0%,
+    rgba(232, 178, 76, 0.12),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.42s var(--ease-out-soft);
+}
+.spec:hover,
+.spec:focus-within {
+  transform: translateY(-8px);
+  border-color: rgba(232, 178, 76, 0.35);
+  box-shadow:
+    0 1px 0 rgba(245, 236, 221, 0.06) inset,
+    0 26px 44px -24px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(232, 178, 76, 0.12);
+}
+.spec:hover::before,
+.spec:focus-within::before {
+  transform: scaleX(1);
+}
+.spec:hover::after,
+.spec:focus-within::after {
+  opacity: 1;
+}
+.spec .ico {
+  width: 58px;
+  height: 58px;
+  margin-bottom: 1rem;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 30% 25%,
+    rgba(232, 178, 76, 0.22),
+    rgba(212, 42, 59, 0.16)
+  );
+  color: var(--marigold);
+  box-shadow: 0 0 0 6px rgba(212, 42, 59, 0.06);
+  transition:
+    transform 0.5s var(--ease-back),
+    background 0.4s var(--ease-out-soft),
+    color 0.4s var(--ease-out-soft),
+    box-shadow 0.4s var(--ease-out-soft);
+}
+.spec .ico svg {
+  width: 26px;
+  height: 26px;
+}
+.spec:hover .ico,
+.spec:focus-within .ico {
+  transform: translateY(-2px) scale(1.12) rotate(-8deg);
+  background: linear-gradient(180deg, var(--cardinal), var(--cardinal-deep));
+  color: #fff;
+  box-shadow: 0 0 0 10px rgba(212, 42, 59, 0.1);
+}
+.spec h3 {
+  font-size: 1.02rem;
+  transition: color 0.4s var(--ease-out-soft);
+}
+.spec:hover h3,
+.spec:focus-within h3 {
+  color: var(--marigold);
+}
+.spec p {
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+}
+
+/* ---- Family combos ---- */
+.offers {
+  gap: 1.5rem;
+  align-items: stretch;
+}
+.offer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 1.8rem 1.6rem 1.7rem;
+  border-radius: 16px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.055) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 16px 34px -26px rgba(0, 0, 0, 0.7);
+  transition:
+    transform 0.42s var(--ease-out-soft),
+    box-shadow 0.42s var(--ease-out-soft),
+    border-color 0.42s var(--ease-out-soft),
+    background 0.42s var(--ease-out-soft);
+}
+/* left accent rail */
+.offer::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 16px 0 0 16px;
+  background: linear-gradient(180deg, var(--marigold), var(--cardinal));
+  transform: scaleY(0.22);
+  transform-origin: top;
+  transition: transform 0.5s var(--ease-out-soft);
+}
+.offer:hover,
+.offer:focus-within {
+  transform: translateY(-6px);
+  border-color: rgba(247, 203, 87, 0.45);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.07) inset,
+    0 30px 50px -28px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(247, 203, 87, 0.14);
+}
+.offer:hover::before,
+.offer:focus-within::before {
+  transform: scaleY(1);
+}
+.offer .tagline {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: var(--sunflower);
+}
+.offer h3 {
+  color: #fff;
+  font-size: 1.3rem;
+  margin: 0.35rem 0 0.5rem;
+}
+.offer p {
+  font-size: 0.9rem;
+  color: rgba(251, 243, 231, 0.82);
+  margin: 0;
+}
+.offer .price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: var(--sunflower);
+  transition: color 0.4s var(--ease-out-soft);
+}
+.offer .price-label {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(251, 243, 231, 0.55);
+}
+.offer:hover .price,
+.offer:focus-within .price {
+  color: var(--marigold);
+}
+/* padding-top:1rem already sets the price block gap; keep the h3+p tight above */
+.offer > p {
+  margin-bottom: 1.1rem;
+}
+
+/* featured combo */
+.offer--feature {
+  border-color: rgba(247, 203, 87, 0.5);
+  background: linear-gradient(
+    180deg,
+    rgba(247, 203, 87, 0.1) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 22px 44px -26px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(247, 203, 87, 0.2);
+}
+.offer--feature::before {
+  transform: scaleY(1);
+}
+.offer-badge {
+  position: absolute;
+  top: -0.72rem;
+  left: 1.5rem;
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 0.63rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #2a1c05;
+  background: linear-gradient(180deg, var(--sunflower), #d9982f);
+  box-shadow: 0 6px 14px -6px rgba(232, 178, 76, 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spec,
+  .spec::before,
+  .spec::after,
+  .spec .ico,
+  .offer,
+  .offer::before {
+    transition: none;
+  }
+  .spec:hover,
+  .spec:focus-within,
+  .offer:hover,
+  .offer:focus-within {
+    transform: none;
+  }
+}

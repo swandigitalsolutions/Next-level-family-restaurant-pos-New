@@ -97,7 +97,7 @@ export default function HomePage() {
       </section>
 
       {/* SPECIALITIES */}
-      <section>
+      <section className="section-spec">
         <div className="container">
           <SectionHead
             kicker="Why people stop here"
