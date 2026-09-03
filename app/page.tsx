@@ -15,12 +15,10 @@ import Reveal from "@/components/Reveal";
 import { img } from "@/lib/images";
 
 const dishes: Dish[] = [
-  { size: "big", image: img.foodThali, tag: "Chef's pick", title: "Next Level Special Thali", sub: "Unlimited, changes daily" },
-  { size: "small", image: img.foodDosa, title: "Butter Masala Dosa", sub: "South Indian" },
-  { size: "small", image: img.foodTandoori, title: "Tandoori Chicken", sub: "From the grill" },
-  { size: "wide", image: img.foodBiryani, title: "Dum Biryani", sub: "Veg & non-veg" },
-  { size: "wide", image: img.foodPaneer, title: "Paneer Butter Masala", sub: "North Indian" },
-  { size: "wide", image: img.foodDessert, title: "Gulab Jamun & Rabri", sub: "Desserts" },
+  { image: img.foodThali, tag: "Chef's pick", title: "Next Level Special Thali", sub: "Unlimited, changes daily" },
+  { image: img.foodTandoori, title: "Tandoori Chicken", sub: "From the grill" },
+  { image: img.foodBiryani, title: "Dum Biryani", sub: "Veg & non-veg" },
+  { image: img.foodPaneer, title: "Paneer Butter Masala", sub: "North Indian" },
 ];
 
 export default function HomePage() {
@@ -54,19 +52,22 @@ export default function HomePage() {
             <dl className="hero-stats">
               <div>
                 <dt>
-                  <CountUp value={25} suffix="+" />
+                  <CountUp value={25} />
+                  <span className="suffix">+</span>
                 </dt>
                 <dd>years cooking for regulars</dd>
               </div>
               <div>
                 <dt>
-                  <CountUp value={60} suffix="+" />
+                  <CountUp value={60} />
+                  <span className="suffix">+</span>
                 </dt>
                 <dd>dishes made fresh daily</dd>
               </div>
               <div>
                 <dt>
-                  <CountUp value={4.6} decimals={1} suffix="★" />
+                  <CountUp value={4.6} decimals={1} />
+                  <span className="suffix star">★</span>
                 </dt>
                 <dd>rated by our regulars</dd>
               </div>
@@ -168,34 +169,6 @@ export default function HomePage() {
           <div className="tac" style={{ marginTop: "2rem" }}>
             <Link href="/contact#reserve" className="btn btn-gold">
               Reserve a celebration table
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* MENU TEASER */}
-      <section>
-        <div className="container menu-teaser">
-          <div className="menu-teaser-media">
-            <Image
-              src={img.foodBiryani.src}
-              alt={img.foodBiryani.alt}
-              fill
-              sizes="(max-width: 860px) 100vw, 520px"
-              style={{ objectFit: "cover" }}
-            />
-          </div>
-          <div>
-            <p className="kicker">Browse before you arrive</p>
-            <h2>Everything from thali to tandoori chai</h2>
-            <Swoosh />
-            <p>
-              Starters, tandoor grills, South and North Indian mains, biryani,
-              Chinese, breads, and our clay-pot chai and fresh-juice counter —
-              with prices, on one page.
-            </p>
-            <Link href="/menu" className="btn btn-primary mt-lg">
-              Open the full menu
             </Link>
           </div>
         </div>

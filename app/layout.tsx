@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Poppins, Inter } from "next/font/google";
+import { Fraunces, Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
 import { site } from "@/lib/site";
 import Header from "@/components/Header";
@@ -8,16 +8,18 @@ import Chatbot from "@/components/Chatbot";
 import MobileBar from "@/components/MobileBar";
 import PageTransition from "@/components/PageTransition";
 
-const poppins = Poppins({
+// Soft old-style serif for headings and dish names — reads hand-set,
+// like a recipe handed down. Paired with a plain, warm grotesque for
+// menus, hours and forms.
+const fraunces = Fraunces({
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  style: ["normal", "italic"],
   variable: "--font-heading",
   display: "swap",
 });
 
-const inter = Inter({
+const hanken = Hanken_Grotesk({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
   variable: "--font-sans",
   display: "swap",
 });
@@ -42,7 +44,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${poppins.variable} ${inter.variable}`}>
+    <html lang="en" className={`${fraunces.variable} ${hanken.variable}`}>
       <body>
         <a href="#main" className="skip-link">
           Skip to content

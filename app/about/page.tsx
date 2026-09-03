@@ -15,9 +15,9 @@ export const metadata: Metadata = {
 };
 
 const values: Dish[] = [
-  { size: "wide", image: img.juiceStall, title: "Fresh, every morning", sub: "Nothing pre-made and frozen" },
-  { size: "wide", image: img.muralWarliWall, title: "Painted by hand", sub: "Every wall, by the family" },
-  { size: "wide", image: img.gardenPergola, title: "Room to breathe", sub: "Garden and verandah seating" },
+  { image: img.juiceStall, title: "Fresh, every morning", sub: "Nothing pre-made and frozen" },
+  { image: img.muralWarliWall, title: "Painted by hand", sub: "Every wall, by the family" },
+  { image: img.gardenPergola, title: "Room to breathe", sub: "Garden and verandah seating" },
 ];
 
 export default function AboutPage() {

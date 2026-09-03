@@ -611,7 +611,7 @@ section:has(+ .frieze-divider) {
 /* ---------- Dish grid ---------- */
 .dish-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.4rem;
 }
 .dish {
@@ -665,31 +665,15 @@ section:has(+ .frieze-divider) {
   color: var(--sunflower);
   font-weight: 600;
 }
-.dish.big {
-  grid-column: span 4;
-  grid-row: span 2;
-  aspect-ratio: 1 / 1;
-}
-.dish.small {
-  grid-column: span 2;
-  aspect-ratio: 1 / 1.15;
-}
-.dish.wide {
-  grid-column: span 3;
-  aspect-ratio: 4 / 3;
+.dish {
+  aspect-ratio: 4 / 5;
 }
 @media (max-width: 900px) {
   .dish-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  .dish.big {
-    grid-column: span 2;
+  .dish {
     aspect-ratio: 4 / 3;
-  }
-  .dish.small,
-  .dish.wide {
-    grid-column: span 2;
-    aspect-ratio: 16 / 10;
   }
 }
 
@@ -3042,6 +3026,28 @@ footer p {
   font-size: 0.86rem;
   color: var(--ink-soft);
 }
+/* photo on each speciality card */
+.spec {
+  padding: 0;
+}
+.spec-shot {
+  position: relative;
+  aspect-ratio: 5 / 4;
+  overflow: hidden;
+}
+.spec-shot img {
+  transition: transform 0.5s var(--ease-out-soft);
+}
+.spec:hover .spec-shot img,
+.spec:focus-within .spec-shot img {
+  transform: scale(1.06);
+}
+.spec-body {
+  padding: 1.05rem 1.2rem 1.3rem;
+}
+.spec-body h3 {
+  margin-bottom: 0.2rem;
+}
 
 /* ---- Family combos ---- */
 .offers {
@@ -3144,6 +3150,36 @@ footer p {
 /* padding-top:1rem already sets the price block gap; keep the h3+p tight above */
 .offer > p {
   margin-bottom: 1.1rem;
+}
+/* photo on each combo card */
+.offer {
+  padding: 0;
+  overflow: hidden;
+}
+.offer-shot {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+.offer-shot img {
+  transition: transform 0.5s var(--ease-out-soft);
+}
+.offer:hover .offer-shot img,
+.offer:focus-within .offer-shot img {
+  transform: scale(1.05);
+}
+.offer-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  padding: 1.5rem 1.6rem 1.7rem;
+}
+.offer-body p {
+  margin-bottom: 1.1rem;
+}
+.offer-badge {
+  top: 0.9rem;
+  left: 0.9rem;
 }
 
 /* featured combo */
@@ -3481,3 +3517,251 @@ footer p {
     animation: none;
   }
 }
+
+/* ===========================================================
+   PREMIUM POLISH — keeps the black / red / yellow theme.
+   Smoother motion, calmer hover travel, more breathing room,
+   tighter display tracking. No colour changes to the theme.
+   =========================================================== */
+:root {
+  /* motion: gentler decel, less overshoot — reads smoother */
+  --ease-out-soft: cubic-bezier(0.16, 0.84, 0.3, 1);
+  --ease-back: cubic-bezier(0.34, 1.2, 0.5, 1);
+  /* a touch more air between sections */
+  --section-y: clamp(3.75rem, 7vw, 6rem);
+}
+
+/* calmer hover travel across the card system */
+.spec:hover, .spec:focus-within,
+.offer:hover, .offer:focus-within,
+.note:hover { transform: translateY(-5px); }
+.dish:hover { transform: translateY(-4px); }
+.timeline .step:hover { transform: translateX(3px); }
+
+/* the serif display face wants tighter tracking + a little more room */
+h1, h2 { letter-spacing: -0.02em; }
+.section-head { margin-bottom: 2.4rem; }
+
+/* ---------- Hero stat strip ---------- */
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin: 2.25rem 0 0;
+  padding-top: 1.7rem;
+  border-top: 1px solid var(--paper-line);
+}
+.hero-stats > div {
+  position: relative;
+  padding: 0 clamp(1rem, 3vw, 2rem);
+}
+.hero-stats > div:first-child { padding-left: 0; }
+.hero-stats > div:last-child { padding-right: 0; }
+.hero-stats > div + div::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.2rem;
+  height: 2.1rem;
+  width: 1px;
+  background: var(--paper-line);
+}
+.hero-stats dt {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 0.7rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.1rem, 4vw, 2.9rem);
+  line-height: 1;
+  color: var(--sunflower);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
+}
+.hero-stats dt .suffix {
+  font-size: 0.44em;
+  font-weight: 700;
+  vertical-align: 0.95em;
+  margin-left: 0.08em;
+  color: var(--cardinal);
+  letter-spacing: 0;
+}
+.hero-stats dt .suffix.star {
+  font-size: 0.5em;
+  vertical-align: 0.35em;
+  margin-left: 0.12em;
+}
+.hero-stats dd {
+  margin: 0.55rem 0 0;
+  max-width: 16ch;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+/* a red-to-gold rule wipes in under each figure once it lands */
+.hero-stats dt::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 2.4rem;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--cardinal), var(--sunflower));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero-stats dt::after {
+    width: 0;
+    animation: heroStatRule 0.8s var(--ease-out-soft) 0.9s both;
+  }
+  .hero-stats > div:nth-child(2) dt::after { animation-delay: 1.05s; }
+  .hero-stats > div:nth-child(3) dt::after { animation-delay: 1.2s; }
+}
+@keyframes heroStatRule {
+  from { width: 0; opacity: 0.2; }
+  to { width: 2.4rem; opacity: 1; }
+}
+@media (max-width: 540px) {
+  .hero-stats {
+    grid-template-columns: 1fr;
+    gap: 1.35rem;
+    row-gap: 1.35rem;
+  }
+  .hero-stats > div,
+  .hero-stats > div:first-child { padding: 0 0 0 1rem; }
+  .hero-stats > div + div::before {
+    top: 0.15rem;
+    height: calc(100% - 0.3rem);
+  }
+  .hero-stats > div::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.15rem;
+    height: calc(100% - 0.3rem);
+    width: 2px;
+    background: var(--cardinal);
+    border-radius: 2px;
+  }
+  .hero-stats dt { padding-bottom: 0.35rem; }
+  .hero-stats dt::after { display: none; }
+  .hero-stats dd { max-width: none; }
+}
+
+/* ===========================================================
+   PREMIUM PASS — dark theme. Restraint, hierarchy, weightier
+   type, quieter surfaces, one warm glow. Token-driven only.
+   =========================================================== */
+
+/* type — let Fraunces carry it */
+h1, h2, h3 { text-wrap: balance; }
+h2 { font-size: clamp(1.7rem, 3vw, 2.35rem); font-weight: 600; }
+.hero .lede,
+.lede { font-size: clamp(1.02rem, 1.3vw, 1.16rem); line-height: 1.66; }
+
+/* uppercase labels — one treatment, gold, everywhere */
+.kicker,
+.hero-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sunflower);
+}
+
+/* hero eyebrow — a real dark chip, not a white pill */
+.hero-eyebrow {
+  background: rgba(247, 203, 87, 0.08);
+  border: 1px solid rgba(247, 203, 87, 0.26);
+  border-radius: 999px;
+  padding: 0.42rem 0.9rem;
+}
+
+/* hero — one warm glow up top */
+.hero {
+  background:
+    radial-gradient(90% 70% at 72% 0%, rgba(247, 203, 87, 0.07), transparent 60%),
+    linear-gradient(180deg, var(--surface) 0%, var(--cream) 100%);
+}
+
+/* buttons — more considered, softer motion */
+.btn {
+  border-radius: 999px;
+  padding: 0.85rem 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition:
+    transform 0.22s var(--ease-out-soft),
+    box-shadow 0.22s var(--ease-out-soft),
+    filter 0.22s ease,
+    background 0.22s ease,
+    border-color 0.22s ease,
+    color 0.22s ease;
+}
+.btn-primary {
+  background: linear-gradient(180deg, var(--cardinal) 0%, var(--cardinal-deep) 100%);
+  color: #fff7ea;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.14) inset,
+    0 12px 28px -12px rgba(212, 42, 59, 0.5);
+}
+.btn-primary:hover {
+  filter: brightness(1.07);
+  transform: translateY(-2px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 18px 38px -12px rgba(212, 42, 59, 0.65);
+}
+.btn-gold {
+  background: linear-gradient(180deg, var(--sunflower), var(--marigold));
+  color: #241a0a;
+  box-shadow: 0 12px 26px -14px rgba(247, 203, 87, 0.45);
+}
+.btn-gold:hover { transform: translateY(-2px); filter: brightness(1.04); }
+.btn-ghost:hover {
+  background: rgba(245, 236, 221, 0.06);
+  border-color: rgba(245, 236, 221, 0.5);
+  color: var(--ink);
+  transform: translateY(-2px);
+}
+
+/* cards — one system: hairline, deep surface, gold on hover */
+.spec,
+.offer,
+.note,
+.findus {
+  background: var(--surface);
+  border: 1px solid var(--paper-line);
+  border-radius: 16px;
+}
+.spec:hover,
+.offer:hover,
+.note:hover,
+.findus:hover {
+  border-color: rgba(247, 203, 87, 0.28);
+}
+
+/* media — consistent frame */
+.hero-art,
+.split-media {
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--paper-line);
+  box-shadow: 0 40px 80px -44px rgba(0, 0, 0, 0.72);
+}
+
+/* in-content links — gold underline */
+.split p a:not(.btn),
+.faq p a {
+  color: var(--sunflower);
+  text-underline-offset: 3px;
+  text-decoration: underline solid rgba(247, 203, 87, 0.35);
+}
+.split p a:not(.btn):hover,
+.faq p a:hover { text-decoration-color: var(--sunflower); }
+
+/* section heads — consistent rhythm */
+.section-head { margin-bottom: 2.6rem; }
