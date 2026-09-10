@@ -38,7 +38,6 @@ export default function ContactPage() {
                 ))}
               </tbody>
             </table>
-            <p className="placeholder-flag">{site.hoursNote}</p>
 
             <h2 className="loc-h" style={{ marginTop: "2rem" }}>Get in touch</h2>
             <div className="info-line">

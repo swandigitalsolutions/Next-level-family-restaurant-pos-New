@@ -8,24 +8,24 @@ export const specialities = [
   { ico: "🌿", title: "Garden Seating", text: "Open-air, under the pots" },
 ];
 
+/* Combos are described, never priced here — the kitchen's POS is the only
+   place a price lives. Guests get the exact figure on the Menu page or
+   when they book. */
 export const combos = [
   {
     tagline: "Best value",
     title: "Family Feast (4)",
     text: "2 mains, dal, rice, 4 breads, raita, papad and gulab jamun to finish.",
-    price: "₹899",
   },
   {
     tagline: "Weekday lunch",
     title: "Unlimited Thali",
     text: "Seasonal sabzi, dal, rice, curd, sweet and unlimited rotis. Changes daily.",
-    price: "₹289",
   },
   {
     tagline: "Celebrations",
     title: "Birthday Table",
     text: "Reserved garden table, a cake-cutting corner and a round of chai on the house.",
-    price: "On request",
   },
 ];
 

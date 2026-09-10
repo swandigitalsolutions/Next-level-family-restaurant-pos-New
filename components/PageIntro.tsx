@@ -6,12 +6,10 @@ export default function PageIntro({
   kicker,
   title,
   children,
-  flag,
 }: {
   kicker: string;
   title: string;
   children?: React.ReactNode;
-  flag?: string;
 }) {
   return (
     <section className="page-intro">
@@ -21,7 +19,6 @@ export default function PageIntro({
           <h1>{title}</h1>
           <Swoosh className="center" />
           {children ? <p>{children}</p> : null}
-          {flag ? <p className="placeholder-flag">{flag}</p> : null}
         </div>
       </div>
     </section>

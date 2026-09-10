@@ -3,7 +3,7 @@ import Image from "next/image";
 import PageIntro from "@/components/PageIntro";
 import SectionHead from "@/components/SectionHead";
 import Swoosh from "@/components/Swoosh";
-import DishGrid, { type Dish } from "@/components/DishGrid";
+import PillarGrid, { type Pillar } from "@/components/PillarGrid";
 import CtaBand from "@/components/CtaBand";
 import { img } from "@/lib/images";
 import { timeline } from "@/lib/content";
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     "How Next Level Family Restaurant grew from a family kitchen table into a full dining room with hand-painted folk-art walls and a garden.",
 };
 
-const values: Dish[] = [
+const values: Pillar[] = [
   { image: img.juiceStall, title: "Fresh, every morning", sub: "Nothing pre-made and frozen" },
   { image: img.muralWarliWall, title: "Painted by hand", sub: "Every wall, by the family" },
   { image: img.gardenPergola, title: "Room to breathe", sub: "Garden and verandah seating" },
@@ -113,7 +113,7 @@ export default function AboutPage() {
       <section className="section-alt">
         <div className="container">
           <SectionHead kicker="How we run it" title="A few things we don't compromise on" center />
-          <DishGrid dishes={values} />
+          <PillarGrid items={values} />
         </div>
       </section>
 

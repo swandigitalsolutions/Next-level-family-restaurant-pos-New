@@ -8,7 +8,6 @@ export default function Offers() {
   return (
     <div className="offers">
       {combos.map((c, i) => {
-        const hasPrice = c.price.trim().startsWith("₹");
         const shot = shots[i] ?? img.foodThali;
         return (
           <div
@@ -29,10 +28,7 @@ export default function Offers() {
               <span className="tagline">{c.tagline}</span>
               <h3>{c.title}</h3>
               <p>{c.text}</p>
-              <span className="price">
-                {hasPrice && <span className="price-label">from</span>}
-                {c.price}
-              </span>
+              <span className="offer-cta">Ask us when you book</span>
             </div>
           </div>
         );

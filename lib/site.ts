@@ -1,6 +1,6 @@
 /* Central site configuration — name, contact, hours, navigation.
    Everything a launch needs to update lives here, not in components.
-   Values marked PLACEHOLDER are safe to ship but should be confirmed. */
+   Menu and pricing are NOT here: those come from the POS. */
 
 export const site = {
   name: "Next Level Family Restaurant",
@@ -22,7 +22,6 @@ export const site = {
     { day: "Monday – Friday", time: "11:00 AM – 10:30 PM" },
     { day: "Saturday – Sunday", time: "11:00 AM – 11:00 PM" },
   ],
-  hoursNote: "Placeholder hours — the team will confirm final timings.",
   socials: [
     { label: "Instagram", short: "IG", href: "#" },
     { label: "Facebook", short: "FB", href: "#" },

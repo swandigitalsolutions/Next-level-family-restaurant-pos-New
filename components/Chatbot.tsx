@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { GREETING, SUGGESTIONS, answer } from "@/lib/chatbot-kb";
+import { GREETING, SUGGESTIONS, answer, type KbMenuItem } from "@/lib/chatbot-kb";
 
 type Msg = {
   id: number;
@@ -10,6 +10,27 @@ type Msg = {
   text: string;
   action?: { label: string; href: string };
 };
+
+/* Minimal shape of the Web Speech API bits we use — the DOM lib doesn't
+   ship these types. */
+type SpeechRecognitionResultLike = {
+  results?: ArrayLike<ArrayLike<{ transcript?: string }>>;
+  error?: string;
+};
+type SpeechRecognitionLike = {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  maxAlternatives: number;
+  onstart: (() => void) | null;
+  onend: (() => void) | null;
+  onresult: ((e: SpeechRecognitionResultLike) => void) | null;
+  onerror: ((e: SpeechRecognitionResultLike) => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+};
+type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
 
 let nextId = 1;
 
@@ -22,11 +43,14 @@ export default function Chatbot() {
   const [input, setInput] = useState("");
   const [micSupported, setMicSupported] = useState(false);
   const [ttsSupported, setTtsSupported] = useState(false);
+  // Live POS catalog, so the bot quotes today's prices and never a stale one.
+  const menuRef = useRef<KbMenuItem[]>([]);
+  const menuLoaded = useRef(false);
 
   const greetedRef = useRef(false);
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const recRef = useRef<any>(null);
+  const recRef = useRef<SpeechRecognitionLike | null>(null);
   const speechOnRef = useRef(true);
   const listeningRef = useRef(false);
   speechOnRef.current = speechOn;
@@ -65,7 +89,7 @@ export default function Chatbot() {
     setTyping(true);
     window.setTimeout(() => {
       setTyping(false);
-      const a = answer(text);
+      const a = answer(text, menuRef.current);
       push({ sender: "bot", text: a.text, action: a.action });
       speak(a.text);
     }, 420 + Math.random() * 280);
@@ -85,9 +109,11 @@ export default function Chatbot() {
     if (typeof window === "undefined") return;
     setTtsSupported("speechSynthesis" in window);
 
-    const Ctor =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
+    const w = window as unknown as {
+      SpeechRecognition?: SpeechRecognitionCtor;
+      webkitSpeechRecognition?: SpeechRecognitionCtor;
+    };
+    const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
     if (!Ctor) return;
 
     setMicSupported(true);
@@ -99,12 +125,13 @@ export default function Chatbot() {
 
     rec.onstart = () => setListening(true);
     rec.onend = () => setListening(false);
-    rec.onresult = (e: any) => {
+    rec.onresult = (e: SpeechRecognitionResultLike) => {
       const transcript = e.results?.[0]?.[0]?.transcript?.trim();
       if (transcript) send(transcript);
     };
-    rec.onerror = (e: any) => {
+    rec.onerror = (e: SpeechRecognitionResultLike) => {
       setListening(false);
+      console.warn("[chatbot] speech recognition error:", e?.error);
       if (e?.error === "not-allowed" || e?.error === "service-not-allowed") {
         push({
           sender: "bot",
@@ -114,6 +141,21 @@ export default function Chatbot() {
         push({
           sender: "bot",
           text: "I didn't catch that — tap the mic and speak again, or type your question.",
+        });
+      } else if (e?.error === "network") {
+        push({
+          sender: "bot",
+          text: "I couldn't reach the speech service — check your internet connection and try again, or type your question.",
+        });
+      } else if (e?.error === "audio-capture") {
+        push({
+          sender: "bot",
+          text: "I can't find a working microphone. Check it's connected and not in use by another app, then try again.",
+        });
+      } else if (e?.error !== "aborted") {
+        push({
+          sender: "bot",
+          text: "Something went wrong with voice input — try again, or type your question.",
         });
       }
     };
@@ -143,7 +185,20 @@ export default function Chatbot() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  async function loadMenu() {
+    if (menuLoaded.current) return;
+    menuLoaded.current = true;
+    try {
+      const res = await fetch("/api/menu-brief");
+      const data = await res.json();
+      if (Array.isArray(data?.items)) menuRef.current = data.items as KbMenuItem[];
+    } catch {
+      menuLoaded.current = false; // let a later open retry
+    }
+  }
+
   function openPanel() {
+    void loadMenu();
     setOpen(true);
     if (!greetedRef.current) {
       greetedRef.current = true;

@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import SectionHead from "@/components/SectionHead";
 import Swoosh from "@/components/Swoosh";
-import DishGrid, { type Dish } from "@/components/DishGrid";
+import DishGrid from "@/components/DishGrid";
 import Testimonials from "@/components/Testimonials";
 import CtaBand from "@/components/CtaBand";
 import Specialities from "@/components/Specialities";
@@ -11,17 +11,13 @@ import FindUs from "@/components/FindUs";
 import GalleryPeek from "@/components/GalleryPeek";
 import Faq from "@/components/Faq";
 import CountUp from "@/components/CountUp";
-import Reveal from "@/components/Reveal";
+import PreOrderSteps from "@/components/PreOrderSteps";
 import { img } from "@/lib/images";
+import { getFeaturedDishes } from "@/lib/menu-source";
 
-const dishes: Dish[] = [
-  { image: img.foodThali, tag: "Chef's pick", title: "Next Level Special Thali", sub: "Unlimited, changes daily" },
-  { image: img.foodTandoori, title: "Tandoori Chicken", sub: "From the grill" },
-  { image: img.foodBiryani, title: "Dum Biryani", sub: "Veg & non-veg" },
-  { image: img.foodPaneer, title: "Paneer Butter Masala", sub: "North Indian" },
-];
+export default async function HomePage() {
+  const dishes = await getFeaturedDishes(4);
 
-export default function HomePage() {
   return (
     <>
       {/* HERO */}
@@ -42,13 +38,18 @@ export default function HomePage() {
               garden to sit in.
             </p>
             <div className="hero-actions">
-              <Link href="/contact#reserve" className="btn btn-primary">
+              <Link href="/menu" className="btn btn-primary">
+                Pre-Order online
+              </Link>
+              <Link href="/contact#reserve" className="btn btn-ghost">
                 Reserve a table
               </Link>
-              <Link href="/menu" className="btn btn-ghost">
-                View the menu
-              </Link>
             </div>
+            <p className="hero-order-note">
+              <span className="hero-order-dot" aria-hidden="true" />
+              Order ahead &amp; skip the wait —{" "}
+              <strong>50% advance, balance at pickup</strong>
+            </p>
             <dl className="hero-stats">
               <div>
                 <dt>
@@ -97,6 +98,28 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* PRE-ORDER */}
+      <section className="band-dark preorder-band">
+        <div className="container">
+          <div className="preorder-head">
+            <div>
+              <p className="kicker">New — Order Online</p>
+              <h2>Pre-Order your table&rsquo;s food</h2>
+              <p className="preorder-sub">
+                Choose your dishes now, pay a{" "}
+                <strong>50% advance</strong>, and we&rsquo;ll have everything
+                cooked fresh for your slot. No queue, no guesswork.
+              </p>
+              <span className="advance-pill">50% Advance Payment Required</span>
+            </div>
+            <Link href="/menu" className="btn btn-gold preorder-band-cta">
+              Start your pre-order →
+            </Link>
+          </div>
+          <PreOrderSteps />
+        </div>
+      </section>
+
       {/* SPECIALITIES */}
       <section className="section-spec">
         <div className="container">
@@ -109,20 +132,22 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SIGNATURE DISHES */}
-      <section className="section-alt">
-        <div className="container">
-          <SectionHead kicker="What we're known for" title="The dishes people come back for">
-            A preview of the menu — family favourites, made fresh to order.
-          </SectionHead>
-          <DishGrid dishes={dishes} />
-          <div className="tac" style={{ marginTop: "2.25rem" }}>
-            <Link href="/menu" className="btn btn-gold">
-              See the full menu &amp; prices
-            </Link>
+      {/* SIGNATURE DISHES — straight from the live POS catalog */}
+      {dishes.length > 0 && (
+        <section className="section-alt">
+          <div className="container">
+            <SectionHead kicker="What we're known for" title="On the menu today">
+              Live from the kitchen — tap any dish to add it to a pre-order.
+            </SectionHead>
+            <DishGrid dishes={dishes} />
+            <div className="tac" style={{ marginTop: "2.25rem" }}>
+              <Link href="/menu" className="btn btn-gold">
+                See the full menu &amp; order
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* STORY */}
       <section>
@@ -162,7 +187,7 @@ export default function HomePage() {
         <div className="container">
           <SectionHead kicker="Come as a crowd" title="Family combos & celebration tables" center>
             <span style={{ color: "rgba(251,243,231,0.75)" }}>
-              Built for a full table. Sample pricing — confirm on the day.
+              Built for a full table. Tell us the headcount and we&rsquo;ll set it up.
             </span>
           </SectionHead>
           <Offers />

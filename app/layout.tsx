@@ -7,6 +7,8 @@ import Footer from "@/components/Footer";
 import Chatbot from "@/components/Chatbot";
 import MobileBar from "@/components/MobileBar";
 import PageTransition from "@/components/PageTransition";
+import { CartProvider } from "@/lib/cart";
+import CartFab from "@/components/CartFab";
 
 // Soft old-style serif for headings and dish names — reads hand-set,
 // like a recipe handed down. Paired with a plain, warm grotesque for
@@ -49,13 +51,16 @@ export default function RootLayout({
         <a href="#main" className="skip-link">
           Skip to content
         </a>
-        <Header />
-        <main id="main">
-          <PageTransition>{children}</PageTransition>
-        </main>
-        <Footer />
-        <MobileBar />
-        <Chatbot />
+        <CartProvider>
+          <Header />
+          <main id="main">
+            <PageTransition>{children}</PageTransition>
+          </main>
+          <Footer />
+          <MobileBar />
+          <CartFab />
+          <Chatbot />
+        </CartProvider>
       </body>
     </html>
   );

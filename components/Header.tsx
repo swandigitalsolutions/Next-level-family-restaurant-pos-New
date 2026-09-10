@@ -65,9 +65,15 @@ export default function Header() {
               </li>
             );
           })}
-          <li>
+          <li className="nav-book">
             <Link href="/contact#reserve" className="nav-cta">
               Book a Table
+            </Link>
+          </li>
+          <li className="nav-preorder">
+            <Link href="/menu" className="nav-order">
+              Pre-Order
+              <span className="nav-order-tag">50% advance</span>
             </Link>
           </li>
         </ul>

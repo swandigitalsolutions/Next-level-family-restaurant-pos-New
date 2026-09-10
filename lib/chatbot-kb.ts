@@ -1,14 +1,22 @@
 /* On-page assistant — a small retrieval engine that answers from the
-   site's OWN data: the menu in lib/menu.ts and the details in
-   lib/site.ts, plus a set of curated facts about the restaurant. Fully
-   client-side, no API key: it tokenises the question, scores it against
-   intents and every menu item, and returns the best match.
+   site's OWN data: the LIVE POS menu (fetched by the widget from
+   /api/menu-brief) and the details in lib/site.ts, plus curated facts
+   about the restaurant. No API key: it tokenises the question, scores it
+   against intents and every menu item, and returns the best match.
 
-   Add a fact: drop it in FACTS. Add a dish: it's already searchable
-   the moment it's in lib/menu.ts. */
+   Dish names and prices are never hardcoded here — they come from the
+   POS catalog, so the bot can't quote a stale price. */
 
-import { menu } from "./menu";
 import { site } from "./site";
+
+/** One dish, as the widget receives it from /api/menu-brief. */
+export type KbMenuItem = {
+  name: string;
+  desc: string;
+  price: string;
+  section: string;
+  available: boolean;
+};
 
 export type Action = { label: string; href: string };
 export type Answer = { text: string; action?: Action };
@@ -30,7 +38,7 @@ const FACTS: {
   {
     id: "hours",
     triggers: ["hour", "open", "opening", "close", "closing", "timing", "time", "when are you open", "what time"],
-    text: `We're open ${hoursText}. (Placeholder hours — the team will confirm final timings.)`,
+    text: `We are open ${hoursText}. Call ahead on weekends and we will keep a table for you.`,
     action: { label: "See Visit Us", href: "/contact" },
   },
   {
@@ -100,13 +108,7 @@ const FACTS: {
   {
     id: "signature",
     triggers: ["recommend", "recommendation", "best", "signature", "special", "must try", "popular", "famous", "favourite", "favorite", "what should i order", "what is good"],
-    text: "People come back for the Next Level Special Thali, Tandoori Chicken, Dum Biryani, Paneer Butter Masala — and the Tandoori Chai.",
-    action: { label: "See full menu", href: "/menu" },
-  },
-  {
-    id: "price-range",
-    triggers: ["how expensive", "price range", "budget", "cost for two", "average cost", "how much for", "cheap", "costly", "expensive", "per person"],
-    text: "Roughly: starters ₹99–₹430, mains ₹150–₹430, the Special Thali is ₹289 (unlimited). Sample pricing for now — full list on the Menu page.",
+    text: "Ask me about any dish by name and I'll give you today's price. Our thalis, tandoor grills, biryanis and the clay-pot Tandoori Chai are what regulars come back for.",
     action: { label: "See full menu", href: "/menu" },
   },
   {
@@ -118,7 +120,7 @@ const FACTS: {
   {
     id: "menu",
     triggers: ["menu", "what do you serve", "what do you have", "food", "eat", "dishes", "cuisine", "what kind of food"],
-    text: "The menu runs Starters, Tandoor & Grills, South Indian, North Indian Curries, Biryani & Rice, Chinese, Breads, and Fresh Juice / Chai / Desserts.",
+    text: "The full menu — with today's live prices — is on the Menu page, and you can pre-order there with a 50% advance. Ask me about any dish by name too.",
     action: { label: "Open the menu", href: "/menu" },
   },
   {
@@ -137,7 +139,7 @@ export const GREETING = FACTS[0].text;
 
 export const SUGGESTIONS = [
   { label: "Hours?", text: "What are your hours?" },
-  { label: "Price of biryani?", text: "How much is the chicken biryani?" },
+  { label: "Price of biryani?", text: "How much is the biryani?" },
   { label: "Veg options", text: "What are the veg options?" },
   { label: "Garden seating?", text: "Do you have garden seating?" },
   { label: "Book a table", text: "I want to book a table" },
@@ -159,26 +161,19 @@ function tokens(s: string): string[] {
     .filter((w) => w && !STOP.has(w));
 }
 
-/* Flatten the menu once for searching. */
-const MENU_INDEX = menu.flatMap((section) =>
-  section.items.map((it) => ({
-    section: section.category,
-    ...it,
-    hay: `${it.name} ${it.desc} ${section.category}`.toLowerCase(),
-  }))
-);
-
-function searchMenu(q: string) {
+function searchMenu(q: string, items: KbMenuItem[]) {
   const t = tokens(q);
-  if (!t.length) return [];
-  return MENU_INDEX.map((it) => {
+  if (!t.length || !items.length) return [];
+  return items
+    .map((it) => ({ ...it, hay: `${it.name} ${it.desc} ${it.section}`.toLowerCase() }))
+    .map((it) => {
     let score = 0;
     for (const w of t) {
       if (it.name.toLowerCase().includes(w)) score += 3;
       else if (it.hay.includes(w)) score += 1;
     }
-    return { it, score };
-  })
+      return { it, score };
+    })
     .filter((r) => r.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, 4)
@@ -205,31 +200,37 @@ function bestFact(q: string) {
 }
 
 /* ---------- the one entry point the UI calls ---------- */
-export function answer(query: string): Answer {
+/* `items` is the live POS catalog the widget fetched. Pass [] before it
+   has loaded — dish questions then point at the menu page rather than
+   guessing a price. */
+export function answer(query: string, items: KbMenuItem[] = []): Answer {
   const q = query.trim();
   if (!q) return { text: FALLBACK };
 
-  const priceIntent = /\b(price|cost|how much|rate|charge|rs|rupees|₹)\b/i.test(q);
-  const hits = searchMenu(q);
+  const priceIntent = /(price|cost|how much|rate|charge|rs|rupees|₹)/i.test(q);
+  const hits = searchMenu(q, items);
   const fact = bestFact(q);
 
-  // A dish was named — answer with the dish(es) and price(s).
+  // A dish was named — answer with the dish(es) and today's price(s).
   if (hits.length && (priceIntent || !fact)) {
     if (hits.length === 1) {
       const d = hits[0];
+      const soldOut = d.available ? "" : " (sold out right now)";
+      const desc = d.desc ? ` ${d.desc}.` : "";
       return {
-        text: `${d.name} — ${d.price}. ${d.desc}. (In our ${d.section} section.)`,
-        action: { label: "See full menu", href: "/menu" },
+        text: `${d.name} — ${d.price}${soldOut}.${desc} You'll find it under ${d.section}.`,
+        action: { label: "Order it", href: "/menu" },
       };
     }
     const list = hits.map((d) => `${d.name} (${d.price})`).join(", ");
     return {
-      text: `A few that match: ${list}. Full details on the menu.`,
+      text: `A few that match: ${list}.`,
       action: { label: "Open the menu", href: "/menu" },
     };
   }
 
   if (fact) return { text: fact.text, action: fact.action };
+
   if (hits.length) {
     const list = hits.map((d) => `${d.name} (${d.price})`).join(", ");
     return {
@@ -237,5 +238,14 @@ export function answer(query: string): Answer {
       action: { label: "Open the menu", href: "/menu" },
     };
   }
+
+  // Sounds like a dish question but the catalog isn't loaded / has no match.
+  if (priceIntent) {
+    return {
+      text: "Today's dishes and prices are all on the menu page — they come straight from the kitchen's system, so they're always current.",
+      action: { label: "Open the menu", href: "/menu" },
+    };
+  }
+
   return { text: FALLBACK };
 }
