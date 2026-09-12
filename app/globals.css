@@ -82,6 +82,17 @@ button {
   font-family: inherit;
 }
 
+/* Instant-feeling taps on mobile: no grey flash, no 300ms tap delay. */
+a,
+button,
+[role="button"],
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
 h1,
 h2,
 h3,
@@ -139,7 +150,7 @@ select:focus-visible {
   color: var(--cream);
   padding: 0.6rem 1rem;
   border-radius: 8px;
-  transition: top 0.2s ease;
+  transition: top 0.2s var(--ease-out-soft);
 }
 .skip-link:focus {
   top: 1rem;
@@ -283,8 +294,8 @@ section:has(+ .frieze-divider) {
   white-space: nowrap;
   border: 1.5px solid transparent;
   cursor: pointer;
-  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease,
-    transform 0.16s ease;
+  transition: background 0.16s var(--ease-out-soft), border-color 0.16s var(--ease-out-soft), color 0.16s var(--ease-out-soft),
+    transform 0.16s var(--ease-out-soft);
 }
 .btn:active {
   transform: translateY(1px);
@@ -333,7 +344,7 @@ section:has(+ .frieze-divider) {
      scroll frame and was a real source of jank. */
   background: var(--cream);
   border-bottom: 1px solid var(--paper-line);
-  transition: box-shadow 0.25s ease;
+  transition: box-shadow 0.25s var(--ease-out-soft);
 }
 .site-header.scrolled {
   box-shadow: 0 6px 18px -12px rgba(43, 33, 26, 0.35);
@@ -391,7 +402,7 @@ section:has(+ .frieze-divider) {
   background: var(--cardinal);
   transform: scaleX(0);
   transform-origin: left;
-  transition: transform 0.25s ease;
+  transition: transform 0.25s var(--ease-out-soft);
 }
 .nav-links a:hover::after,
 .nav-links a[aria-current="page"]::after {
@@ -410,7 +421,7 @@ section:has(+ .frieze-divider) {
   font-size: 0.88rem;
   line-height: 1;
   white-space: nowrap;
-  transition: background 0.16s ease;
+  transition: background 0.16s var(--ease-out-soft);
 }
 .nav-cta::after {
   display: none;
@@ -433,7 +444,7 @@ section:has(+ .frieze-divider) {
   right: 9px;
   height: 2px;
   background: var(--ink);
-  transition: transform 0.25s ease, opacity 0.25s ease;
+  transition: transform 0.25s var(--ease-out-soft), opacity 0.25s var(--ease-out-soft);
 }
 .nav-toggle span:nth-child(1) {
   top: 14px;
@@ -468,7 +479,7 @@ section:has(+ .frieze-divider) {
     transform: translateY(-8px);
     opacity: 0;
     pointer-events: none;
-    transition: transform 0.22s ease, opacity 0.2s ease;
+    transition: transform 0.22s var(--ease-out-soft), opacity 0.2s var(--ease-out-soft);
   }
   .nav-links.open {
     transform: translateY(0);
@@ -620,7 +631,7 @@ section:has(+ .frieze-divider) {
   overflow: hidden;
   background: var(--ink);
   color: #fff;
-  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  transition: transform 0.22s var(--ease-out-soft), box-shadow 0.22s var(--ease-out-soft);
 }
 .dish:hover {
   transform: translateY(-4px);
@@ -630,7 +641,7 @@ section:has(+ .frieze-divider) {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.5s ease;
+  transition: transform 0.5s var(--ease-out-soft);
 }
 .dish:hover img {
   transform: scale(1.07);
@@ -795,7 +806,7 @@ section:has(+ .frieze-divider) {
   box-shadow: 0 30px 60px -22px rgba(43, 33, 26, 0.55),
     inset -8px 0 18px rgba(0, 0, 0, 0.25);
   transform: rotateY(-18deg) rotateX(2deg);
-  transition: transform 0.5s ease;
+  transition: transform 0.5s var(--ease-out-soft);
 }
 .book-peek:hover .cover {
   transform: rotateY(-8deg) rotateX(1deg);
@@ -890,7 +901,7 @@ section:has(+ .frieze-divider) {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.4s ease;
+  transition: transform 0.4s var(--ease-out-soft);
 }
 .gallery-grid button:hover img {
   transform: scale(1.07);
@@ -918,7 +929,7 @@ section:has(+ .frieze-divider) {
   padding: 2rem;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.25s var(--ease-out-soft);
 }
 .lightbox.open {
   opacity: 1;
@@ -1049,7 +1060,7 @@ textarea {
   font-family: var(--font-body);
   font-size: 0.95rem;
   color: var(--ink);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s var(--ease-out-soft), box-shadow 0.2s var(--ease-out-soft);
 }
 input:focus,
 select:focus,
@@ -1173,7 +1184,7 @@ footer a:hover {
   align-items: center;
   justify-content: center;
   font-size: 0.75rem;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: background 0.2s var(--ease-out-soft), border-color 0.2s var(--ease-out-soft);
 }
 .social-row a:hover {
   background: var(--cardinal);
@@ -1214,7 +1225,7 @@ footer a:hover {
 .reveal {
   opacity: 0;
   transform: translateY(14px);
-  transition: opacity 0.5s ease, transform 0.5s ease;
+  transition: opacity 0.5s var(--ease-out-soft), transform 0.5s var(--ease-out-soft);
 }
 .reveal.in {
   opacity: 1;
@@ -1241,7 +1252,7 @@ footer a:hover {
   border: none;
   cursor: pointer;
   box-shadow: 0 16px 30px -10px rgba(163, 22, 33, 0.6);
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition: transform 0.2s var(--ease-out-soft), background 0.2s var(--ease-out-soft);
 }
 .nl-fab:hover {
   transform: translateY(-2px) scale(1.04);
@@ -1280,7 +1291,7 @@ footer a:hover {
   opacity: 0;
   transform: translateY(16px) scale(0.98);
   pointer-events: none;
-  transition: opacity 0.22s ease, transform 0.22s ease;
+  transition: opacity 0.22s var(--ease-out-soft), transform 0.22s var(--ease-out-soft);
 }
 .nl-chat.open .nl-panel {
   opacity: 1;
@@ -1328,7 +1339,7 @@ footer a:hover {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.2s ease;
+  transition: background 0.2s var(--ease-out-soft);
 }
 .nl-icon-btn:hover {
   background: rgba(255, 255, 255, 0.2);
@@ -1474,7 +1485,7 @@ footer a:hover {
   padding: 0.4rem 0.75rem;
   border-radius: 999px;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: background 0.2s var(--ease-out-soft), border-color 0.2s var(--ease-out-soft);
 }
 .nl-chip:hover {
   background: var(--cream-dim);
@@ -1622,8 +1633,8 @@ body::before {
   background: #fff;
   border: 1px solid var(--paper-line);
   border-radius: 14px;
-  transition: transform 0.18s ease, box-shadow 0.18s ease,
-    border-color 0.18s ease;
+  transition: transform 0.18s var(--ease-out-soft), box-shadow 0.18s var(--ease-out-soft),
+    border-color 0.18s var(--ease-out-soft);
 }
 .spec:hover {
   transform: translateY(-4px);
@@ -1640,7 +1651,7 @@ body::before {
   border-radius: 50%;
   background: rgba(163, 22, 33, 0.08);
   color: var(--cardinal);
-  transition: background 0.18s ease, transform 0.18s ease;
+  transition: background 0.18s var(--ease-out-soft), transform 0.18s var(--ease-out-soft);
 }
 .spec .ico svg {
   width: 24px;
@@ -1783,7 +1794,7 @@ body::before {
   transform: translateY(-50%);
   font-size: 1.4rem;
   color: var(--cardinal);
-  transition: transform 0.2s ease;
+  transition: transform 0.2s var(--ease-out-soft);
 }
 .faq details[open] summary::after {
   transform: translateY(-50%) rotate(45deg);
@@ -1811,7 +1822,7 @@ body::before {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.4s ease;
+  transition: transform 0.4s var(--ease-out-soft);
 }
 .peek a:hover img {
   transform: scale(1.08);
@@ -2020,7 +2031,7 @@ body {
 
 /* Route cross-fade */
 .page-tx {
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition: opacity 0.18s var(--ease-out-soft), transform 0.18s var(--ease-out-soft);
 }
 .page-tx.is-out {
   opacity: 0;
@@ -2088,7 +2099,7 @@ h4 {
 .spec {
   border-radius: 16px;
   padding: 1.9rem 1.2rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s var(--ease-out-soft), box-shadow 0.2s var(--ease-out-soft);
 }
 .spec:hover {
   transform: translateY(-4px);
@@ -2856,7 +2867,7 @@ footer p {
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.18) inset,
     0 8px 20px -8px rgba(212, 42, 59, 0.55);
-  transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+  transition: transform 0.16s var(--ease-out-soft), box-shadow 0.16s var(--ease-out-soft), filter 0.16s var(--ease-out-soft);
 }
 .nav-cta::after {
   display: none;
@@ -3396,13 +3407,13 @@ footer p {
 /* menu rows */
 .menu-row {
   border-radius: 8px;
-  transition: background 0.25s ease;
+  transition: background 0.25s var(--ease-out-soft);
 }
 .menu-row .n,
 .menu-row .p {
   transition:
     transform 0.25s var(--ease-out-soft),
-    color 0.25s ease;
+    color 0.25s var(--ease-out-soft);
 }
 .menu-row:hover {
   background: rgba(232, 178, 76, 0.08);
@@ -3432,12 +3443,12 @@ footer p {
   transition: transform 0.38s var(--ease-out-soft);
 }
 .timeline .step h3 {
-  transition: color 0.3s ease;
+  transition: color 0.3s var(--ease-out-soft);
 }
 .timeline .step::before {
   transition:
     transform 0.4s var(--ease-back),
-    box-shadow 0.4s ease;
+    box-shadow 0.4s var(--ease-out-soft);
 }
 .timeline .step:hover {
   transform: translateX(5px);
@@ -3454,14 +3465,14 @@ footer p {
 .findus {
   transition:
     box-shadow 0.42s var(--ease-out-soft),
-    border-color 0.42s ease;
+    border-color 0.42s var(--ease-out-soft);
 }
 .findus:hover {
   border-color: rgba(232, 178, 76, 0.25);
   box-shadow: 0 30px 55px -30px rgba(0, 0, 0, 0.55);
 }
 .map-frame {
-  transition: box-shadow 0.42s ease;
+  transition: box-shadow 0.42s var(--ease-out-soft);
 }
 .map-frame:hover {
   box-shadow: 0 30px 55px -26px rgba(0, 0, 0, 0.5);
@@ -3481,12 +3492,12 @@ footer p {
 
 /* FAQ */
 .faq summary {
-  transition: color 0.25s ease;
+  transition: color 0.25s var(--ease-out-soft);
 }
 .faq summary::after {
   transition:
     transform 0.32s var(--ease-back),
-    color 0.25s ease;
+    color 0.25s var(--ease-out-soft);
 }
 .faq summary:hover,
 .faq details[open] summary {
@@ -3708,10 +3719,10 @@ h2 { font-size: clamp(1.7rem, 3vw, 2.35rem); font-weight: 600; }
   transition:
     transform 0.22s var(--ease-out-soft),
     box-shadow 0.22s var(--ease-out-soft),
-    filter 0.22s ease,
-    background 0.22s ease,
-    border-color 0.22s ease,
-    color 0.22s ease;
+    filter 0.22s var(--ease-out-soft),
+    background 0.22s var(--ease-out-soft),
+    border-color 0.22s var(--ease-out-soft),
+    color 0.22s var(--ease-out-soft);
 }
 .btn-primary {
   background: linear-gradient(180deg, var(--cardinal) 0%, var(--cardinal-deep) 100%);
@@ -3806,7 +3817,7 @@ h2 { font-size: clamp(1.7rem, 3vw, 2.35rem); font-weight: 600; }
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.4) inset,
     0 8px 20px -10px rgba(232, 178, 76, 0.6);
-  transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+  transition: transform 0.16s var(--ease-out-soft), box-shadow 0.16s var(--ease-out-soft), filter 0.16s var(--ease-out-soft);
 }
 .nav-order::after { display: none; }
 .nav-order-tag {
@@ -3954,7 +3965,7 @@ h2 { font-size: clamp(1.7rem, 3vw, 2.35rem); font-weight: 600; }
   color: #1a1206;
   border: none;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease;
+  transition: background 0.15s var(--ease-out-soft), transform 0.1s var(--ease-out-soft);
 }
 .atc-add:hover { background: var(--sunflower); }
 .atc-add:active { transform: translateY(1px); }
@@ -4001,7 +4012,7 @@ h2 { font-size: clamp(1.7rem, 3vw, 2.35rem); font-weight: 600; }
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.16) inset,
     0 18px 42px -14px rgba(0, 0, 0, 0.7);
-  animation: cartFabIn 0.28s ease;
+  animation: cartFabIn 0.28s var(--ease-out-soft);
 }
 .cart-fab:hover { filter: brightness(1.05); }
 @keyframes cartFabIn {
@@ -4279,7 +4290,7 @@ h2 { font-size: clamp(1.7rem, 3vw, 2.35rem); font-weight: 600; }
   border-radius: 999px;
   background: var(--surface);
   border: 1px solid var(--paper-line);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  transition: border-color 0.18s var(--ease-out-soft), box-shadow 0.18s var(--ease-out-soft);
 }
 .menu-search:focus-within {
   border-color: var(--marigold);
@@ -4338,7 +4349,7 @@ h2 { font-size: clamp(1.7rem, 3vw, 2.35rem); font-weight: 600; }
   font-size: 0.85rem;
   white-space: nowrap;
   cursor: pointer;
-  transition: color 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+  transition: color 0.16s var(--ease-out-soft), background 0.16s var(--ease-out-soft), border-color 0.16s var(--ease-out-soft);
 }
 .menu-tabs button:hover { color: var(--ink); border-color: rgba(245, 236, 221, 0.3); }
 .menu-tabs button.is-active {
@@ -4398,7 +4409,7 @@ h2 { font-size: clamp(1.7rem, 3vw, 2.35rem); font-weight: 600; }
   border: 1px solid var(--paper-line);
   border-radius: 16px;
   overflow: hidden;
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s var(--ease-out-soft), border-color 0.2s var(--ease-out-soft), box-shadow 0.2s var(--ease-out-soft);
 }
 .dish-card:hover {
   transform: translateY(-3px);
@@ -4416,7 +4427,7 @@ h2 { font-size: clamp(1.7rem, 3vw, 2.35rem); font-weight: 600; }
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.4s ease;
+  transition: transform 0.4s var(--ease-out-soft);
 }
 .dish-card:hover .dish-card-media img { transform: scale(1.05); }
 
@@ -4526,7 +4537,7 @@ h2 { font-size: clamp(1.7rem, 3vw, 2.35rem); font-weight: 600; }
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.5s ease;
+  transition: transform 0.5s var(--ease-out-soft);
 }
 .dish-noimg {
   position: absolute;
