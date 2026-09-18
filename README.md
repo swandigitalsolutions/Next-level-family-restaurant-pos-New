@@ -102,6 +102,28 @@ the POS every 8s and shows **Order confirmed** only once the POS reports
   attempts allowed until one succeeds; POS webhook is idempotent per
   payment id). The browser never marks an order paid/confirmed.
 
+### POS error contract
+
+Every POS error body is `{error: {code, message}}`. Only **422
+`invalid-argument`** is the guest's cart being refused; everything else is
+our problem or a transient one, and `app/api/website-orders/route.ts` is
+careful never to dress those up as "your items are unavailable":
+
+| POS reply | code | We return | Guest sees |
+|---|---|---|---|
+| 401 / 403 | `unauthenticated` | 503 `NOT_CONFIGURED` | ordering unavailable, please call (real reason is logged, never shown) |
+| 400 | `invalid-argument` | 502 `BAD_REQUEST` | generic "please try again" (our bug — logged loudly) |
+| 422 | `invalid-argument` | 409 `CART_REJECTED` | the POS's own message (guest-safe) |
+| 422 | `idempotency-conflict` | 409 `IDEMPOTENCY_CONFLICT` | nothing — the browser mints a new key and resubmits once |
+| 409 | `processing` | retried with the SAME key, honouring `Retry-After` | only after retries: "still confirming, you won't be charged twice" |
+| 500 | `internal` | retried with the SAME key | after retries: generic "please try again" |
+
+Retrying `processing` and `internal` with the same key is safe by
+contract: the POS dedupes on the key and releases its claim before
+returning a 500, so a retry returns the one order instead of creating a
+second. A 409/422 of any other kind is **not** retryable with the same
+body.
+
 ### Local development against the POS
 
 There is no mock POS in the tree any more — `app/mockpos/` was deleted

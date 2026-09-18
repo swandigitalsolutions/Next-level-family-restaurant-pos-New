@@ -14,9 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default function ContactPage() {
-  const mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(
-    site.address.mapQuery
-  )}&output=embed`;
+  const mapSrc = site.address.mapEmbed;
 
   return (
     <>

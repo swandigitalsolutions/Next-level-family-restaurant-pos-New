@@ -7,7 +7,11 @@
    wrong token returns 404 — no oracle for whether the ref exists. */
 
 import { NextResponse } from "next/server";
-import { getWebsiteOrder, PosContractNotConfigured } from "@/lib/pos-order-api";
+import {
+  getWebsiteOrder,
+  PosContractNotConfigured,
+  PosRequestError,
+} from "@/lib/pos-order-api";
 import { verifyOrderToken } from "@/lib/order-token";
 
 const NOT_FOUND = {
@@ -36,6 +40,17 @@ export async function GET(
     if (err instanceof PosContractNotConfigured) {
       return NextResponse.json(
         { error: "Online ordering isn't available right now.", code: "NOT_CONFIGURED" },
+        { status: 503 },
+      );
+    }
+    // The POS refusing our API key is our configuration problem, not a
+    // problem with this order — don't imply the order is broken.
+    if (err instanceof PosRequestError && (err.status === 401 || err.status === 403)) {
+      console.error(
+        `[website-orders] POS rejected our API key (${err.status}) — check POS_API_KEY`,
+      );
+      return NextResponse.json(
+        { error: "Order status isn't available right now.", code: "NOT_CONFIGURED" },
         { status: 503 },
       );
     }

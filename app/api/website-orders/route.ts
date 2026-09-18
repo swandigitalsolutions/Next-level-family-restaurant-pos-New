@@ -93,13 +93,32 @@ function posError(body: string): { code: string; message: string } {
   }
 }
 
-/* "processing" means the POS is still working on an earlier request with
-   this same Idempotency-Key — it is NOT a rejected cart. Wait for it: the
-   order is about to exist, and retrying the same key returns that one
-   order rather than creating a second. */
-const PROCESSING_RETRIES = 3;
-const PROCESSING_WAIT_MS = 1_200;
+/* The POS's error contract, as implemented and tested on its side:
+
+     401 unauthenticated      our API key is missing/wrong — our problem
+     400 invalid-argument     malformed body or Idempotency-Key — our bug
+     422 invalid-argument     a genuine cart rejection; message is guest-safe
+     422 idempotency-conflict same key reused with a different cart
+     409 processing           same key still in flight (+ Retry-After: 2)
+     500 internal             POS/Razorpay failure; the idempotency claim is
+                              released first, so the SAME key is safe to reuse
+
+   Only the 422 invalid-argument family is the guest's cart being refused.
+   Everything else must not be dressed up as "your items are unavailable". */
+const RETRYABLE_ATTEMPTS = 3;
+const RETRY_FALLBACK_MS = 1_200;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Can this failure be retried with the SAME idempotency key? */
+function retryableWithSameKey(err: unknown): boolean {
+  if (!(err instanceof PosRequestError)) return false;
+  const { code } = posError(err.body);
+  if (err.status === 409 && code === "processing") return true;
+  // The POS releases the idempotency claim before returning 500, so a
+  // retry cannot double-create the order.
+  if (err.status >= 500) return true;
+  return false;
+}
 
 async function createOrder(
   input: ReturnType<typeof toCreateOrderInput>,
@@ -111,11 +130,10 @@ async function createOrder(
         const order = await createWebsiteOrder(input, idemKey);
         return { status: 201, order };
       } catch (err) {
-        const isProcessing =
-          err instanceof PosRequestError &&
-          posError(err.body).code === "processing";
-        if (!isProcessing || attempt >= PROCESSING_RETRIES) throw err;
-        await wait(PROCESSING_WAIT_MS);
+        if (!retryableWithSameKey(err) || attempt >= RETRYABLE_ATTEMPTS) throw err;
+        const after =
+          err instanceof PosRequestError ? err.retryAfterMs : null;
+        await wait(after ?? RETRY_FALLBACK_MS);
       }
     }
   } catch (err) {
@@ -131,10 +149,52 @@ async function createOrder(
         },
       };
     }
-    if (err instanceof PosRequestError && err.status >= 400 && err.status < 500) {
+    if (err instanceof PosRequestError) {
       const { code, message } = posError(err.body);
-      // Still processing after our retries — the guest's order may yet
-      // appear, so don't tell them their cart was rejected.
+
+      // Our credentials, not the guest's cart. Never show them the reason.
+      if (err.status === 401 || err.status === 403 || code === "unauthenticated") {
+        console.error(
+          `[website-orders] POS rejected our API key (${err.status}) — check POS_API_KEY`,
+        );
+        return {
+          status: 503,
+          body: {
+            error:
+              "Online ordering isn't available right now. Please call the restaurant.",
+            code: "NOT_CONFIGURED",
+          },
+        };
+      }
+
+      // A 400 means WE sent something malformed. Loud log, generic copy.
+      if (err.status === 400) {
+        console.error(
+          `[website-orders] POS rejected our request as invalid: ${message || err.body}`,
+        );
+        return {
+          status: 502,
+          body: {
+            error: "We couldn't place your order just now. Please try again.",
+            code: "BAD_REQUEST",
+          },
+        };
+      }
+
+      // Same key, different cart — the browser must mint a fresh key.
+      if (code === "idempotency-conflict") {
+        return {
+          status: 409,
+          body: {
+            error:
+              "Your cart changed while we were placing that order. Please try again.",
+            code: "IDEMPOTENCY_CONFLICT",
+          },
+        };
+      }
+
+      // Still in flight after our retries — the order may yet appear, so
+      // don't tell the guest their cart was rejected.
       if (code === "processing") {
         return {
           status: 409,
@@ -145,15 +205,19 @@ async function createOrder(
           },
         };
       }
-      return {
-        status: 409,
-        body: {
-          error:
-            message ||
-            "Some items in your cart are no longer available. Please review it.",
-          code: "CART_REJECTED",
-        },
-      };
+
+      // The one family that really is the cart: 422 invalid-argument.
+      if (err.status === 422) {
+        return {
+          status: 409,
+          body: {
+            error:
+              message ||
+              "Some items in your cart are no longer available. Please review it.",
+            code: "CART_REJECTED",
+          },
+        };
+      }
     }
     console.error("[website-orders] create failed:", err);
     return {

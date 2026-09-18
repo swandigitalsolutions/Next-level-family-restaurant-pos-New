@@ -75,25 +75,40 @@ export default function CheckoutPage() {
         ? new Date(`${date}T${time}:00+05:30`).toISOString()
         : null;
 
-    try {
-      const res = await fetch("/api/website-orders", {
+    const payload = {
+      // ONLY item ids + quantities + contact + arrival. No money.
+      items: lines.map((l) => ({ id: l.id, qty: l.qty })),
+      customer: {
+        name: f.get("name"),
+        phone: f.get("phone"),
+        email: f.get("email"),
+      },
+      fulfillment: { type: "pickup", pickupAt, notes: f.get("notes") },
+    };
+
+    const submit = (idemKey: string) =>
+      fetch("/api/website-orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Idempotency-Key": readIdemKey(),
+          "Idempotency-Key": idemKey,
         },
-        // ONLY item ids + quantities + contact + pickup. No money.
-        body: JSON.stringify({
-          items: lines.map((l) => ({ id: l.id, qty: l.qty })),
-          customer: {
-            name: f.get("name"),
-            phone: f.get("phone"),
-            email: f.get("email"),
-          },
-          fulfillment: { type: "pickup", pickupAt, notes: f.get("notes") },
-        }),
+        body: JSON.stringify(payload),
       });
-      const data = await res.json();
+
+    try {
+      let res = await submit(readIdemKey());
+      let data = await res.json();
+
+      /* The key we held belongs to a different cart than the one we just
+         sent — the POS refuses to reuse it, and rightly so. Mint a fresh
+         key and send this cart once more. */
+      if (!res.ok && data?.code === "IDEMPOTENCY_CONFLICT") {
+        clearIdemKey();
+        res = await submit(readIdemKey());
+        data = await res.json();
+      }
+
       if (!res.ok) throw new Error(data?.error || "Could not create the order.");
       const created = data.order as WebsiteOrder;
       accessTokenRef.current =

@@ -38,10 +38,22 @@ export class PosRequestError extends Error {
     message: string,
     readonly status: number,
     readonly body: string,
+    /** From the POS's Retry-After header, when it sent one. */
+    readonly retryAfterMs: number | null = null,
   ) {
     super(message);
     this.name = "PosRequestError";
   }
+}
+
+/** Seconds from a Retry-After header, clamped so a bad value can't park a
+    request for minutes. Only the delta-seconds form is used by the POS. */
+export function retryAfterMs(res: Response): number | null {
+  const raw = res.headers.get("retry-after");
+  if (!raw) return null;
+  const secs = Number(raw.trim());
+  if (!Number.isFinite(secs) || secs < 0) return null;
+  return Math.min(Math.round(secs * 1000), 10_000);
 }
 
 export function posConfig(): { base: string; key: string } {
@@ -142,6 +154,7 @@ export async function createWebsiteOrder(
       `POS create-order failed (${res.status})`,
       res.status,
       text,
+      retryAfterMs(res),
     );
   }
   return (await res.json()) as WebsiteOrder;

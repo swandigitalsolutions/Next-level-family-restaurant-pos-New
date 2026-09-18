@@ -2,9 +2,7 @@ import Link from "next/link";
 import { site } from "@/lib/site";
 
 export default function FindUs() {
-  const mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(
-    site.address.mapQuery
-  )}&output=embed`;
+  const mapSrc = site.address.mapEmbed;
   return (
     <div className="findus">
       <div>

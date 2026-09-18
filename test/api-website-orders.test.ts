@@ -190,6 +190,107 @@ describe("POST /api/website-orders", () => {
     expect(data.error).toBe("Chicken 65 is off today.");
   });
 
+  it("does not dress up a POS 401 as a cart problem", async () => {
+    createWebsiteOrder.mockRejectedValueOnce(
+      new PosRequestError(
+        "unauthenticated",
+        401,
+        JSON.stringify({ error: { code: "unauthenticated", message: "bad key" } }),
+      ),
+    );
+    const res = await POST(req(goodBody));
+    expect(res.status).toBe(503);
+    const data = await res.json();
+    expect(data.code).toBe("NOT_CONFIGURED");
+    expect(data.error).not.toMatch(/bad key/i); // never leak our own config
+    expect(data.error).toMatch(/call the restaurant/i);
+  });
+
+  it("treats a POS 400 as our bug, not the guest's cart", async () => {
+    createWebsiteOrder.mockRejectedValueOnce(
+      new PosRequestError(
+        "invalid-argument",
+        400,
+        JSON.stringify({
+          error: { code: "invalid-argument", message: "Idempotency-Key malformed" },
+        }),
+      ),
+    );
+    const res = await POST(req(goodBody));
+    expect(res.status).toBe(502);
+    const data = await res.json();
+    expect(data.code).toBe("BAD_REQUEST");
+    expect(data.error).not.toMatch(/no longer available/i);
+  });
+
+  it("maps a 422 invalid-argument to CART_REJECTED with the POS's message", async () => {
+    createWebsiteOrder.mockRejectedValueOnce(
+      new PosRequestError(
+        "invalid-argument",
+        422,
+        JSON.stringify({
+          error: { code: "invalid-argument", message: "Chicken 65 is out of stock." },
+        }),
+      ),
+    );
+    const res = await POST(req(goodBody));
+    expect(res.status).toBe(409);
+    const data = await res.json();
+    expect(data.code).toBe("CART_REJECTED");
+    expect(data.error).toBe("Chicken 65 is out of stock.");
+  });
+
+  it("tells the browser to mint a new key on an idempotency conflict", async () => {
+    createWebsiteOrder.mockRejectedValueOnce(
+      new PosRequestError(
+        "idempotency-conflict",
+        422,
+        JSON.stringify({
+          error: { code: "idempotency-conflict", message: "key reused" },
+        }),
+      ),
+    );
+    const res = await POST(req(goodBody, "conflicting-key-1"));
+    expect(res.status).toBe(409);
+    const data = await res.json();
+    expect(data.code).toBe("IDEMPOTENCY_CONFLICT");
+    // Not retried with the same key — that can never succeed.
+    expect(createWebsiteOrder).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries a POS 500 with the SAME key (the POS releases the claim)", async () => {
+    createWebsiteOrder.mockRejectedValueOnce(
+      new PosRequestError(
+        "internal",
+        500,
+        JSON.stringify({ error: { code: "internal", message: "razorpay down" } }),
+      ),
+    );
+    createWebsiteOrder.mockResolvedValueOnce(posOrder);
+    const res = await POST(req(goodBody, "internal-key-1"));
+    expect(res.status).toBe(201);
+    expect(createWebsiteOrder).toHaveBeenCalledTimes(2);
+    // Same key both times: a retry must not be able to double-create.
+    const keys = createWebsiteOrder.mock.calls.map((c) => c[1]);
+    expect(keys[0]).toBe(keys[1]);
+  }, 20_000);
+
+  it("honours the POS's Retry-After instead of its own fallback", async () => {
+    const started = Date.now();
+    createWebsiteOrder.mockRejectedValueOnce(
+      new PosRequestError(
+        "processing",
+        409,
+        JSON.stringify({ error: { code: "processing", message: "in flight" } }),
+        2_000, // Retry-After: 2
+      ),
+    );
+    createWebsiteOrder.mockResolvedValueOnce(posOrder);
+    const res = await POST(req(goodBody, "retry-after-key"));
+    expect(res.status).toBe(201);
+    expect(Date.now() - started).toBeGreaterThanOrEqual(1_900);
+  }, 20_000);
+
   it("maps not-configured to 503", async () => {
     createWebsiteOrder.mockRejectedValueOnce(new PosContractNotConfigured());
     const res = await POST(req(goodBody));

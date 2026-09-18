@@ -25,21 +25,21 @@ export default async function HomePage() {
         <div className="hero-inner">
           <div className="hero-copy">
             <span className="hero-eyebrow">
-              Order ahead · skip the wait
+              Family restaurant · veg &amp; non-veg
             </span>
             <h1>
-              Order before you arrive.
+              Home-style cooking,
               <br />
-              <em>Eat the moment you sit.</em>
+              <em>made for the whole family.</em>
             </h1>
             <p className="lede">
-              Choose your dishes on your phone, pay 50% now, and we&rsquo;ll
-              have them ready when you walk in. Pay the rest after your meal.
-              Not delivery — just your table, and your food, waiting.
+              Biryani, curries, fresh breads and something sweet &mdash; village-style
+              food the way the family makes it, served at a table big enough
+              for everyone.
             </p>
             <div className="hero-actions">
               <Link href="/menu" className="btn btn-primary">
-                Order ahead now
+                See the menu
               </Link>
               <Link href="/contact#reserve" className="btn btn-ghost">
                 Reserve a table
@@ -47,8 +47,8 @@ export default async function HomePage() {
             </div>
             <p className="hero-order-note">
               <span className="hero-order-dot" aria-hidden="true" />
-              Dine-in pre-order —{" "}
-              <strong>50% advance now, balance after your meal</strong>
+              Coming with a group? <Link href="/menu">Order ahead</Link> and
+              your food is ready when you arrive.
             </p>
             <dl className="hero-stats">
               <div>

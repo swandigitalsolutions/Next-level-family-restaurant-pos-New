@@ -16,7 +16,9 @@ export const site = {
   address: {
     line1: "Next Level Family Restaurant",
     line2: "Highway-side, near Bengaluru — full address on request",
-    mapQuery: "Next Level Family Restaurant",
+    mapQuery: "Next Level Family Restaurant, Chikkaballapur, Karnataka",
+    mapEmbed:
+      "https://www.google.com/maps?q=Next+Level+Family+Restaurant,+Chikkaballapur,+Karnataka&z=15&output=embed",
   },
   hours: [
     { day: "Monday – Friday", time: "11:00 AM – 10:30 PM" },
