@@ -70,8 +70,8 @@ export const faqs = [
     a: "Open parking on the stone-paved forecourt right in front — room for cars and two-wheelers.",
   },
   {
-    q: "Do you do takeaway or delivery?",
-    a: "Takeaway yes — you can pre-order online for pickup (pay a 50% advance and collect at your slot), or call ahead and we'll have it packed. We're not on the delivery apps yet.",
+    q: "Can I order before I arrive?",
+    a: "Not delivery — but you can order ahead online: pick your dishes, pay a 50% advance, and the kitchen has them ready when you arrive. You pay the balance after your meal. Takeaway on request, and we're not on the delivery apps yet.",
   },
   {
     q: "Do you take advance bookings?",

@@ -4648,3 +4648,199 @@ h2 { font-size: clamp(1.7rem, 3vw, 2.35rem); font-weight: 600; }
    than flashing a broken-looking dim state */
 .dish-card-foot .atc-add:disabled,
 .menu-preorder-card ~ * .atc-add:disabled { opacity: 1; }
+
+
+/* ===========================================================
+   ORDER-AHEAD REDESIGN — the headline feature, mobile-first.
+   Dine-in pre-order: order + pay 50% before arriving, food is
+   ready on arrival, balance after the meal. Not delivery.
+   Appended last so it wins the cascade.
+   =========================================================== */
+
+/* ---- hero: message first, photo second (mobile reads top-down) ---- */
+.hero-copy { order: 1; }
+.hero-media { order: 2; }
+.hero h1 {
+  font-size: clamp(2.1rem, 6.4vw, 3.5rem);
+  line-height: 1.08;
+}
+.hero-actions { gap: 0.7rem; }
+.hero-actions .btn-primary {
+  padding: 1rem 1.9rem;
+  font-size: 1.02rem;
+  animation: orderPulse 3.2s var(--ease-out-soft) 1.2s infinite;
+}
+@keyframes orderPulse {
+  0%, 70%, 100% { box-shadow: 0 10px 26px -10px rgba(217, 45, 61, 0.7), 0 0 0 0 rgba(217, 45, 61, 0.45); }
+  85% { box-shadow: 0 10px 26px -10px rgba(217, 45, 61, 0.7), 0 0 0 12px rgba(217, 45, 61, 0); }
+}
+.hero-order-note {
+  padding: 0.6rem 0.9rem;
+  border: 1px solid rgba(127, 181, 98, 0.35);
+  background: rgba(127, 181, 98, 0.08);
+  border-radius: 12px;
+  line-height: 1.4;
+}
+@media (max-width: 900px) {
+  .hero-inner { padding-top: 1.5rem; gap: 1.6rem; }
+  .hero-art { aspect-ratio: 4 / 3; border-radius: 18px; }
+  .hero-chip { left: 0.75rem; bottom: 0.75rem; width: min(15rem, 78%); }
+  .hero-stats { margin-top: 1.4rem; }
+}
+@media (max-width: 640px) {
+  .hero-actions { flex-direction: column; align-items: stretch; }
+  .hero-actions .btn { width: 100%; text-align: center; justify-content: center; }
+  .hero .lede { font-size: 1.02rem; }
+}
+
+/* ---- "how it works" band ---- */
+.preorder-head h2 { max-width: 20ch; }
+.preorder-head h2 em { color: var(--sunflower); font-style: italic; }
+.preorder-badges { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+.preorder-badges .advance-pill:first-child {
+  background: rgba(247, 203, 87, 0.14);
+  border-style: solid;
+}
+
+.preorder-steps { position: relative; gap: 0.9rem; counter-reset: none; }
+.preorder-steps li {
+  position: relative;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 1.15rem 1.1rem 1.2rem;
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(247, 203, 87, 0.09), transparent 60%),
+    var(--surface);
+  border-radius: 18px;
+  transition: transform 0.3s var(--ease-out-soft), border-color 0.3s var(--ease-out-soft);
+}
+.preorder-steps li:hover { transform: translateY(-4px); border-color: rgba(247, 203, 87, 0.4); }
+.preorder-step-n {
+  width: 46px; height: 46px;
+  font-size: 1.4rem;
+  border-radius: 14px;
+  background: linear-gradient(160deg, var(--sunflower), var(--marigold));
+  box-shadow: 0 10px 20px -10px rgba(232, 178, 76, 0.8);
+}
+.preorder-step-num {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.66rem !important;
+  color: var(--sunflower) !important;
+  font-weight: 700;
+}
+.preorder-step-txt strong { font-size: 1.02rem; margin: 0.1rem 0 0.15rem; }
+.preorder-step-txt small { font-size: 0.82rem; line-height: 1.4; }
+/* connector arrows between steps on wide screens */
+@media (min-width: 901px) {
+  .preorder-steps li:not(:last-child)::after {
+    content: "\2192";
+    position: absolute;
+    right: -0.85rem; top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    width: 1.5rem; height: 1.5rem;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: var(--cream);
+    border: 1px solid rgba(247, 203, 87, 0.4);
+    color: var(--sunflower);
+    font-size: 0.8rem;
+  }
+}
+@media (max-width: 900px) {
+  .preorder-steps { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .preorder-steps { grid-template-columns: 1fr; }
+  .preorder-steps li { flex-direction: row; align-items: center; gap: 0.9rem; }
+}
+.preorder-steps.compact li { flex-direction: row; align-items: center; padding: 0.7rem 0.85rem; }
+.preorder-steps.compact .preorder-step-n { width: 34px; height: 34px; font-size: 1rem; border-radius: 10px; }
+.preorder-steps.compact .preorder-step-num { display: none; }
+.preorder-steps.compact li::after { display: none; }
+
+.preorder-perks {
+  list-style: none;
+  padding: 0;
+  margin: 1.4rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.9rem;
+}
+.preorder-perks li {
+  padding: 0.9rem 1rem;
+  border-left: 3px solid var(--sunflower);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0 12px 12px 0;
+  display: flex; flex-direction: column; gap: 0.15rem;
+}
+.preorder-perks strong { font-size: 0.98rem; }
+.preorder-perks span { font-size: 0.84rem; color: var(--ink-soft); line-height: 1.45; }
+@media (max-width: 720px) { .preorder-perks { grid-template-columns: 1fr; } }
+
+/* ---- menu page strip ---- */
+.menu-preorder-card {
+  background:
+    radial-gradient(90% 140% at 0% 0%, rgba(247, 203, 87, 0.12), transparent 60%),
+    var(--surface);
+}
+.menu-preorder-card span { line-height: 1.5; display: block; margin-top: 0.15rem; }
+.menu-preorder-card b { color: var(--sunflower); }
+
+/* ---- sticky mobile bar: "Order ahead" is the hero action ---- */
+@media (max-width: 720px) {
+  .mobile-bar { gap: 0.5rem; align-items: stretch; }
+  .mobile-bar .call { flex: 0.62 1 0; display: flex; align-items: center; justify-content: center; gap: 0.3rem; }
+  .mobile-bar .order {
+    flex: 1.7 1 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    line-height: 1.15;
+    background: linear-gradient(180deg, var(--sunflower) 0%, var(--marigold) 100%);
+    color: #1a1206;
+    font-weight: 800;
+    font-size: 0.98rem;
+    box-shadow: 0 10px 22px -10px rgba(232, 178, 76, 0.9);
+  }
+  .mobile-bar .order small { font-size: 0.66rem; font-weight: 700; opacity: 0.75; }
+  .mobile-bar .order:active { transform: scale(0.97); }
+  /* keep page content clear of the bar */
+  main { padding-bottom: 76px; }
+}
+
+/* ---- hero: tidy note + compact stat row + overlaid quote on mobile ---- */
+.hero-order-note { display: block; }
+.hero-order-note .hero-order-dot { display: inline-block; margin-right: 0.55rem; vertical-align: middle; }
+@media (max-width: 900px) {
+  .hero-stats {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+  .hero-stats > div,
+  .hero-stats > div:first-child,
+  .hero-stats > div:last-child {
+    padding: 0 0.4rem !important;
+    border: 0 !important;
+    text-align: center;
+  }
+  .hero-stats > div::before { display: none !important; }
+  .hero-stats dt { font-size: 1.6rem !important; justify-content: center; }
+  .hero-stats dd { font-size: 0.7rem !important; letter-spacing: 0.06em; line-height: 1.3; }
+  .hero-media { position: relative; }
+  .hero-chip {
+    position: absolute !important;
+    left: 0.75rem; right: 0.75rem; bottom: 0.75rem;
+    width: auto !important;
+    background: rgba(23, 19, 16, 0.78);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+}
+
+/* desktop hero balance */
+.hero h1 { font-size: clamp(2.1rem, 5.6vw, 3.1rem); text-wrap: balance; }
+.hero-stats dt { font-size: clamp(1.7rem, 2.6vw, 2.2rem); line-height: 1; }
+/* the animated number was inheriting a tiny legacy `.hero-stats span` size */
+.hero-stats dt > span:not(.suffix) { font-size: inherit; letter-spacing: inherit; text-transform: none; color: inherit; }

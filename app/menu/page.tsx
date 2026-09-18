@@ -27,7 +27,7 @@ export default async function MenuPage() {
       <PageIntro kicker="Live from our kitchen" title="Menu & pre-order">
         {ok
           ? `Every dish below is today's menu at today's prices — ${itemCount} in
-             all. Add what you want, pay a 50% advance, and collect it hot.`
+             all. Add what you want, pay a 50% advance, and it's ready when you walk in.`
           : "Cooked to order in small batches — ask your server about the day's specials."}
       </PageIntro>
 
@@ -41,9 +41,10 @@ export default async function MenuPage() {
             <div className="container">
               <div className="menu-preorder-card">
                 <div>
-                  <strong>Pre-Order for pickup</strong>
+                  <strong>Order ahead — skip the wait</strong>
                   <span>
-                    Add dishes below, pay <b>50% advance</b>, collect at your slot.
+                    Add dishes, pay <b>50% now</b>, eat when you arrive and pay the
+                    rest <b>after your meal</b>. Dine-in, not delivery.
                   </span>
                 </div>
                 <Link href="/cart" className="btn btn-gold">
@@ -66,8 +67,8 @@ export default async function MenuPage() {
               { label: "Reserve a table", href: "/contact#reserve", variant: "ghost" },
             ]}
           >
-            Pre-order for pickup with a 50% advance, or book a table and order
-            when you arrive.
+            Order ahead with a 50% advance and your food is ready when you walk
+            in — or book a table and order when you arrive.
           </CtaBand>
         </>
       ) : (

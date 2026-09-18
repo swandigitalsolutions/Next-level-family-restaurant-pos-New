@@ -25,21 +25,21 @@ export default async function HomePage() {
         <div className="hero-inner">
           <div className="hero-copy">
             <span className="hero-eyebrow">
-              Family-run · near Bengaluru · since day one
+              Order ahead · skip the wait
             </span>
             <h1>
-              Home-style Indian,
+              Order before you arrive.
               <br />
-              <em>done properly.</em>
+              <em>Eat the moment you sit.</em>
             </h1>
             <p className="lede">
-              Slow-cooked curries, tandoor grills, biryani and
-              clay-pot chai — generous portions in a warm family room, with a
-              garden to sit in.
+              Choose your dishes on your phone, pay 50% now, and we&rsquo;ll
+              have them ready when you walk in. Pay the rest after your meal.
+              Not delivery — just your table, and your food, waiting.
             </p>
             <div className="hero-actions">
               <Link href="/menu" className="btn btn-primary">
-                Pre-Order online
+                Order ahead now
               </Link>
               <Link href="/contact#reserve" className="btn btn-ghost">
                 Reserve a table
@@ -47,8 +47,8 @@ export default async function HomePage() {
             </div>
             <p className="hero-order-note">
               <span className="hero-order-dot" aria-hidden="true" />
-              Order ahead &amp; skip the wait —{" "}
-              <strong>50% advance, balance at pickup</strong>
+              Dine-in pre-order —{" "}
+              <strong>50% advance now, balance after your meal</strong>
             </p>
             <dl className="hero-stats">
               <div>
@@ -60,10 +60,10 @@ export default async function HomePage() {
               </div>
               <div>
                 <dt>
-                  <CountUp value={60} />
+                  <CountUp value={200} />
                   <span className="suffix">+</span>
                 </dt>
-                <dd>dishes made fresh daily</dd>
+                <dd>dishes on our menu</dd>
               </div>
               <div>
                 <dt>
@@ -98,25 +98,46 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* PRE-ORDER */}
-      <section className="band-dark preorder-band">
+      {/* ORDER-AHEAD — the headline feature */}
+      <section className="band-dark preorder-band" id="how-it-works">
         <div className="container">
           <div className="preorder-head">
             <div>
-              <p className="kicker">New — Order Online</p>
-              <h2>Pre-Order your table&rsquo;s food</h2>
+              <p className="kicker">Our signature feature</p>
+              <h2>
+                Your food, ready <em>before</em> you walk in
+              </h2>
               <p className="preorder-sub">
-                Choose your dishes now, pay a{" "}
-                <strong>50% advance</strong>, and we&rsquo;ll have everything
-                cooked fresh for your slot. No queue, no guesswork.
+                No more waiting for a table&rsquo;s worth of cooking. Order
+                from your phone, pay a <strong>50% advance</strong>, and the
+                order goes straight to our kitchen. By the time you arrive,
+                it&rsquo;s ready to eat &mdash; and you pay the balance{" "}
+                <strong>after your meal</strong>.
               </p>
-              <span className="advance-pill">50% Advance Payment Required</span>
+              <div className="preorder-badges">
+                <span className="advance-pill">Not delivery &mdash; dine-in</span>
+                <span className="advance-pill">50% now &middot; 50% after</span>
+              </div>
             </div>
             <Link href="/menu" className="btn btn-gold preorder-band-cta">
-              Start your pre-order →
+              Start your pre-order &rarr;
             </Link>
           </div>
           <PreOrderSteps />
+          <ul className="preorder-perks">
+            <li>
+              <strong>Zero waiting</strong>
+              <span>Cooking starts before you leave home.</span>
+            </li>
+            <li>
+              <strong>Pay only half now</strong>
+              <span>The advance books your order; settle the rest at the table.</span>
+            </li>
+            <li>
+              <strong>Great for groups</strong>
+              <span>Order for the whole family in one go, on one bill.</span>
+            </li>
+          </ul>
         </div>
       </section>
 
