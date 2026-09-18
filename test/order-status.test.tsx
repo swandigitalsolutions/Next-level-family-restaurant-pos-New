@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import type { WebsiteOrder } from "@/lib/pos-order-api";
 
 vi.mock("next/link", () => ({
@@ -90,6 +90,54 @@ describe("order status page", () => {
     expect(
       screen.getByRole("button", { name: /Pay .* advance/i }),
     ).toBeInTheDocument();
+  });
+
+  /* Polling is bounded: it must not hammer the POS forever on an order
+     that never settles, and it must stop entirely once one does. */
+  it("stops polling once the order is settled", async () => {
+    vi.useFakeTimers();
+    const f = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        order: { ...base, status: "CONFIRMED", paymentStatus: "ADVANCE_PAID" },
+      }),
+    });
+    vi.stubGlobal("fetch", f);
+    renderStatus();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(f).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+    });
+    expect(f).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives up after the polling budget, backs off, and offers a re-check", async () => {
+    vi.useFakeTimers();
+    const f = vi
+      .fn()
+      .mockResolvedValue({ ok: true, json: async () => ({ order: base }) });
+    vi.stubGlobal("fetch", f);
+    renderStatus();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(11 * 60 * 1000);
+    });
+
+    // Backoff: a fixed 8s interval would be ~80 calls in 11 minutes.
+    expect(f.mock.calls.length).toBeGreaterThan(5);
+    expect(f.mock.calls.length).toBeLessThan(40);
+
+    expect(
+      screen.getByRole("button", { name: /check again/i }),
+    ).toBeInTheDocument();
+
+    const settled = f.mock.calls.length;
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
+    });
+    expect(f).toHaveBeenCalledTimes(settled); // really stopped
   });
 
   it("shows an error for an unknown order", async () => {

@@ -15,7 +15,7 @@ bun dev
 ```
 
 Open [http://localhost:3100](http://localhost:3100) with your browser to see the result.
-(The dev port is pinned so the in-app mock POS URL always resolves — see **Local mock**.)
+(The dev port is pinned — see **Local development against the POS**.)
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
@@ -102,20 +102,16 @@ the POS every 8s and shows **Order confirmed** only once the POS reports
   attempts allowed until one succeeds; POS webhook is idempotent per
   payment id). The browser never marks an order paid/confirmed.
 
-### Local mock
+### Local development against the POS
 
-`app/mockpos/` is a stand-in POS implementing the contract: a full
-40-dish catalog, order creation, and — with `PAYMENTS_MODE=mock` — a
-simulated verified advance. Its order store is a JSON file in the OS temp
-dir, because `next dev` runs route handlers across several worker
-processes.
+There is no mock POS in the tree any more — `app/mockpos/` was deleted
+before deploy, and `.env.local` may still point at it. Ordering needs a
+real POS: set `POS_API_BASE_URL` + `POS_API_KEY` to a POS you can reach
+and `PAYMENTS_MODE=live`. Without them `/menu` shows the honest
+"menu unavailable" notice and ordering is disabled — by design; the site
+never invents a menu or a price.
 
-`npm run dev` is pinned to port **3100** so `.env.local`'s
-`POS_API_BASE_URL=http://localhost:3100/mockpos` always resolves to this
-app itself.
-
-**Before deploying: delete `app/mockpos/`**, point `POS_API_BASE_URL` at
-the real POS and set `PAYMENTS_MODE=live`.
+`npm run dev` stays pinned to port **3100** so the dev origin is stable.
 
 ### Scripts
 

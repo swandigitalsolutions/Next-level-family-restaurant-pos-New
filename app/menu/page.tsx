@@ -16,7 +16,7 @@ export const revalidate = 0;
 export const metadata: Metadata = {
   title: "Menu & Online Pre-Order",
   description:
-    "Today's full menu from our kitchen — starters, tandoor grills, South & North Indian mains, biryani, breads and clay-pot chai. Pre-order online with a 50% advance and collect at your slot.",
+    "Today's full menu from our kitchen — tandoor grills, curries, biryani, South Indian, chaats, rolls, noodles, Naati-style home food, breads and clay-pot chai. Pre-order online with a 50% advance and collect at your slot.",
 };
 
 export default async function MenuPage() {

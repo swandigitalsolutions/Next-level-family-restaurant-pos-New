@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useCart } from "@/lib/cart";
 import { formatINR, splitAdvance } from "@/lib/money";
 import PreOrderSteps from "@/components/PreOrderSteps";
@@ -33,11 +32,17 @@ export default function CartPage() {
               {lines.map((l) => (
                 <li key={l.id} className="cart-line">
                   {l.imageUrl ? (
-                    <Image
+                    /* Plain <img>, like the menu cards: the POS image host is
+                       a CDN domain we don't know at build time, so next/image's
+                       remotePatterns allowlist isn't workable. */
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
                       src={l.imageUrl}
                       alt=""
                       width={56}
                       height={56}
+                      loading="lazy"
+                      decoding="async"
                       className="cart-line-thumb"
                     />
                   ) : (

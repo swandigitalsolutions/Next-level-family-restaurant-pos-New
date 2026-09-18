@@ -47,6 +47,16 @@ const STATUS_COPY: Record<
   },
 };
 
+/* Polling: the POS decides when an order is CONFIRMED, so we ask it
+   repeatedly — but not forever and not at a fixed rate. The interval eases
+   from 4s up to 30s, and the whole run gives up after POLL_BUDGET_MS so a
+   tab left open on a stuck order stops hammering the POS. When it gives up
+   the guest gets an explicit "Check again" button. */
+const POLL_FIRST_MS = 4_000;
+const POLL_MAX_MS = 30_000;
+const POLL_BUDGET_MS = 10 * 60 * 1000;
+const nextDelay = (prev: number) => Math.min(Math.round(prev * 1.5), POLL_MAX_MS);
+
 const PAYMENT_COPY: Record<string, string> = {
   UNPAID: "Advance not yet paid",
   ADVANCE_PAID: "50% advance paid",
@@ -78,6 +88,10 @@ export function OrderStatusView({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [retrying, setRetrying] = useState(false);
+  // Bumped to (re)start a polling run — after a payment retry, or when the
+  // guest asks us to check again once the budget has run out.
+  const [pollRun, setPollRun] = useState(0);
+  const [exhausted, setExhausted] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stopped = useRef(false);
 
@@ -105,6 +119,10 @@ export function OrderStatusView({
 
   useEffect(() => {
     stopped.current = false;
+    setExhausted(false);
+    const startedAt = Date.now();
+    let delay = POLL_FIRST_MS;
+
     const tick = async () => {
       if (stopped.current) return;
       try {
@@ -113,20 +131,26 @@ export function OrderStatusView({
         setOrder(o);
         setError(null);
         setLoading(false);
-        if (o && TERMINAL_STATUSES.includes(o.status)) return; // stop polling
+        if (o && TERMINAL_STATUSES.includes(o.status)) return; // settled
       } catch (err) {
         if (stopped.current) return;
         setError(err instanceof Error ? err.message : "Couldn't load this order.");
         setLoading(false);
       }
-      timer.current = setTimeout(tick, 8000);
+      if (Date.now() - startedAt >= POLL_BUDGET_MS) {
+        setExhausted(true); // stop; the guest can ask for another run
+        return;
+      }
+      timer.current = setTimeout(tick, delay);
+      delay = nextDelay(delay);
     };
+
     tick();
     return () => {
       stopped.current = true;
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [fetchOnce]);
+  }, [fetchOnce, pollRun]);
 
   async function retryPayment() {
     if (!order) return;
@@ -145,24 +169,10 @@ export function OrderStatusView({
         // idempotent per payment id. The browser never marks it paid.
         await openAdvanceCheckout(order);
       }
-      // Resume polling for the POS verdict.
-      stopped.current = true;
+      // Resume polling for the POS verdict — one loop, restarted.
       if (timer.current) clearTimeout(timer.current);
       setLoading(true);
-      stopped.current = false;
-      const poll = async () => {
-        if (stopped.current) return;
-        try {
-          const o = await fetchOnce();
-          setOrder(o);
-          setLoading(false);
-          if (o && TERMINAL_STATUSES.includes(o.status)) return;
-        } catch {
-          /* keep trying */
-        }
-        timer.current = setTimeout(poll, 8000);
-      };
-      poll();
+      setPollRun((n) => n + 1);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Could not start the payment.",
@@ -217,6 +227,23 @@ export function OrderStatusView({
               <p className="order-error" role="alert">
                 {error}
               </p>
+            )}
+
+            {exhausted && !TERMINAL_STATUSES.includes(order.status) && (
+              <div className="order-recheck">
+                <p>
+                  We&rsquo;ve stopped checking for now. Your order is safe
+                  &mdash; nothing about it changes because this page went
+                  quiet.
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setPollRun((n) => n + 1)}
+                >
+                  Check again
+                </button>
+              </div>
             )}
 
             {canRetry && (
@@ -317,11 +344,13 @@ export function OrderStatusView({
             </div>
 
             <p className="order-fineprint">
-              {confirmed
-                ? "This page updates itself if the status changes."
-                : "This page checks for updates every few seconds."}{" "}
-              Save your Order ID <strong>{ref}</strong>
-              {order.customer.email ? " — a copy has been emailed to you." : "."}
+              {exhausted
+                ? "This page has stopped checking automatically — use Check again above."
+                : confirmed
+                  ? "This page updates itself if the status changes."
+                  : "This page checks for updates on its own."}{" "}
+              Save your Order ID <strong>{ref}</strong> &mdash; the counter
+              finds your order by it.
             </p>
           </>
         )}

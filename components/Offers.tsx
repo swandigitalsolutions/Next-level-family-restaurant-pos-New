@@ -2,13 +2,13 @@ import Image from "next/image";
 import { combos } from "@/lib/content";
 import { img } from "@/lib/images";
 
-const shots = [img.foodBiryani, img.foodThali, img.gardenPergola];
+const shots = [img.foodBiryani, img.foodPaneer, img.gardenPergola];
 
 export default function Offers() {
   return (
     <div className="offers">
       {combos.map((c, i) => {
-        const shot = shots[i] ?? img.foodThali;
+        const shot = shots[i] ?? img.foodBiryani;
         return (
           <div
             className={`offer${i === 0 ? " offer--feature" : ""}`}

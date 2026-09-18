@@ -73,13 +73,51 @@ export async function POST(req: Request) {
   return NextResponse.json(outcome.body, { status: outcome.status });
 }
 
+/* The POS reports errors as {error: {code, message}}, and older shapes as
+   {error: "message"}. Read both rather than guessing. */
+function posError(body: string): { code: string; message: string } {
+  try {
+    const parsed = JSON.parse(body) as {
+      error?: string | { code?: string; message?: string };
+      code?: string;
+    };
+    if (typeof parsed.error === "string") {
+      return { code: parsed.code ?? "", message: parsed.error };
+    }
+    return {
+      code: parsed.error?.code ?? parsed.code ?? "",
+      message: parsed.error?.message ?? "",
+    };
+  } catch {
+    return { code: "", message: "" };
+  }
+}
+
+/* "processing" means the POS is still working on an earlier request with
+   this same Idempotency-Key — it is NOT a rejected cart. Wait for it: the
+   order is about to exist, and retrying the same key returns that one
+   order rather than creating a second. */
+const PROCESSING_RETRIES = 3;
+const PROCESSING_WAIT_MS = 1_200;
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 async function createOrder(
   input: ReturnType<typeof toCreateOrderInput>,
   idemKey: string,
 ): Promise<Outcome> {
   try {
-    const order = await createWebsiteOrder(input, idemKey);
-    return { status: 201, order };
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const order = await createWebsiteOrder(input, idemKey);
+        return { status: 201, order };
+      } catch (err) {
+        const isProcessing =
+          err instanceof PosRequestError &&
+          posError(err.body).code === "processing";
+        if (!isProcessing || attempt >= PROCESSING_RETRIES) throw err;
+        await wait(PROCESSING_WAIT_MS);
+      }
+    }
   } catch (err) {
     // Don't let a failure stick in the collapse cache — allow a real retry.
     inFlight.delete(idemKey);
@@ -94,14 +132,28 @@ async function createOrder(
       };
     }
     if (err instanceof PosRequestError && err.status >= 400 && err.status < 500) {
-      let msg = "Some items in your cart are no longer available. Please review it.";
-      try {
-        const parsed = JSON.parse(err.body);
-        if (parsed?.error && typeof parsed.error === "string") msg = parsed.error;
-      } catch {
-        /* keep default */
+      const { code, message } = posError(err.body);
+      // Still processing after our retries — the guest's order may yet
+      // appear, so don't tell them their cart was rejected.
+      if (code === "processing") {
+        return {
+          status: 409,
+          body: {
+            error:
+              "We're still confirming this order with the kitchen. Give it a few seconds and try again — you won't be charged twice.",
+            code: "PROCESSING",
+          },
+        };
       }
-      return { status: 409, body: { error: msg, code: "CART_REJECTED" } };
+      return {
+        status: 409,
+        body: {
+          error:
+            message ||
+            "Some items in your cart are no longer available. Please review it.",
+          code: "CART_REJECTED",
+        },
+      };
     }
     console.error("[website-orders] create failed:", err);
     return {

@@ -64,12 +64,12 @@ export const img = {
   },
 
   // ---- Food (still need real dish photos — temporary stand-ins) ----
-  foodThali: { src: "/images/food-thali.jpg", alt: "Next Level special thali with rice, sambar, curries and papad", w: 1000, h: 1000 },
-  foodDosa: { src: "/images/food-dosa.jpg", alt: "Crisp butter masala dosa with chutneys", w: 900, h: 1040 },
+  foodThali: { src: "/images/food-thali.jpg", alt: "A spread of rice, curries and sides on the table", w: 1000, h: 1000 },
+  foodDosa: { src: "/images/food-dosa.jpg", alt: "Crisp masala dosa with chutneys", w: 900, h: 1040 },
   foodTandoori: { src: "/images/food-tandoori.jpg", alt: "Tandoori chicken fresh off the grill", w: 900, h: 1040 },
   foodBiryani: { src: "/images/food-biryani.jpg", alt: "Hyderabadi-style dum biryani served with raita", w: 1100, h: 830 },
   foodPaneer: { src: "/images/food-paneer.jpg", alt: "Paneer butter masala in a copper handi", w: 1100, h: 830 },
-  foodDessert: { src: "/images/food-dessert.jpg", alt: "Warm gulab jamun with rabri", w: 1100, h: 830 },
+  foodDessert: { src: "/images/food-dessert.jpg", alt: "A warm Indian dessert", w: 1100, h: 830 },
 } satisfies Record<string, Img>;
 
 /* The gallery grid — ordered. `span` controls the grid footprint. */

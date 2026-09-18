@@ -3,7 +3,7 @@
 
 export const specialities = [
   { ico: "🫖", title: "Tandoori Chai", text: "Smoked in a hot clay kulhad" },
-  { ico: "🍛", title: "Unlimited Thali", text: "Refilled till you're full" },
+  { ico: "🍗", title: "Tandoori Chicken", text: "Straight off the charcoal" },
   { ico: "🎨", title: "Warli Walls", text: "Hand-painted, floor to roof" },
   { ico: "🌿", title: "Garden Seating", text: "Open-air, under the pots" },
 ];
@@ -14,13 +14,13 @@ export const specialities = [
 export const combos = [
   {
     tagline: "Best value",
-    title: "Family Feast (4)",
-    text: "2 mains, dal, rice, 4 breads, raita, papad and gulab jamun to finish.",
+    title: "Family spread",
+    text: "A biryani, a couple of curries, breads and something sweet — sized for your table.",
   },
   {
     tagline: "Weekday lunch",
-    title: "Unlimited Thali",
-    text: "Seasonal sabzi, dal, rice, curd, sweet and unlimited rotis. Changes daily.",
+    title: "Naati style home food",
+    text: "Village-style veg and non-veg home cooking, the way the family makes it. Ask what's on today.",
   },
   {
     tagline: "Celebrations",
@@ -71,7 +71,7 @@ export const faqs = [
   },
   {
     q: "Do you do takeaway or delivery?",
-    a: "Takeaway yes — call ahead and we'll have it packed. We're not on delivery apps yet; for now it's dine-in and parcels.",
+    a: "Takeaway yes — you can pre-order online for pickup (pay a 50% advance and collect at your slot), or call ahead and we'll have it packed. We're not on the delivery apps yet.",
   },
   {
     q: "Do you take advance bookings?",

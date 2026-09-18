@@ -4070,6 +4070,25 @@ h2 { font-size: clamp(1.7rem, 3vw, 2.35rem); font-weight: 600; }
 .advance-callout strong { color: var(--sunflower); font-size: 0.95rem; }
 .advance-callout span { color: var(--ink-soft); font-size: 0.85rem; }
 
+/* Shown when the status page gives up polling a stuck order. */
+.order-recheck {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-m);
+  background: var(--surface-2);
+}
+.order-recheck p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 .order-id-card {
   display: flex;
   flex-direction: column;

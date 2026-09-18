@@ -65,8 +65,13 @@ export default function CheckoutPage() {
     const f = new FormData(e.currentTarget);
     const date = String(f.get("date") || "");
     const time = String(f.get("time") || "");
+    /* The pickup slot is a wall-clock time at the restaurant, so pin it to
+       IST (+05:30) rather than the guest's device timezone — otherwise a
+       phone set to another zone sends a shifted instant to the kitchen. */
     const pickupAt =
-      date && time ? new Date(`${date}T${time}`).toISOString() : null;
+      date && time
+        ? new Date(`${date}T${time}:00+05:30`).toISOString()
+        : null;
 
     try {
       const res = await fetch("/api/website-orders", {
@@ -186,7 +191,7 @@ export default function CheckoutPage() {
               />
             </div>
             <div className="full">
-              <label htmlFor="email">Email (for the receipt)</label>
+              <label htmlFor="email">Email (optional)</label>
               <input id="email" name="email" type="email" autoComplete="email" />
             </div>
             <div>

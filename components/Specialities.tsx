@@ -3,7 +3,7 @@ import { img } from "@/lib/images";
 
 const items = [
   { photo: img.juiceStall, title: "Tandoori Chai", text: "Smoked in a hot clay kulhad" },
-  { photo: img.foodThali, title: "Unlimited Thali", text: "Refilled till you're full" },
+  { photo: img.foodTandoori, title: "Tandoori Chicken", text: "Straight off the charcoal" },
   { photo: img.muralWarliWall, title: "Warli Walls", text: "Hand-painted, floor to roof" },
   { photo: img.gardenPergola, title: "Garden Seating", text: "Open-air, under the pots" },
 ];

@@ -138,6 +138,58 @@ describe("POST /api/website-orders", () => {
     expect((await res.json()).error).toMatch(/sold out/i);
   });
 
+  /* The POS answers "processing" while an earlier request with the same
+     Idempotency-Key is still in flight. That is not a rejected cart — the
+     order is about to exist, so the route waits it out. */
+  it("waits out a POS 'processing' reply and returns the order", async () => {
+    const processing = new PosRequestError(
+      "processing",
+      409,
+      JSON.stringify({ error: { code: "processing", message: "in flight" } }),
+    );
+    createWebsiteOrder.mockRejectedValueOnce(processing);
+    createWebsiteOrder.mockResolvedValueOnce(posOrder);
+    const res = await POST(req(goodBody, "processing-key-1"));
+    expect(res.status).toBe(201);
+    expect((await res.json()).order.ref).toBe("WEB-000001");
+    expect(createWebsiteOrder).toHaveBeenCalledTimes(2);
+  }, 20_000);
+
+  it("never reports a 'processing' POS reply as a rejected cart", async () => {
+    // Four attempts: the first call plus PROCESSING_RETRIES retries.
+    for (let i = 0; i < 4; i++) {
+      createWebsiteOrder.mockRejectedValueOnce(
+        new PosRequestError(
+          "processing",
+          409,
+          JSON.stringify({ error: { code: "processing", message: "in flight" } }),
+        ),
+      );
+    }
+    const res = await POST(req(goodBody, "processing-key-2"));
+    expect(res.status).toBe(409);
+    const data = await res.json();
+    expect(data.code).toBe("PROCESSING");
+    expect(data.error).not.toMatch(/no longer available/i);
+  }, 20_000);
+
+  it("reads the POS's nested {error:{code,message}} shape for a real rejection", async () => {
+    createWebsiteOrder.mockRejectedValueOnce(
+      new PosRequestError(
+        "gone",
+        422,
+        JSON.stringify({
+          error: { code: "item_unavailable", message: "Chicken 65 is off today." },
+        }),
+      ),
+    );
+    const res = await POST(req(goodBody));
+    expect(res.status).toBe(409);
+    const data = await res.json();
+    expect(data.code).toBe("CART_REJECTED");
+    expect(data.error).toBe("Chicken 65 is off today.");
+  });
+
   it("maps not-configured to 503", async () => {
     createWebsiteOrder.mockRejectedValueOnce(new PosContractNotConfigured());
     const res = await POST(req(goodBody));

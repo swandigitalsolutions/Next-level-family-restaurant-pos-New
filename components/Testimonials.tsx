@@ -1,7 +1,7 @@
 const NOTES = [
   {
     stars: "★★★★★",
-    text: "Portions are generous and nothing tastes like it came out of a factory kitchen. The thali is unbeatable value, and the tandoori chai is a reason on its own.",
+    text: "Portions are generous and nothing tastes like it came out of a factory kitchen. The biryani is unbeatable value, and the tandoori chai is a reason on its own.",
     who: "Anjali R.",
     sub: "Regular, Sunday lunch",
   },

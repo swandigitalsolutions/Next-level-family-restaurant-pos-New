@@ -79,14 +79,14 @@ const FACTS: {
   {
     id: "chai",
     triggers: ["chai", "tea", "tandoori chai", "kulhad", "clay pot", "juice", "fresh juice", "beverage", "drink", "coffee", "filter coffee", "lassi"],
-    text: "Our Tandoori Chai — smoked in a hot clay pot — is what people stop for. There's a Fresh Juice counter and South Indian filter coffee too.",
+    text: "Our Tandoori Chai — smoked in a hot clay pot — is what people stop for. There's a Fresh Juice counter as well.",
     action: { label: "See drinks on the menu", href: "/menu" },
   },
   {
     id: "delivery",
     triggers: ["delivery", "deliver", "takeaway", "take away", "parcel", "online order", "swiggy", "zomato", "home delivery"],
-    text: "We're focused on dine-in and the sit-down experience. For takeaway, call us directly and we'll sort it out.",
-    action: { label: "Call us", href: site.phoneHref },
+    text: "You can pre-order online for pickup — add dishes on the menu page, pay a 50% advance and collect at your slot. We're not on the delivery apps; for anything else just call us.",
+    action: { label: "Pre-order for pickup", href: "/menu" },
   },
   {
     id: "kids",
@@ -96,19 +96,19 @@ const FACTS: {
   {
     id: "veg",
     triggers: ["veg", "vegetarian", "pure veg", "vegan", "no meat", "veg options", "veg menu"],
-    text: "Plenty of vegetarian: the Next Level Special Thali, Butter Masala Dosa, Veg Dum Biryani, Paneer Butter Masala, Malai Kofta, Paneer Tikka, Gobi Manchurian and more.",
+    text: "Plenty of vegetarian — whole sections of the menu are veg, from starters and soups to curries, biryani and South Indian. Ask me about any dish by name for today's price.",
     action: { label: "See full menu", href: "/menu" },
   },
   {
     id: "nonveg",
     triggers: ["non veg", "nonveg", "non-veg", "meat", "chicken", "mutton", "prawn", "prawns", "egg", "fish"],
-    text: "Non-veg favourites: Tandoori Chicken, Chicken & Mutton Dum Biryani, Mutton Rogan Josh, Tandoori Prawns, Chilli Chicken and Seekh Kebab.",
+    text: "Lots of non-veg — tandoor grills, chicken and mutton gravies, biryani, seafood and egg dishes. Ask me about any dish by name for today's price.",
     action: { label: "See full menu", href: "/menu" },
   },
   {
     id: "signature",
     triggers: ["recommend", "recommendation", "best", "signature", "special", "must try", "popular", "famous", "favourite", "favorite", "what should i order", "what is good"],
-    text: "Ask me about any dish by name and I'll give you today's price. Our thalis, tandoor grills, biryanis and the clay-pot Tandoori Chai are what regulars come back for.",
+    text: "Ask me about any dish by name and I'll give you today's price. The tandoor grills, biryanis, Naati-style home food and the clay-pot Tandoori Chai are what regulars come back for.",
     action: { label: "See full menu", href: "/menu" },
   },
   {
@@ -180,6 +180,46 @@ function searchMenu(q: string, items: KbMenuItem[]) {
     .map((r) => r.it);
 }
 
+/* ---------- veg / non-veg, worked out from the live catalog ----------
+   The bot must never name a dish that isn't on the menu card, so the
+   examples in a diet answer are read off the POS catalog the widget
+   fetched, not written down here. Classification is deliberately
+   conservative: an explicitly veg section wins, then any non-veg marker,
+   then a veg marker; anything else is left out of the examples. */
+const EXPLICIT_VEG_SECTION = /\bveg\b|vegetarian/i;
+const NONVEG =
+  /non[\s-]?veg|chicken|mutton|prawn|fish|seafood|crab|squid|\begg\b|keema|lamb|beef|kebab|tangdi|liver/i;
+const VEG_MARKER =
+  /\bveg\b|vegetarian|paneer|gobi|mushroom|aloo|potato|\bdal\b|chana|soya|babycorn|\bcorn\b|tofu|palak|bhindi|dosa|idli|vada|uttapam|uthappam|salad|kofta/i;
+
+function dietOf(it: KbMenuItem): "veg" | "nonveg" | "unknown" {
+  const section = it.section ?? "";
+  if (EXPLICIT_VEG_SECTION.test(section) && !/non[\s-]?veg/i.test(section)) {
+    return "veg";
+  }
+  const hay = `${section} ${it.name}`;
+  if (NONVEG.test(hay)) return "nonveg";
+  if (VEG_MARKER.test(hay)) return "veg";
+  return "unknown";
+}
+
+/** Up to five available dishes for a diet, spread across sections. */
+export function dietExamples(
+  items: KbMenuItem[],
+  want: "veg" | "nonveg",
+): string[] {
+  const picked: string[] = [];
+  const usedSections = new Set<string>();
+  for (const it of items) {
+    if (it.available === false || dietOf(it) !== want) continue;
+    if (usedSections.has(it.section)) continue;
+    usedSections.add(it.section);
+    picked.push(it.name);
+    if (picked.length === 5) break;
+  }
+  return picked;
+}
+
 function bestFact(q: string) {
   const t = tokens(q);
   const raw = q.toLowerCase();
@@ -207,7 +247,10 @@ export function answer(query: string, items: KbMenuItem[] = []): Answer {
   const q = query.trim();
   if (!q) return { text: FALLBACK };
 
-  const priceIntent = /(price|cost|how much|rate|charge|rs|rupees|₹)/i.test(q);
+  /* Word boundaries per-word, not around the whole group — "₹" is not a
+     word character, so a trailing \b would never match after it. */
+  const priceIntent =
+    /\bprice\b|\bcost\b|how much|\brate\b|\bcharge\b|\brs\b|\brupees\b|₹/i.test(q);
   const hits = searchMenu(q, items);
   const fact = bestFact(q);
 
@@ -227,6 +270,17 @@ export function answer(query: string, items: KbMenuItem[] = []): Answer {
       text: `A few that match: ${list}.`,
       action: { label: "Open the menu", href: "/menu" },
     };
+  }
+
+  // Diet questions name real dishes only if the live catalog backs them.
+  if (fact && (fact.id === "veg" || fact.id === "nonveg") && items.length) {
+    const examples = dietExamples(items, fact.id === "veg" ? "veg" : "nonveg");
+    if (examples.length) {
+      return {
+        text: `${fact.text} On the menu right now: ${examples.join(", ")}.`,
+        action: fact.action,
+      };
+    }
   }
 
   if (fact) return { text: fact.text, action: fact.action };

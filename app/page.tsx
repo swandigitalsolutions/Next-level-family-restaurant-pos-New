@@ -33,7 +33,7 @@ export default async function HomePage() {
               <em>done properly.</em>
             </h1>
             <p className="lede">
-              Slow-cooked curries, tandoor grills, unlimited thalis and
+              Slow-cooked curries, tandoor grills, biryani and
               clay-pot chai — generous portions in a warm family room, with a
               garden to sit in.
             </p>
