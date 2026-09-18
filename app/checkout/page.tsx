@@ -65,9 +65,11 @@ export default function CheckoutPage() {
     const f = new FormData(e.currentTarget);
     const date = String(f.get("date") || "");
     const time = String(f.get("time") || "");
-    /* The pickup slot is a wall-clock time at the restaurant, so pin it to
+    /* The arrival slot is a wall-clock time at the restaurant, so pin it to
        IST (+05:30) rather than the guest's device timezone — otherwise a
-       phone set to another zone sends a shifted instant to the kitchen. */
+       phone set to another zone sends a shifted instant to the kitchen.
+       The contract fields are still `pickupAt` / type "pickup"; only the
+       words the guest reads changed. */
     const pickupAt =
       date && time
         ? new Date(`${date}T${time}:00+05:30`).toISOString()
@@ -162,8 +164,8 @@ export default function CheckoutPage() {
         <div className="advance-callout">
           <strong>Pay 50% advance to confirm your order</strong>
           <span>
-            The balance is paid when you collect. Your order is confirmed only
-            after the advance is received.
+            The balance is paid after your meal. Your order is confirmed only
+            once the advance is received.
           </span>
         </div>
 
@@ -195,11 +197,11 @@ export default function CheckoutPage() {
               <input id="email" name="email" type="email" autoComplete="email" />
             </div>
             <div>
-              <label htmlFor="date">Pickup date</label>
+              <label htmlFor="date">Arrival date</label>
               <input id="date" name="date" type="date" required min={minDate} />
             </div>
             <div>
-              <label htmlFor="time">Pickup time</label>
+              <label htmlFor="time">Arrival time</label>
               <input id="time" name="time" type="time" required />
             </div>
             <div className="full">
@@ -288,7 +290,7 @@ export default function CheckoutPage() {
                 <span>{formatINR(order.advancePaise)}</span>
               </div>
               <div className="row muted">
-                <span>Balance at pickup</span>
+                <span>Balance &mdash; after your meal</span>
                 <span>{formatINR(order.balancePaise)}</span>
               </div>
 

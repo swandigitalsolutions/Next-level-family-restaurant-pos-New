@@ -18,7 +18,7 @@ const STATUS_COPY: Record<
   CONFIRMED: {
     label: "Confirmed",
     tone: "ok",
-    note: "Advance received. The kitchen has your order and will prepare it for your pickup time.",
+    note: "Advance received. The kitchen has your order and will have it ready for the time you arrive.",
   },
   PREPARING: {
     label: "Being prepared",
@@ -26,14 +26,14 @@ const STATUS_COPY: Record<
     note: "Your dishes are being cooked to order.",
   },
   READY: {
-    label: "Ready for pickup",
+    label: "Ready when you arrive",
     tone: "ok",
-    note: "Come to the counter and quote your Order ID. The balance is paid now.",
+    note: "Your food is ready. Quote your Order ID when you get here — the balance is settled after your meal.",
   },
   COMPLETED: {
     label: "Completed",
     tone: "ok",
-    note: "Picked up — thanks, see you again.",
+    note: "Enjoyed and settled — thanks, see you again.",
   },
   CANCELLED: {
     label: "Cancelled",
@@ -205,7 +205,7 @@ export function OrderStatusView({
           <span className="order-id-label">Order ID</span>
           <span className="order-id-value">{ref}</span>
           <span className="order-id-hint">
-            Quote this at the counter — staff find your order by this ID.
+            Quote this when you arrive — staff find your order by this ID.
           </span>
         </div>
 
@@ -290,7 +290,7 @@ export function OrderStatusView({
                 </span>
               </div>
               <div className="row muted">
-                <span>Balance at pickup</span>
+                <span>Balance &mdash; after your meal</span>
                 <span>{formatINR(order.balancePaise)}</span>
               </div>
             </div>
@@ -325,14 +325,14 @@ export function OrderStatusView({
                 </div>
               )}
               <div className="row">
-                <span>Pickup</span>
+                <span>Arriving</span>
                 <span>
                   {order.fulfillment.pickupAt
                     ? new Date(order.fulfillment.pickupAt).toLocaleString(
                         "en-IN",
                         { dateStyle: "medium", timeStyle: "short" },
                       )
-                    : "As soon as ready"}
+                    : "As soon as you arrive"}
                 </span>
               </div>
               {order.fulfillment.notes && (

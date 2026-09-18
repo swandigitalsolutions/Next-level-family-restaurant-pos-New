@@ -15,8 +15,10 @@ export default function CartPage() {
         <p className="kicker">Pre-Order</p>
         <h1>Your pre-order</h1>
         <p className="order-lede">
-          Review your dishes, then pay a <strong>50% advance</strong> to lock
-          in your slot. The kitchen confirms the final total from live prices.
+          Review your dishes, then pay a <strong>50% advance</strong> so the
+          kitchen can start on time. It&rsquo;s ready when you walk in, and you
+          settle the balance after your meal. The final total is confirmed from
+          live prices.
         </p>
 
         {ready && count === 0 ? (
@@ -94,7 +96,7 @@ export default function CartPage() {
                 <span>{formatINR(advancePaise)}</span>
               </div>
               <div className="row muted">
-                <span>Balance on pickup</span>
+                <span>Balance &mdash; after your meal</span>
                 <span>{formatINR(balancePaise)}</span>
               </div>
               <p className="order-fineprint">

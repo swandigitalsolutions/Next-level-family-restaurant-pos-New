@@ -85,8 +85,8 @@ const FACTS: {
   {
     id: "delivery",
     triggers: ["delivery", "deliver", "takeaway", "take away", "parcel", "online order", "swiggy", "zomato", "home delivery"],
-    text: "You can pre-order online for pickup — add dishes on the menu page, pay a 50% advance and collect at your slot. We're not on the delivery apps; for anything else just call us.",
-    action: { label: "Pre-order for pickup", href: "/menu" },
+    text: "We're dine-in: order ahead on the menu page, pay a 50% advance, and your food is ready when you walk in — you settle the balance after your meal. We're not on the delivery apps; for takeaway just call us.",
+    action: { label: "Order ahead for dine-in", href: "/menu" },
   },
   {
     id: "kids",
@@ -120,7 +120,7 @@ const FACTS: {
   {
     id: "menu",
     triggers: ["menu", "what do you serve", "what do you have", "food", "eat", "dishes", "cuisine", "what kind of food"],
-    text: "The full menu — with today's live prices — is on the Menu page, and you can pre-order there with a 50% advance. Ask me about any dish by name too.",
+    text: "The full menu — with today's live prices — is on the Menu page. You can order ahead there with a 50% advance so it's ready when you arrive. Ask me about any dish by name too.",
     action: { label: "Open the menu", href: "/menu" },
   },
   {
