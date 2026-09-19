@@ -4844,3 +4844,12 @@ h2 { font-size: clamp(1.7rem, 3vw, 2.35rem); font-weight: 600; }
 .hero-stats dt { font-size: clamp(1.7rem, 2.6vw, 2.2rem); line-height: 1; }
 /* the animated number was inheriting a tiny legacy `.hero-stats span` size */
 .hero-stats dt > span:not(.suffix) { font-size: inherit; letter-spacing: inherit; text-transform: none; color: inherit; }
+
+/* PHOTO CREDITS */
+.credits-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.credits-table{width:100%;border-collapse:collapse;font-size:.92rem;min-width:560px}
+.credits-table th,.credits-table td{padding:.6rem .75rem;text-align:left;border-bottom:1px solid rgba(255,255,255,.1);vertical-align:top}
+.credits-table th{color:var(--yellow,#f5c518);font-weight:600;white-space:nowrap}
+.credits-table a{text-decoration:underline;text-underline-offset:2px}
+.credits-note{margin-top:1rem;opacity:.75;font-size:.88rem}
+.foot-bottom a{text-decoration:underline;text-underline-offset:2px}

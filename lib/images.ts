@@ -68,7 +68,7 @@ export const img = {
   foodDosa: { src: "/images/food-dosa.jpg", alt: "Crisp masala dosa with chutneys", w: 900, h: 1040 },
   foodTandoori: { src: "/images/food-tandoori.jpg", alt: "Tandoori chicken fresh off the grill", w: 900, h: 1040 },
   foodBiryani: { src: "/images/food-biryani.jpg", alt: "Hyderabadi-style dum biryani served with raita", w: 1100, h: 830 },
-  foodPaneer: { src: "/images/food-paneer.jpg", alt: "Paneer butter masala in a copper handi", w: 1100, h: 830 },
+  foodPaneer: { src: "/images/food-paneer.jpg", alt: "A paneer curry served in a copper handi", w: 1100, h: 830 },
   foodDessert: { src: "/images/food-dessert.jpg", alt: "A warm Indian dessert", w: 1100, h: 830 },
 } satisfies Record<string, Img>;
 

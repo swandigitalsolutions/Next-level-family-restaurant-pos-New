@@ -68,7 +68,9 @@ export default function Footer() {
           <span>
             © {year} {site.name}. All rights reserved.
           </span>
-          <span>{site.credit}</span>
+          <span>
+            <Link href="/credits">Photo credits</Link> · {site.credit}
+          </span>
         </div>
       </div>
     </footer>
