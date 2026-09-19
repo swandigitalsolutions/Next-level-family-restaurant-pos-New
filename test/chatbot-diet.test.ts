@@ -15,7 +15,7 @@ const item = (name: string, section: string, available = true): KbMenuItem => ({
 // Sections as they appear on the printed card.
 const catalog: KbMenuItem[] = [
   item("Tandoori Chicken", "Tandoor Non-Veg Starters"),
-  item("Paneer Butter Masala", "Indian Veg"),
+  item("Kadai Paneer", "Indian Veg"),
   item("Gobi Manchurian", "Veg Starters"),
   item("Hyderabadi Chicken Dum Biryani", "Biryani"),
   item("Grilled Prawns", "Seafood"),
@@ -31,13 +31,13 @@ describe("diet examples come from the live catalog", () => {
     expect(veg).not.toContain("Tandoori Chicken");
     expect(veg).not.toContain("Grilled Prawns");
     expect(veg).not.toContain("Egg Bhurji");
-    expect(veg).toContain("Paneer Butter Masala");
+    expect(veg).toContain("Kadai Paneer");
   });
 
   it("picks only non-veg dishes for a non-veg question", () => {
     const nonveg = dietExamples(catalog, "nonveg");
     expect(nonveg).toContain("Tandoori Chicken");
-    expect(nonveg).not.toContain("Paneer Butter Masala");
+    expect(nonveg).not.toContain("Kadai Paneer");
     expect(nonveg).not.toContain("Veg Manchow Soup");
     expect(nonveg).not.toContain("Gobi Manchurian");
   });
@@ -49,7 +49,7 @@ describe("diet examples come from the live catalog", () => {
   });
 
   it("skips sold-out dishes", () => {
-    const soldOut = [item("Paneer Butter Masala", "Indian Veg", false)];
+    const soldOut = [item("Kadai Paneer", "Indian Veg", false)];
     expect(dietExamples(soldOut, "veg")).toEqual([]);
   });
 
@@ -64,7 +64,7 @@ describe("diet examples come from the live catalog", () => {
 
   it("names real dishes in a veg answer, and none when the catalog is empty", () => {
     const withCatalog = answer("what are the veg options?", catalog).text;
-    expect(withCatalog).toMatch(/Paneer Butter Masala/);
+    expect(withCatalog).toMatch(/Kadai Paneer/);
 
     const without = answer("what are the veg options?", []).text;
     expect(without).not.toMatch(/Paneer|Thali|Kofta/);

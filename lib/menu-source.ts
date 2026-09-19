@@ -15,12 +15,24 @@ import "server-only";
 import { cache } from "react";
 import { toPaise } from "./money";
 
+/* Attribution for a photo the restaurant doesn't own. The POS sends it
+   only for images that need crediting (CC BY / BY-SA / CC0) and omits it
+   for photos shot from the restaurant's own menu card. Where it is
+   present, the licence REQUIRES the credit to be shown wherever the
+   photo is. */
+export type ImageCredit = {
+  author: string;
+  license: string;
+  sourceUrl: string;
+};
+
 /* ---- shape returned by the POS endpoint ---- */
 export type PosMenuItem = {
   id: number | string;
   name: string;
   description?: string | null;
   imageUrl?: string | null;
+  imageCredit?: ImageCredit | null;
   pricePaise?: number | null;
   price?: number | string | null;
   available: boolean;
@@ -46,6 +58,7 @@ export type LiveMenuItem = {
   pricePaise: number; // for the running cart estimate only — never trusted
   available: boolean;
   imageUrl?: string;
+  imageCredit?: ImageCredit;
 };
 export type LiveMenuSection = { category: string; items: LiveMenuItem[] };
 
@@ -90,10 +103,18 @@ export function toSections(data: PosMenuResponse): LiveMenuSection[] {
           pricePaise: paise,
           available: it.available !== false,
           imageUrl: it.imageUrl ?? undefined,
+          // Only meaningful alongside a photo, and only when complete —
+          // a half-filled credit is worse than none.
+          imageCredit:
+            it.imageUrl && isCredit(it.imageCredit) ? it.imageCredit : undefined,
         };
       }),
     }))
     .filter((s) => s.items.length > 0);
+}
+
+function isCredit(c: ImageCredit | null | undefined): c is ImageCredit {
+  return Boolean(c && c.author?.trim() && c.license?.trim() && c.sourceUrl?.trim());
 }
 
 const EMPTY: MenuResult = { ok: false, sections: [], itemCount: 0 };
@@ -133,6 +154,27 @@ export const getMenu = cache(async (): Promise<MenuResult> => {
     return EMPTY;
   }
 });
+
+/** Every photo on the site that carries an attribution requirement, in
+    one list, for the credits page. Built from the live catalog so it can
+    never drift from the images actually being shown: re-shoot a dish or
+    drop it from the menu and the credit follows. */
+export const getPhotoCredits = cache(
+  async (): Promise<{ dish: string; credit: ImageCredit }[]> => {
+    const { sections } = await getMenu();
+    const seen = new Set<string>();
+    const out: { dish: string; credit: ImageCredit }[] = [];
+    for (const s of sections) {
+      for (const it of s.items) {
+        // Full/Half share one photo, so credit it once.
+        if (!it.imageCredit || seen.has(it.imageCredit.sourceUrl)) continue;
+        seen.add(it.imageCredit.sourceUrl);
+        out.push({ dish: it.name, credit: it.imageCredit });
+      }
+    }
+    return out.sort((a, b) => a.dish.localeCompare(b.dish));
+  },
+);
 
 /** Flat id -> item lookup for pages that need a single item. */
 export const getMenuIndex = cache(async (): Promise<Map<string, LiveMenuItem>> => {
