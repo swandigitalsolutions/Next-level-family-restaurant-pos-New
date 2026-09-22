@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-598406d1-4b4d-40c4-a649-fbae09130236/styles.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700&family=Archivo:wght@400;500;600;700&display=swap">
+<style>
+  body { margin:0; background:#fbf3e7; font-family:Archivo,system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#a31621; } a:hover { color:#7c0f19; }
+  button:focus-visible { outline:2px solid #a31621; outline-offset:2px; }
+  @keyframes pulseDot { 0%,100%{opacity:1} 50%{opacity:.3} }
+  @keyframes growBar { from { transform:scaleY(0); } to { transform:scaleY(1); } }
+  .noscroll::-webkit-scrollbar { display:none; }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#fbf3e7;color:#2b211a;padding-bottom:96px">
+
+  <div style="position:sticky;top:0;z-index:20;background:#a31621;color:#fbf3e7">
+    <div style="max-width:1120px;margin:0 auto;padding:10px 14px;display:flex;align-items:center;gap:12px">
+      <div style="display:flex;flex-direction:column;gap:1px;flex:1;min-width:0">
+        <div style="font-family:Bitter,serif;font-weight:700;font-size:14px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Next Level Family Restaurant &amp; Dhaba</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#f6c445;font-weight:700">Dashboard</span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(251,243,231,.82)"><span style="width:7px;height:7px;border-radius:50%;background:#7ee06b;animation:pulseDot 2.4s ease-in-out infinite"></span>Live</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:rgba(251,243,231,.14);border:1px solid rgba(251,243,231,.3);padding:5px 8px;border-radius:6px">Read only</span>
+        <button type="button" style="display:flex;align-items:center;gap:8px;min-height:40px;padding:5px 9px;border-radius:6px;border:1px solid rgba(251,243,231,.28);background:rgba(251,243,231,.1);color:#fbf3e7;cursor:pointer" style-hover="background:rgba(251,243,231,.2)">
+          <span style="width:26px;height:26px;border-radius:50%;background:#f6c445;color:#7c0f19;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center">RS</span>
+          <span style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.1">
+            <span style="font-size:12px;font-weight:600">R. Shetty</span>
+            <span style="font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#f6c445">Owner</span>
+          </span>
+        </button>
+      </div>
+    </div>
+    <svg viewBox="0 0 400 10" preserveAspectRatio="none" width="100%" height="8" fill="none" stroke="#fbf3e7" stroke-width="1" stroke-linecap="round" style="display:block;opacity:.55">
+      <line x1="0" y1="9" x2="400" y2="9"></line>
+      <g><circle cx="30" cy="3" r="1.6"></circle><path d="M30 4.6 L27 8.5 M30 4.6 L33 8.5 M27 5.6 L33 5.6"></path></g>
+      <g><path d="M104 4.6 L107 8.5 L101 8.5 Z M107 1.5 L104 4.6 L101 1.5"></path></g>
+      <g><circle cx="178" cy="3" r="1.6"></circle><path d="M178 4.6 L175 8.5 M178 4.6 L181 8.5 M175 5.6 L181 5.6"></path></g>
+      <g><path d="M252 4.6 L255 8.5 L249 8.5 Z M255 1.5 L252 4.6 L249 1.5"></path></g>
+      <g><circle cx="326" cy="3" r="1.6"></circle><path d="M326 4.6 L323 8.5 M326 4.6 L329 8.5 M323 5.6 L329 5.6"></path></g>
+    </svg>
+  </div>
+
+  <div style="max-width:1120px;margin:0 auto;padding:14px 14px 0;display:flex;flex-direction:column;gap:14px">
+
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+      <div style="font-family:Bitter,serif;font-size:19px;font-weight:700">Today</div>
+      <div style="font-size:12px;color:#5a4c3f;font-variant-numeric:tabular-nums">{{ dateLine }}</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="grid-column:span 2;background:#f3e7d4;border-radius:14px;padding:16px 16px 14px;display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5a4c3f">Total sales</div>
+        <div style="font-family:Bitter,serif;font-variant-numeric:tabular-nums;font-size:42px;line-height:1;font-weight:700;letter-spacing:-.02em">{{ totalSales }}</div>
+        <div style="display:flex;align-items:center;gap:8px;padding-top:2px">{{ totalDelta }}</div>
+      </div>
+      <div style="background:#f3e7d4;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:5px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5a4c3f">Bills</div>
+        <div style="font-family:Bitter,serif;font-variant-numeric:tabular-nums;font-size:30px;line-height:1;font-weight:700">{{ billCount }}</div>
+        <div style="display:flex;align-items:center;gap:6px">{{ billDelta }}</div>
+      </div>
+      <div style="background:#f3e7d4;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:5px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5a4c3f">Average bill</div>
+        <div style="font-family:Bitter,serif;font-variant-numeric:tabular-nums;font-size:30px;line-height:1;font-weight:700">{{ avgBill }}</div>
+        <div style="display:flex;align-items:center;gap:6px">{{ avgDelta }}</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;align-items:start">
+
+      <div style="background:#f3e7d4;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:13px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between">
+          <div style="font-family:Bitter,serif;font-size:16px;font-weight:700">Sales by till</div>
+          <div style="font-size:11px;color:#5a4c3f;letter-spacing:.08em;text-transform:uppercase">4 streams</div>
+        </div>
+        <div style="display:flex;height:16px;border-radius:6px;overflow:hidden;background:#e5d5ba">
+          <sc-for list="{{ tills }}" as="t" hint-placeholder-count="4">
+            <div style="height:100%;width:{{ t.pct }};background:{{ t.color }}"></div>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column">
+          <sc-for list="{{ tills }}" as="t" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #e3d3b8">
+              <span style="width:10px;height:10px;border-radius:2px;background:{{ t.color }};flex:none"></span>
+              <span style="flex:1;font-size:14.5px;font-weight:600">{{ t.name }}</span>
+              <span style="font-size:12px;color:#5a4c3f;font-variant-numeric:tabular-nums;width:44px;text-align:right">{{ t.pct }}</span>
+              <span style="font-family:Bitter,serif;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;min-width:86px;text-align:right">{{ t.amount }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background:#f3e7d4;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:13px">
+        <div style="font-family:Bitter,serif;font-size:16px;font-weight:700">Payment method</div>
+        <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+          <div style="position:relative;width:118px;height:118px;flex:none">{{ donut }}</div>
+          <div style="flex:1;min-width:150px;display:flex;flex-direction:column">
+            <sc-for list="{{ payments }}" as="p" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #e3d3b8">
+                <span style="width:10px;height:10px;border-radius:50%;background:{{ p.color }};flex:none"></span>
+                <span style="flex:1;font-size:14.5px;font-weight:600">{{ p.name }}</span>
+                <span style="font-size:12px;color:#5a4c3f;font-variant-numeric:tabular-nums">{{ p.pct }}</span>
+                <span style="font-family:Bitter,serif;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;min-width:78px;text-align:right">{{ p.amount }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#f3e7d4;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+          <div style="font-family:Bitter,serif;font-size:16px;font-weight:700">Last 7 days</div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1">
+            <span style="font-family:Bitter,serif;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums">{{ pickedAmount }}</span>
+            <span style="font-size:11px;color:#5a4c3f;letter-spacing:.06em;text-transform:uppercase">{{ pickedLabel }}</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:8px;height:132px">
+          <sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
+            <button type="button" onClick="{{ d.pick }}" style="flex:1;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;gap:7px;height:100%;background:transparent;border:0;padding:0;cursor:pointer;min-height:48px">
+              <span style="display:block;height:{{ d.h }};background:{{ d.color }};border-radius:4px 4px 0 0;transform-origin:bottom;animation:growBar .5s ease"></span>
+              <span style="font-size:11px;font-weight:600;color:{{ d.labelColor }};letter-spacing:.02em">{{ d.day }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="font-size:11.5px;color:#5a4c3f">Touch a bar to read that day's total.</div>
+      </div>
+
+      <div style="background:#f3e7d4;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+          <div style="font-family:Bitter,serif;font-size:16px;font-weight:700">Hourly flow, today</div>
+          <div style="font-size:11px;color:#5a4c3f;letter-spacing:.06em;text-transform:uppercase">{{ peakLine }}</div>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:3px;height:104px">
+          <sc-for list="{{ hours }}" as="h" hint-placeholder-count="13">
+            <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;gap:6px">
+              <span style="display:block;height:{{ h.h }};background:{{ h.color }};border-radius:3px 3px 0 0"></span>
+              <span style="font-size:9.5px;color:#5a4c3f;text-align:center;font-variant-numeric:tabular-nums">{{ h.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background:#f3e7d4;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:6px">
+        <div style="font-family:Bitter,serif;font-size:16px;font-weight:700;padding-bottom:6px">Top items today</div>
+        <sc-if value="{{ hasItems }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ topItems }}" as="it" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #e3d3b8">
+                <span style="font-family:Bitter,serif;font-size:13px;font-weight:700;color:#a31621;width:16px;font-variant-numeric:tabular-nums">{{ it.rank }}</span>
+                <span style="flex:1;font-size:15px;font-weight:600;line-height:1.25">{{ it.name }}</span>
+                <span style="font-size:12.5px;color:#5a4c3f;font-variant-numeric:tabular-nums;white-space:nowrap">×{{ it.qty }}</span>
+                <span style="font-family:Bitter,serif;font-size:15.5px;font-weight:600;font-variant-numeric:tabular-nums;min-width:74px;text-align:right">{{ it.revenue }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noItems }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:22px 10px 16px;text-align:center">
+            <svg width="86" height="34" viewBox="0 0 120 34" fill="none" stroke="#c9b69a" stroke-width="1.4" stroke-linecap="round">
+              <line x1="4" y1="31" x2="116" y2="31"></line>
+              <g><circle cx="28" cy="9" r="4"></circle><path d="M28 13 L21 25 M28 13 L35 25 M21 16 L35 16"></path></g>
+              <g><path d="M60 13 L67 25 L53 25 Z M67 5 L60 13 L53 5"></path></g>
+              <g><circle cx="92" cy="9" r="4"></circle><path d="M92 13 L85 25 M92 13 L99 25 M85 16 L99 16"></path></g>
+            </svg>
+            <div style="font-size:14.5px;font-weight:600;color:#5a4c3f">Nothing sold yet this morning</div>
+            <div style="font-size:12.5px;color:#8a7967;max-width:230px;line-height:1.45">Ranking starts once the first few bills are settled. The kitchen usually opens at 11:00.</div>
+          </div>
+        </sc-if>
+      </div>
+
+    </div>
+
+    <div style="background:#2b211a;border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="width:8px;height:8px;border-radius:50%;background:#7ee06b;animation:pulseDot 1.8s ease-in-out infinite"></span>
+        <span style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#f3e7d4">Right now</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <span style="font-family:Bitter,serif;font-size:30px;font-weight:700;line-height:1;color:{{ waitingColor }};font-variant-numeric:tabular-nums">{{ waiting }}</span>
+          <span style="font-size:11.5px;color:#c9b69a;line-height:1.3">Orders waiting<br>to be accepted</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <span style="font-family:Bitter,serif;font-size:30px;font-weight:700;line-height:1;color:#ff9933;font-variant-numeric:tabular-nums">{{ kitchenTickets }}</span>
+          <span style="font-size:11.5px;color:#c9b69a;line-height:1.3">Tickets in<br>the kitchen</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <span style="font-family:Bitter,serif;font-size:30px;font-weight:700;line-height:1;color:#f6c445;font-variant-numeric:tabular-nums">{{ occupied }}</span>
+          <span style="font-size:11.5px;color:#c9b69a;line-height:1.3">Tables<br>occupied</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="font-size:11.5px;color:#8a7967;line-height:1.5;padding:2px 2px 0">Owner view is read-only by design — no bill can be created, edited or settled from this screen. Figures refresh live from the in-restaurant server.</div>
+
+  </div>
+
+  <div style="position:fixed;left:0;right:0;bottom:0;z-index:30;background:#f3e7d4;border-top:2px solid #2b211a">
+    <div style="max-width:1120px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;padding:6px 10px 10px">
+      <button type="button" style="min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:0;background:transparent;cursor:pointer;color:#a31621;border-radius:6px" style-hover="background:#ecdcc2">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V5M16 20v-7M22 20H2"></path></svg>
+        <span style="font-size:11.5px;font-weight:700;letter-spacing:.04em">Dashboard</span>
+      </button>
+      <button type="button" style="min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:0;background:transparent;cursor:pointer;color:#5a4c3f;border-radius:6px" style-hover="background:#ecdcc2">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 4h14v16H5zM8 9h8M8 13h8M8 17h5"></path></svg>
+        <span style="font-size:11.5px;font-weight:600;letter-spacing:.04em">Audit log</span>
+      </button>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:430,&quot;height&quot;:1100},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dinner&quot;,&quot;morning&quot;],&quot;default&quot;:&quot;dinner&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;State&quot;}}">
+class Component extends DCLogic {
+  state = { pick: 6, tick: 0 };
+  componentDidMount() { this.t = setInterval(() => this.setState(s => ({ tick: s.tick + 1 })), 5000); }
+  componentWillUnmount() { clearInterval(this.t); }
+
+  money(n, dp) {
+    return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: dp ?? 0, maximumFractionDigits: dp ?? 0 });
+  }
+
+  delta(pct, e, big) {
+    const up = pct >= 0;
+    return e('span', { style:{ display:'flex', alignItems:'center', gap:5, fontSize: big ? 13 : 12, fontWeight:600,
+        color: up ? '#138808' : '#a31621', fontVariantNumeric:'tabular-nums' } },
+      e('span', { style:{ fontSize: big ? 14 : 12 } }, up ? '▲' : '▼'),
+      (up ? '+' : '') + pct.toFixed(1) + '%',
+      e('span', { style:{ color:'#8a7967', fontWeight:500 } }, 'vs last ' + this.dayName));
+  }
+
+  renderVals() {
+    const e = React.createElement;
+    const early = (this.props.mode ?? 'dinner') === 'morning';
+    this.dayName = 'Wed';
+
+    const totals = early
+      ? { sales: 1240, bills: 3, avg: 413, d1: -8.4, d2: -25.0, d3: 12.2 }
+      : { sales: 48250, bills: 96, avg: 502, d1: 11.3, d2: 6.7, d3: 4.3 };
+
+    const tillData = early
+      ? [['Food', 640, '#a31621'], ['Alcohol', 0, '#7c0f19'], ['Cafe', 600, '#e3a522'], ['Website', 0, '#4b6b3d']]
+      : [['Food', 28940, '#a31621'], ['Alcohol', 12310, '#7c0f19'], ['Cafe', 3180, '#e3a522'], ['Website', 3820, '#4b6b3d']];
+    const tillSum = tillData.reduce((a, b) => a + b[1], 0) || 1;
+    const tills = tillData.map(([name, amount, color]) => ({
+      name, color, amount: this.money(amount),
+      pct: Math.round(amount / tillSum * 100) + '%'
+    }));
+
+    const payData = early
+      ? [['UPI', 840, '#4b6b3d'], ['Cash', 400, '#e3a522'], ['Card', 0, '#a31621']]
+      : [['UPI', 26420, '#4b6b3d'], ['Cash', 13960, '#e3a522'], ['Card', 7870, '#a31621']];
+    const paySum = payData.reduce((a, b) => a + b[1], 0) || 1;
+    const payments = payData.map(([name, amount, color]) => ({
+      name, color, amount: this.money(amount), pct: Math.round(amount / paySum * 100) + '%'
+    }));
+
+    let off = 0;
+    const C = 2 * Math.PI * 46;
+    const donut = e('svg', { viewBox:'0 0 110 110', width:118, height:118, style:{ transform:'rotate(-90deg)' } },
+      e('circle', { cx:55, cy:55, r:46, fill:'none', stroke:'#e5d5ba', strokeWidth:15 }),
+      ...payData.filter(p => p[1] > 0).map(([name, amount, color], i) => {
+        const frac = amount / paySum;
+        const el = e('circle', { key:i, cx:55, cy:55, r:46, fill:'none', stroke:color, strokeWidth:15,
+          strokeDasharray: (frac * C) + ' ' + C, strokeDashoffset: -off * C });
+        off += frac;
+        return el;
+      }));
+
+    const weekData = [['Thu', 41200], ['Fri', 52800], ['Sat', 61400], ['Sun', 58900], ['Mon', 33100], ['Tue', 36700], ['Wed', totals.sales]];
+    const wMax = Math.max(...weekData.map(d => d[1]));
+    const week = weekData.map(([day, v], i) => ({
+      day, h: Math.max(6, Math.round(v / wMax * 100)) + '%',
+      color: i === this.state.pick ? '#a31621' : (i === 6 ? '#d8c6ab' : '#c9b69a'),
+      labelColor: i === this.state.pick ? '#a31621' : '#5a4c3f',
+      pick: () => this.setState({ pick: i })
+    }));
+    const picked = weekData[this.state.pick];
+
+    const hourVals = early
+      ? [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      : [1800, 4200, 6100, 5200, 2100, 900, 1400, 3100, 6900, 8400, 5300, 2200, 650];
+    if (early) { hourVals[0] = 380; hourVals[1] = 860; }
+    const hMax = Math.max(...hourVals, 1);
+    const hours = hourVals.map((v, i) => {
+      const hr = 9 + i;
+      return { label: hr > 12 ? (hr - 12) : hr, h: v === 0 ? '2px' : Math.max(5, Math.round(v / hMax * 100)) + '%',
+        color: v === 0 ? '#e5d5ba' : (v > hMax * 0.7 ? '#a31621' : '#d3b98f') };
+    });
+
+    const topItems = (early
+      ? [['Masala Chai', 8, 160], ['Veg Puff', 4, 120]]
+      : [['Butter Chicken', 34, 10540], ['Tandoori Roti', 96, 1920], ['Kingfisher 650ml', 41, 9430], ['Veg Biryani', 22, 5060], ['Masala Chai', 63, 1260]]
+    ).map(([name, qty, rev], i) => ({ rank: i + 1, name, qty, revenue: this.money(rev) }));
+
+    const waiting = early ? 0 : 2;
+
+    return {
+      dateLine: early ? 'Wed 19 Sep · 9:04 AM' : 'Wed 19 Sep · 9:41 PM',
+      totalSales: this.money(totals.sales),
+      billCount: totals.bills,
+      avgBill: this.money(totals.avg, 2),
+      totalDelta: this.delta(totals.d1, e, true),
+      billDelta: this.delta(totals.d2, e),
+      avgDelta: this.delta(totals.d3, e),
+      tills, payments, donut, week, hours,
+      pickedAmount: this.money(picked[1]),
+      pickedLabel: this.state.pick === 6 ? 'Today' : picked[0] + ' · last week',
+      peakLine: early ? 'Quiet so far' : 'Peak 8–9 PM',
+      topItems, hasItems: !early, noItems: early,
+      waiting, waitingColor: waiting > 0 ? '#f6c445' : '#7a6a58',
+      kitchenTickets: early ? 0 : 5,
+      occupied: early ? 1 : 9
+    };
+  }
+}
+</script>
+</body>
+</html>

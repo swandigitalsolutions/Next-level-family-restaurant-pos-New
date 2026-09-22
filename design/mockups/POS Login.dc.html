@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-598406d1-4b4d-40c4-a649-fbae09130236/styles.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700&family=Archivo:wght@400;500;600;700&display=swap">
+<style>
+  body { margin:0; background:#fbf3e7; font-family:Archivo,system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#a31621; } a:hover { color:#7c0f19; }
+  input:focus-visible, button:focus-visible { outline:2px solid #a31621; outline-offset:2px; }
+  input::placeholder { color:#a2907c; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+  @keyframes shake { 10%,90%{transform:translateX(-2px)} 30%,70%{transform:translateX(3px)} 50%{transform:translateX(-3px)} 100%{transform:none} }
+  @keyframes pulseDot { 0%,100%{opacity:1} 50%{opacity:.35} }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#fbf3e7;color:#2b211a;padding:0 0 64px">
+
+  <div style="display:flex;flex-direction:column;align-items:center;padding:28px 16px 0">
+
+    <div style="width:100%;max-width:390px;display:flex;flex-direction:column;gap:18px">
+
+      <div style="display:flex;flex-direction:column;gap:14px;background:#f3e7d4;border-radius:14px;overflow:hidden;box-shadow:0 1px 0 rgba(43,33,26,.08),0 12px 30px -18px rgba(43,33,26,.5)">
+
+        <div style="background:#a31621;padding:14px 18px 12px;display:flex;flex-direction:column;gap:10px">
+          <svg viewBox="0 0 360 22" width="100%" height="18" fill="none" stroke="#fbf3e7" stroke-width="1.1" stroke-linecap="round" style="display:block;opacity:.85">
+            <line x1="0" y1="20" x2="360" y2="20"></line>
+            <g><circle cx="20" cy="5" r="3"></circle><path d="M20 8 L14 16 M20 8 L26 16 M14 10 L26 10"></path></g>
+            <g><circle cx="65" cy="5" r="3"></circle><path d="M65 8 L59 16 M65 8 L71 16 M59 10 L71 10"></path></g>
+            <g><path d="M104 8 L110 16 L98 16 Z M110 3 L104 8 L98 3"></path></g>
+            <g><circle cx="150" cy="5" r="3"></circle><path d="M150 8 L144 16 M150 8 L156 16 M144 10 L156 10"></path></g>
+            <g><path d="M189 8 L195 16 L183 16 Z M195 3 L189 8 L183 3"></path></g>
+            <g><circle cx="235" cy="5" r="3"></circle><path d="M235 8 L229 16 M235 8 L241 16 M229 10 L241 10"></path></g>
+            <g><path d="M274 8 L280 16 L268 16 Z M280 3 L274 8 L268 3"></path></g>
+            <g><circle cx="320" cy="5" r="3"></circle><path d="M320 8 L314 16 M320 8 L326 16 M314 10 L326 10"></path></g>
+          </svg>
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <div style="font-family:Bitter,serif;font-weight:700;font-size:21px;line-height:1.15;color:#fbf3e7;letter-spacing:-.01em">Next Level<br>Family Restaurant &amp; Dhaba</div>
+            <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#f6c445;font-weight:600;padding-top:4px">Point of sale · Staff sign in</div>
+          </div>
+        </div>
+
+        <div style="padding:2px 18px 20px;display:flex;flex-direction:column;gap:16px">
+
+          <sc-if value="{{ hasError }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;animation:shake .4s ease">{{ errorBanner }}</div>
+          </sc-if>
+
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <label for="pos-user" style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#5a4c3f">Username</label>
+            <input id="pos-user" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" value="{{ username }}" onChange="{{ onUser }}" disabled="{{ inputsDisabled }}" placeholder="e.g. rekha.k" style="height:56px;box-sizing:border-box;width:100%;border-radius:6px;border:1.5px solid #ddcbb1;background:#fffaf2;padding:0 14px;font-family:Archivo,sans-serif;font-size:17px;color:#2b211a">
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <label for="pos-pw" style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#5a4c3f">Password</label>
+            <div style="position:relative;display:flex;align-items:center">
+              <input id="pos-pw" type="{{ pwType }}" autocomplete="current-password" value="{{ password }}" onChange="{{ onPw }}" onKeyDown="{{ onKey }}" disabled="{{ inputsDisabled }}" placeholder="••••••••" style="height:56px;box-sizing:border-box;width:100%;border-radius:6px;border:1.5px solid #ddcbb1;background:#fffaf2;padding:0 60px 0 14px;font-family:Archivo,sans-serif;font-size:17px;color:#2b211a">
+              <button type="button" onClick="{{ togglePw }}" aria-label="Show or hide password" style="position:absolute;right:4px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;border:0;background:transparent;border-radius:6px;cursor:pointer;color:#5a4c3f" style-hover="background:#e9d9bf">
+                {{ eyeIcon }}
+              </button>
+            </div>
+          </div>
+
+          <button type="button" onClick="{{ toggleKeep }}" style="display:flex;align-items:center;gap:12px;min-height:48px;border:0;background:transparent;padding:0;cursor:pointer;text-align:left;width:100%">
+            <span style="flex:none;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;border:1.5px solid #a31621;background:{{ keepBg }}">{{ keepTick }}</span>
+            <span style="display:flex;flex-direction:column;gap:1px">
+              <span style="font-size:15px;font-weight:600;color:#2b211a">Keep me signed in on this device</span>
+              <span style="font-size:12.5px;color:#5a4c3f">Shared till tablet — stays signed in for the shift</span>
+            </span>
+          </button>
+
+          <button type="button" onClick="{{ submit }}" disabled="{{ submitDisabled }}" style="height:56px;width:100%;border:0;border-radius:6px;background:{{ submitBg }};color:#fbf3e7;font-family:Archivo,sans-serif;font-size:17px;font-weight:700;letter-spacing:.01em;display:flex;align-items:center;justify-content:space-between;padding:0 18px;cursor:pointer" style-hover="filter:brightness(1.08)" style-active="background:#7c0f19">
+            <span>{{ submitLabel }}</span>
+            <span style="display:flex;align-items:center">{{ submitGlyph }}</span>
+          </button>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;padding-top:2px;border-top:1px solid #e3d3b8;margin-top:2px;padding-top:12px">
+            <span style="font-size:12.5px;color:#5a4c3f">Forgot your password? Ask the manager.</span>
+          </div>
+
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#5a4c3f;padding:0 4px">
+        <span style="display:flex;align-items:center;gap:7px"><span style="width:8px;height:8px;border-radius:50%;background:#138808;animation:pulseDot 2.4s ease-in-out infinite"></span>Local server connected</span>
+        <span style="font-variant-numeric:tabular-nums">Main till · v2.4.0</span>
+      </div>
+
+      <div style="font-size:12px;color:#8a7967;padding:0 4px;line-height:1.5">Demo: any username signs in. Password <strong style="color:#5a4c3f">dhaba</strong> succeeds; anything else fails, and the third failure locks the account. Username <strong style="color:#5a4c3f">suresh.p</strong> is deactivated.</div>
+    </div>
+  </div>
+
+  <div style="max-width:1180px;margin:56px auto 0;padding:0 16px">
+    <div style="height:2px;background:#2b211a;opacity:.85"></div>
+    <div style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#5a4c3f;font-weight:700;padding:14px 0 18px">Error states · reference</div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;align-items:start">
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:Bitter,serif;font-size:15px;font-weight:600">1 · Wrong credentials</div>
+        <div style="background:#f3e7d4;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;gap:10px;padding:12px 13px;border-radius:6px;background:#f7dfe1;border-left:4px solid #a31621">
+            <div style="flex:none;width:20px;height:20px;border-radius:50%;background:#a31621;color:#fbf3e7;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center">!</div>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:14px;font-weight:700;color:#7c0f19">Username or password is wrong</div>
+              <div style="font-size:12.5px;color:#5a4c3f">2 attempts left before this account is locked.</div>
+            </div>
+          </div>
+          <div style="height:56px;border-radius:6px;border:1.5px solid #a31621;background:#fffaf2;display:flex;align-items:center;padding:0 14px;font-size:17px;color:#a2907c">••••••••</div>
+          <div style="height:56px;border-radius:6px;background:#a31621;color:#fbf3e7;font-weight:700;font-size:17px;display:flex;align-items:center;justify-content:space-between;padding:0 18px"><span>Sign in</span><span>→</span></div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:Bitter,serif;font-size:15px;font-weight:600">2 · Account deactivated</div>
+        <div style="background:#f3e7d4;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;gap:10px;padding:12px 13px;border-radius:6px;background:#fbeecb;border-left:4px solid #e3a522">
+            <div style="flex:none;width:20px;height:20px;border-radius:50%;background:#e3a522;color:#2b211a;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center">!</div>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:14px;font-weight:700;color:#7a5a10">This account has been deactivated</div>
+              <div style="font-size:12.5px;color:#5a4c3f">Staff records are never deleted, so old bills stay valid. Ask an admin to reactivate it.</div>
+            </div>
+          </div>
+          <div style="height:56px;border-radius:6px;background:#d8c6ab;color:#7d6c59;font-weight:700;font-size:17px;display:flex;align-items:center;justify-content:space-between;padding:0 18px"><span>Sign in</span><span>→</span></div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:Bitter,serif;font-size:15px;font-weight:600">3 · Rate limited (live countdown)</div>
+        <div style="background:#f3e7d4;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;gap:12px;padding:14px 13px;border-radius:6px;background:#fbeecb;border-left:4px solid #e3a522;align-items:center">
+            <div style="display:flex;flex-direction:column;gap:2px;flex:1">
+              <div style="font-size:14px;font-weight:700;color:#7a5a10">Too many attempts</div>
+              <div style="font-size:12.5px;color:#5a4c3f">Try again in</div>
+            </div>
+            <div style="font-family:Bitter,serif;font-variant-numeric:tabular-nums;font-size:30px;font-weight:700;color:#7c0f19;letter-spacing:-.01em">{{ demoCountdown }}</div>
+          </div>
+          <div style="height:56px;border-radius:6px;background:#d8c6ab;color:#7d6c59;font-weight:700;font-size:17px;display:flex;align-items:center;justify-content:space-between;padding:0 18px"><span>Locked</span><span>{{ demoCountdown }}</span></div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:Bitter,serif;font-size:15px;font-weight:600">4 · Branded hand-off by role</div>
+        <div style="background:#a31621;border-radius:14px;padding:20px 16px;display:flex;flex-direction:column;gap:14px;min-height:172px;justify-content:center">
+          <div style="width:44px;height:44px;border-radius:50%;border:3px solid rgba(251,243,231,.28);border-top-color:#f6c445;animation:spin .9s linear infinite"></div>
+          <div style="font-family:Bitter,serif;font-size:20px;font-weight:700;color:#fbf3e7;line-height:1.2">Welcome, Rekha</div>
+          <div style="font-size:13.5px;color:#f6c445;font-weight:600;letter-spacing:.04em">Opening the Kitchen display…</div>
+          <div style="font-size:12px;color:rgba(251,243,231,.7);line-height:1.5">kitchen → Kitchen · cafe_billing → Cafe till · everyone else → Dashboard</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <sc-if value="{{ transitioning }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:50;background:#a31621;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:32px;animation:fadeUp .25s ease">
+      <svg viewBox="0 0 360 22" width="240" height="20" fill="none" stroke="#fbf3e7" stroke-width="1.3" stroke-linecap="round" style="opacity:.8">
+        <line x1="0" y1="20" x2="360" y2="20"></line>
+        <g><circle cx="60" cy="5" r="3"></circle><path d="M60 8 L54 16 M60 8 L66 16 M54 10 L66 10"></path></g>
+        <g><path d="M126 8 L132 16 L120 16 Z M132 3 L126 8 L120 3"></path></g>
+        <g><circle cx="190" cy="5" r="3"></circle><path d="M190 8 L184 16 M190 8 L196 16 M184 10 L196 10"></path></g>
+        <g><path d="M256 8 L262 16 L250 16 Z M262 3 L256 8 L250 3"></path></g>
+      </svg>
+      <div style="width:56px;height:56px;border-radius:50%;border:4px solid rgba(251,243,231,.25);border-top-color:#f6c445;animation:spin .9s linear infinite"></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
+        <div style="font-family:Bitter,serif;font-size:26px;font-weight:700;color:#fbf3e7">{{ greeting }}</div>
+        <div style="font-size:14px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#f6c445">{{ roleLabel }}</div>
+        <div style="font-size:14.5px;color:rgba(251,243,231,.82);padding-top:6px">{{ landingLine }}</div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;demoRole&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;admin&quot;,&quot;manager&quot;,&quot;owner&quot;,&quot;billing&quot;,&quot;kitchen&quot;,&quot;cafe_billing&quot;],&quot;default&quot;:&quot;kitchen&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Demo&quot;},&quot;lockSeconds&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:161,&quot;min&quot;:10,&quot;max&quot;:600,&quot;unit&quot;:&quot;s&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Demo&quot;}}">
+class Component extends DCLogic {
+  state = { username:'', password:'', showPw:false, keep:true, err:null, attempts:0, lockUntil:0, now:Date.now(), transitioning:false };
+
+  componentDidMount() { this.t = setInterval(() => this.setState({ now: Date.now() }), 250); }
+  componentWillUnmount() { clearInterval(this.t); if (this.to) clearTimeout(this.to); }
+
+  fmt(ms) {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  }
+
+  submit = () => {
+    const { username, password, attempts } = this.state;
+    if (!username.trim()) { this.setState({ err:'creds' }); return; }
+    if (username.trim().toLowerCase() === 'suresh.p') { this.setState({ err:'deactivated' }); return; }
+    if (password === 'dhaba') {
+      this.setState({ err:null, transitioning:true });
+      this.to = setTimeout(() => this.setState({ transitioning:false, password:'', attempts:0 }), 2600);
+      return;
+    }
+    const n = attempts + 1;
+    if (n >= 3) {
+      const secs = this.props.lockSeconds ?? 161;
+      this.setState({ attempts:n, err:'locked', lockUntil: Date.now() + secs * 1000, password:'' });
+    } else {
+      this.setState({ attempts:n, err:'creds' });
+    }
+  };
+
+  renderVals() {
+    const s = this.state;
+    const role = this.props.demoRole ?? 'kitchen';
+    const locked = s.err === 'locked' && s.lockUntil > s.now;
+    if (s.err === 'locked' && !locked && s.lockUntil) setTimeout(() => this.setState({ err:null, attempts:0, lockUntil:0 }), 0);
+    const countdown = this.fmt(s.lockUntil - s.now);
+    const e = React.createElement;
+
+    const banner = (() => {
+      if (locked) return e('div', { style:{ display:'flex', gap:12, alignItems:'center', width:'100%' } },
+        e('div', { style:{ display:'flex', flexDirection:'column', gap:2, flex:1 } },
+          e('div', { style:{ fontSize:14, fontWeight:700, color:'#7a5a10' } }, 'Too many attempts'),
+          e('div', { style:{ fontSize:12.5, color:'#5a4c3f' } }, 'This device is paused. Try again in')),
+        e('div', { style:{ fontFamily:'Bitter,serif', fontVariantNumeric:'tabular-nums', fontSize:30, fontWeight:700, color:'#7c0f19' } }, countdown));
+      if (s.err === 'deactivated') return e('div', { style:{ display:'flex', gap:10 } },
+        e('div', { style:{ flex:'none', width:20, height:20, borderRadius:'50%', background:'#e3a522', color:'#2b211a', fontSize:13, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' } }, '!'),
+        e('div', { style:{ display:'flex', flexDirection:'column', gap:2 } },
+          e('div', { style:{ fontSize:14, fontWeight:700, color:'#7a5a10' } }, 'This account has been deactivated'),
+          e('div', { style:{ fontSize:12.5, color:'#5a4c3f' } }, 'Staff records are never deleted, so old bills stay valid. Ask an admin to reactivate it.')));
+      return e('div', { style:{ display:'flex', gap:10 } },
+        e('div', { style:{ flex:'none', width:20, height:20, borderRadius:'50%', background:'#a31621', color:'#fbf3e7', fontSize:13, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' } }, '!'),
+        e('div', { style:{ display:'flex', flexDirection:'column', gap:2 } },
+          e('div', { style:{ fontSize:14, fontWeight:700, color:'#7c0f19' } }, 'Username or password is wrong'),
+          e('div', { style:{ fontSize:12.5, color:'#5a4c3f' } }, (3 - s.attempts) + ' attempt' + (3 - s.attempts === 1 ? '' : 's') + ' left before this account is locked.')));
+    })();
+
+    const warm = locked || s.err === 'deactivated';
+    const bannerWrap = e('div', {
+      style:{ display:'flex', gap:10, padding:locked ? '14px 13px' : '12px 13px', borderRadius:6, width:'100%',
+              background: warm ? '#fbeecb' : '#f7dfe1', borderLeft:'4px solid ' + (warm ? '#e3a522' : '#a31621') }
+    }, banner);
+
+    const eye = s.showPw
+      ? e('svg', { width:24, height:24, viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:1.8, strokeLinecap:'round' },
+          e('path', { d:'M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8' }),
+          e('path', { d:'M9.4 5.2A9.6 9.6 0 0112 5c5 0 9 4.5 9 7 0 .9-.9 2.3-2.3 3.6M6.3 6.7C4 8.2 3 10.2 3 12c0 2 4 7 9 7 1.4 0 2.7-.4 3.8-1' }))
+      : e('svg', { width:24, height:24, viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:1.8, strokeLinecap:'round' },
+          e('path', { d:'M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7z' }), e('circle', { cx:12, cy:12, r:2.6 }));
+
+    const roleMap = {
+      admin:['Admin','Opening the Dashboard…','Priya'],
+      manager:['Manager','Opening the Dashboard…','Anil'],
+      owner:['Owner · read only','Opening the Dashboard…','Mr. Shetty'],
+      billing:['Billing','Opening Food Billing… (main till)','Vikram'],
+      kitchen:['Kitchen','Opening the Kitchen display…','Rekha'],
+      cafe_billing:['Cafe billing','Opening the Cafe counter till…','Meena']
+    };
+    const [roleLabel, landingLine, name] = roleMap[role] || roleMap.kitchen;
+
+    return {
+      username: s.username, password: s.password,
+      onUser: ev => this.setState({ username: ev.target.value, err: s.err === 'locked' ? s.err : null }),
+      onPw: ev => this.setState({ password: ev.target.value }),
+      onKey: ev => { if (ev.key === 'Enter') this.submit(); },
+      pwType: s.showPw ? 'text' : 'password',
+      togglePw: () => this.setState({ showPw: !s.showPw }),
+      eyeIcon: eye,
+      keep: s.keep,
+      keepBg: s.keep ? '#a31621' : '#fffaf2',
+      keepTick: s.keep ? e('svg', { width:18, height:18, viewBox:'0 0 24 24', fill:'none', stroke:'#fbf3e7', strokeWidth:3, strokeLinecap:'round', strokeLinejoin:'round' }, e('path', { d:'M4 12.5l5 5L20 6.5' })) : null,
+      toggleKeep: () => this.setState({ keep: !s.keep }),
+      hasError: !!s.err,
+      errorBanner: bannerWrap,
+      inputsDisabled: locked,
+      submitDisabled: locked || s.err === 'deactivated',
+      submitBg: (locked || s.err === 'deactivated') ? '#d8c6ab' : '#a31621',
+      submitLabel: locked ? 'Locked' : (s.err === 'deactivated' ? 'Sign in' : 'Sign in'),
+      submitGlyph: locked ? e('span', { style:{ fontVariantNumeric:'tabular-nums', fontFamily:'Bitter,serif' } }, countdown) : '→',
+      submit: this.submit,
+      demoCountdown: this.fmt(((Math.floor(s.now / 1000) % 162) * 1000) + 1000),
+      transitioning: s.transitioning,
+      greeting: 'Welcome, ' + name,
+      roleLabel, landingLine
+    };
+  }
+}
+</script>
+</body>
+</html>

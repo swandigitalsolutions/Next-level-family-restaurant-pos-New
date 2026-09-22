@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-598406d1-4b4d-40c4-a649-fbae09130236/styles.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700&family=Archivo:wght@400;500;600;700&display=swap">
+<style>
+  body { margin:0; background:#fbf3e7; font-family:Archivo,system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#a31621; } a:hover { color:#7c0f19; }
+  button:focus-visible { outline:2px solid #a31621; outline-offset:2px; }
+  .hscroll { overflow-x:auto; scrollbar-width:none; } .hscroll::-webkit-scrollbar { display:none; }
+  @keyframes sheetUp { from { transform:translateY(100%); } to { transform:none; } }
+  @keyframes fade { from { opacity:0; } to { opacity:1; } }
+  @keyframes pop { 0%{transform:scale(.9);opacity:0} 60%{transform:scale(1.03)} 100%{transform:scale(1);opacity:1} }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#fbf3e7;color:#2b211a;padding-bottom:104px">
+
+  <div style="position:sticky;top:0;z-index:20;background:#e3a522;color:#2b211a">
+    <div style="max-width:900px;margin:0 auto;padding:10px 12px;display:flex;align-items:center;gap:10px">
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+        <div style="font-family:Bitter,serif;font-weight:700;font-size:16px">Cafe counter</div>
+        <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:#7c0f19">Outside till · CAFE-xxxxxx</div>
+      </div>
+      <button type="button" onClick="{{ openSummary }}" style="min-height:48px;padding:0 14px;border-radius:6px;border:2px solid #2b211a;background:transparent;color:#2b211a;font-size:14px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif" style-hover="background:rgba(43,33,26,.1)">Today</button>
+      <button type="button" style="width:48px;height:48px;border-radius:6px;border:2px solid #2b211a;background:#2b211a;color:#f6c445;font-weight:700;font-size:13px;cursor:pointer">MN</button>
+    </div>
+  </div>
+
+  <div style="max-width:900px;margin:0 auto;padding:12px 12px 0;display:flex;flex-direction:column;gap:13px">
+
+    <div style="display:flex;flex-direction:column;gap:9px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5a4c3f">Best sellers · one tap</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px">
+        <sc-for list="{{ pinned }}" as="p" hint-placeholder-count="10">
+          <button type="button" onClick="{{ p.add }}" style="min-height:96px;border-radius:14px;border:2px solid {{ p.border }};background:{{ p.bg }};cursor:pointer;padding:10px;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;text-align:left;gap:6px" style-hover="filter:brightness(.98)">
+            <span style="font-size:14px;font-weight:700;line-height:1.2;color:{{ p.fg }}">{{ p.name }}</span>
+            <span style="display:flex;align-items:baseline;justify-content:space-between;width:100%;gap:6px">
+              <span style="font-family:Bitter,serif;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;color:{{ p.fg }}">{{ p.price }}</span>
+              <sc-if value="{{ p.qty }}" hint-placeholder-val="{{ false }}">
+                <span style="min-width:26px;height:26px;border-radius:50%;background:#a31621;color:#fbf3e7;font-family:Bitter,serif;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums">{{ p.qty }}</span>
+              </sc-if>
+            </span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div class="hscroll" style="display:flex;gap:7px">
+      <sc-for list="{{ categories }}" as="c" hint-placeholder-count="7">
+        <button type="button" onClick="{{ c.pick }}" style="flex:none;min-height:44px;padding:0 15px;border-radius:6px;border:1.5px solid {{ c.border }};background:{{ c.bg }};color:{{ c.fg }};font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap">{{ c.name }}</button>
+      </sc-for>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px">
+      <sc-for list="{{ items }}" as="it" hint-placeholder-count="8">
+        <div style="border-radius:14px;background:{{ it.bg }};border:1.5px solid {{ it.border }};overflow:hidden;display:flex;flex-direction:column">
+          <button type="button" onClick="{{ it.add }}" style="flex:1;min-height:62px;border:0;background:transparent;cursor:pointer;padding:10px 11px;display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;width:100%">
+            <span style="font-size:14px;font-weight:600;line-height:1.25">{{ it.name }}</span>
+            <span style="font-family:Bitter,serif;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums">{{ it.price }}</span>
+          </button>
+          <sc-if value="{{ it.inCart }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;border-top:1.5px solid #e3d3b8;background:#f8eddb">
+              <button type="button" onClick="{{ it.dec }}" style="width:56px;height:48px;border:0;background:transparent;cursor:pointer;font-size:24px;font-weight:700;color:#a31621">−</button>
+              <span style="flex:1;text-align:center;font-family:Bitter,serif;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums">{{ it.qty }}</span>
+              <button type="button" onClick="{{ it.add }}" style="width:56px;height:48px;border:0;background:transparent;cursor:pointer;font-size:24px;font-weight:700;color:#a31621">+</button>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="font-size:11.5px;color:#8a7967;line-height:1.5;padding-bottom:4px">No tables, no kitchen ticket, no tax at this counter. Cafe bills are settled on the spot.</div>
+  </div>
+
+  <div style="position:fixed;left:0;right:0;bottom:0;z-index:30;padding:0 10px 10px;pointer-events:none">
+    <div style="max-width:900px;margin:0 auto;pointer-events:auto;display:flex;gap:8px">
+      <sc-if value="{{ hasCart }}" hint-placeholder-val="{{ false }}">
+        <button type="button" onClick="{{ clearCart }}" aria-label="Clear sale" style="width:68px;min-height:68px;border-radius:14px;border:0;background:#2b211a;color:#fbf3e7;cursor:pointer;font-size:13px;font-weight:700;font-family:Archivo,sans-serif">Clear</button>
+      </sc-if>
+      <button type="button" onClick="{{ openSettle }}" disabled="{{ cartEmpty }}" style="flex:1;min-height:68px;border:0;border-radius:14px;background:{{ barBg }};color:#fbf3e7;cursor:pointer;display:flex;align-items:center;gap:12px;padding:0 16px;box-shadow:0 -2px 24px -8px rgba(43,33,26,.5)" style-hover="filter:brightness(1.07)">
+        <span style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;flex:1">
+          <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(251,243,231,.85)">{{ barLabel }}</span>
+          <span style="font-size:13px;color:rgba(251,243,231,.85)">{{ barCount }}</span>
+        </span>
+        <span style="font-family:Bitter,serif;font-size:28px;font-weight:700;font-variant-numeric:tabular-nums">{{ total }}</span>
+      </button>
+    </div>
+  </div>
+
+  <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:40;display:flex;align-items:flex-end;justify-content:center;background:rgba(43,33,26,.55);animation:fade .18s ease" onClick="{{ closeSheet }}">
+      <div onClick="{{ stop }}" style="width:100%;max-width:480px;max-height:92vh;overflow-y:auto;background:#fbf3e7;border-radius:18px 18px 0 0;animation:sheetUp .22s cubic-bezier(.2,.8,.3,1)">
+        <div style="position:sticky;top:0;background:#fbf3e7;padding:10px 0 6px;display:flex;justify-content:center"><span style="width:44px;height:5px;border-radius:99px;background:#d8c6ab"></span></div>
+
+        <sc-if value="{{ isSettle }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:2px 16px 20px;display:flex;flex-direction:column;gap:14px">
+            <span style="font-family:Bitter,serif;font-size:20px;font-weight:700">Confirm sale</span>
+            <div style="background:#f3e7d4;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ lines }}" as="l" hint-placeholder-count="2">
+                <div style="display:flex;align-items:baseline;gap:10px">
+                  <span style="font-family:Bitter,serif;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;width:30px">×{{ l.qty }}</span>
+                  <span style="flex:1;font-size:15px;font-weight:600">{{ l.name }}</span>
+                  <span style="font-family:Bitter,serif;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums">{{ l.amount }}</span>
+                </div>
+              </sc-for>
+              <div style="height:1px;background:#e3d3b8;margin:3px 0"></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between">
+                <span style="font-size:15px;font-weight:700">Total</span>
+                <span style="font-family:Bitter,serif;font-size:32px;font-weight:700;font-variant-numeric:tabular-nums">{{ totalDp }}</span>
+              </div>
+              <span style="font-size:11.5px;color:#8a7967">No tax at the cafe counter.</span>
+            </div>
+            <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5a4c3f">Tap payment method to finish</span>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+              <sc-for list="{{ methods }}" as="m" hint-placeholder-count="3">
+                <button type="button" onClick="{{ m.pay }}" style="min-height:76px;border-radius:14px;border:2px solid #e3d3b8;background:#f3e7d4;color:#2b211a;font-size:16px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif" style-hover="background:#a31621;color:#fbf3e7;border-color:#7c0f19">{{ m.name }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isSuccess }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:2px 16px 22px;display:flex;flex-direction:column;gap:14px;animation:pop .28s ease">
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="width:52px;height:52px;border-radius:50%;background:#4b6b3d;display:flex;align-items:center;justify-content:center;flex:none">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fbf3e7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg>
+              </span>
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <span style="font-family:Bitter,serif;font-size:21px;font-weight:700;font-variant-numeric:tabular-nums">{{ billNo }}</span>
+                <span style="font-size:13px;color:#5a4c3f">{{ paidMethod }} · {{ paidAmount }} · final, cannot be edited</span>
+              </div>
+            </div>
+            <button type="button" onClick="{{ newSale }}" style="min-height:64px;border:0;border-radius:14px;background:#a31621;color:#fbf3e7;font-size:18px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 18px"><span>Next customer</span><span>→</span></button>
+            <button type="button" style="min-height:52px;border:1.5px solid #ddcbb1;border-radius:10px;background:transparent;color:#5a4c3f;font-size:15px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 14px">Print receipt</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isSummary }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:2px 16px 22px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <span style="font-family:Bitter,serif;font-size:20px;font-weight:700">Today at this counter</span>
+              <span style="font-size:12.5px;color:#5a4c3f">Wed 19 Sep · since 7:00 AM</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+              <div style="background:#f3e7d4;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:4px">
+                <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5a4c3f">Bills</span>
+                <span style="font-family:Bitter,serif;font-size:32px;font-weight:700;font-variant-numeric:tabular-nums">{{ dayCount }}</span>
+              </div>
+              <div style="background:#f3e7d4;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:4px">
+                <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5a4c3f">Total</span>
+                <span style="font-family:Bitter,serif;font-size:32px;font-weight:700;font-variant-numeric:tabular-nums">{{ dayTotal }}</span>
+              </div>
+            </div>
+            <div style="background:#f3e7d4;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:9px">
+              <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5a4c3f">Most sold</span>
+              <sc-for list="{{ daySold }}" as="d" hint-placeholder-count="4">
+                <div style="display:flex;align-items:baseline;gap:10px;padding-bottom:7px;border-bottom:1px solid #e3d3b8">
+                  <span style="flex:1;font-size:14.5px;font-weight:600">{{ d.name }}</span>
+                  <span style="font-size:12.5px;color:#5a4c3f;font-variant-numeric:tabular-nums">×{{ d.qty }}</span>
+                  <span style="font-family:Bitter,serif;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;min-width:62px;text-align:right">{{ d.amount }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <span style="font-size:11.5px;color:#8a7967;line-height:1.5">This is the only summary available at this counter — the cafe role has no dashboard access.</span>
+            <button type="button" onClick="{{ closeSheet }}" style="min-height:56px;border:0;border-radius:10px;background:#2b211a;color:#fbf3e7;font-size:16px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 16px">Back to counter</button>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:430,&quot;height&quot;:950}}">
+const CAFE = [
+  ['Masala Chai', 20, 'Tea', 1], ['Ginger Chai', 25, 'Tea', 1], ['Black Tea', 15, 'Tea', 0],
+  ['Filter Coffee', 30, 'Coffee', 1], ['Cold Coffee', 70, 'Coffee', 1], ['Espresso', 40, 'Coffee', 0],
+  ['Vanilla Cone', 40, 'Ice cream', 1], ['Chocobar', 35, 'Ice cream', 1], ['Butterscotch Cup', 60, 'Ice cream', 0],
+  ['Water 1 L', 20, 'Water', 1], ['Water 500 ml', 10, 'Water', 1],
+  ['Thums Up 250 ml', 25, 'Cool drinks', 1], ['Sprite 250 ml', 25, 'Cool drinks', 0], ['Soda', 15, 'Cool drinks', 0],
+  ['Fresh Lime', 40, 'Juices', 1], ['Mosambi Juice', 60, 'Juices', 0],
+  ['Veg Puff', 30, 'Other', 1], ['Biscuit Pack', 10, 'Other', 0]
+];
+const CATS = ['All', 'Tea', 'Coffee', 'Ice cream', 'Water', 'Cool drinks', 'Juices', 'Other'];
+
+class Component extends DCLogic {
+  state = { cart:{}, cat:'All', sheet:null, method:null, paid:0, seq:117 };
+  money0 = n => '₹' + Math.round(n).toLocaleString('en-IN');
+  money = n => '₹' + n.toLocaleString('en-IN', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  add = i => this.setState(s => ({ cart:{ ...s.cart, [i]: (s.cart[i] || 0) + 1 } }));
+  dec = i => this.setState(s => { const c = { ...s.cart }; c[i] = (c[i] || 0) - 1; if (c[i] <= 0) delete c[i]; return { cart:c }; });
+
+  renderVals() {
+    const s = this.state;
+    const keys = Object.keys(s.cart);
+    const total = keys.reduce((a, k) => a + CAFE[k][1] * s.cart[k], 0);
+    const count = keys.reduce((a, k) => a + s.cart[k], 0);
+
+    const tile = i => ({
+      name: CAFE[i][0], price: this.money0(CAFE[i][1]), qty: s.cart[i] || 0, inCart: !!s.cart[i],
+      add: () => this.add(i), dec: () => this.dec(i),
+      bg: s.cart[i] ? '#f8eddb' : '#f3e7d4', border: s.cart[i] ? '#a31621' : '#e3d3b8',
+      fg: '#2b211a'
+    });
+
+    const pinned = CAFE.map((c, i) => ({ c, i })).filter(({ c }) => c[3]).map(({ i }) => tile(i));
+    const items = CAFE.map((c, i) => ({ c, i })).filter(({ c }) => s.cat === 'All' || c[2] === s.cat).map(({ i }) => tile(i));
+
+    return {
+      pinned, items,
+      categories: CATS.map(c => ({ name:c, pick: () => this.setState({ cat:c }),
+        bg: s.cat === c ? '#2b211a' : 'transparent', fg: s.cat === c ? '#fbf3e7' : '#2b211a',
+        border: s.cat === c ? '#2b211a' : '#d8c6ab' })),
+      lines: keys.map(k => ({ name: CAFE[k][0], qty: s.cart[k], amount: this.money0(CAFE[k][1] * s.cart[k]) })),
+      total: this.money0(total), totalDp: this.money(total),
+      cartEmpty: count === 0, hasCart: count > 0,
+      barBg: count ? '#a31621' : '#c9b69a',
+      barLabel: count ? 'Cafe sale' : 'Cafe counter',
+      barCount: count ? count + ' items · tap to settle' : 'Tap an item to start',
+      clearCart: () => this.setState({ cart:{} }),
+      openSettle: () => this.setState({ sheet:'settle' }),
+      openSummary: () => this.setState({ sheet:'summary' }),
+      closeSheet: () => this.setState({ sheet:null }), stop: ev => ev.stopPropagation(),
+      sheetOpen: !!s.sheet, isSettle: s.sheet === 'settle', isSuccess: s.sheet === 'success', isSummary: s.sheet === 'summary',
+      methods: ['Cash','UPI','Card'].map(m => ({ name:m, pay: () => this.setState({ sheet:'success', method:m, paid: total, seq: s.seq + 1, cart:{} }) })),
+      billNo: 'CAFE-000' + s.seq,
+      paidMethod: s.method || 'Cash', paidAmount: this.money(s.paid),
+      dayCount: 63, dayTotal: '₹3,180',
+      daySold: [['Masala Chai', 84, 1680], ['Filter Coffee', 21, 630], ['Water 1 L', 18, 360], ['Chocobar', 9, 315]]
+        .map(([name, qty, amt]) => ({ name, qty, amount: this.money0(amt) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

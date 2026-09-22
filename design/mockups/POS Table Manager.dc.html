@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-598406d1-4b4d-40c4-a649-fbae09130236/styles.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700&family=Archivo:wght@400;500;600;700&display=swap">
+<style>
+  body { margin:0; background:#fbf3e7; font-family:Archivo,system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#a31621; } a:hover { color:#7c0f19; }
+  button:focus-visible, input:focus-visible { outline:2px solid #a31621; outline-offset:2px; }
+  @keyframes sheetUp { from { transform:translateY(100%); } to { transform:none; } }
+  @keyframes fade { from { opacity:0; } to { opacity:1; } }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#fbf3e7;color:#2b211a;padding-bottom:96px">
+
+  <div style="position:sticky;top:0;z-index:20;background:#fbf3e7;border-bottom:2px solid #2b211a">
+    <div style="max-width:1120px;margin:0 auto;padding:13px 12px;display:flex;align-items:center;gap:10px">
+      <div style="flex:1;display:flex;flex-direction:column;gap:1px">
+        <span style="font-family:Bitter,serif;font-size:20px;font-weight:700">Tables &amp; QR codes</span>
+        <span style="font-size:12px;color:#5a4c3f">{{ summary }}</span>
+      </div>
+      <button type="button" onClick="{{ openBulk }}" style="min-height:48px;padding:0 14px;border-radius:6px;border:1.5px solid #2b211a;background:transparent;color:#2b211a;font-size:14px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif">Print all</button>
+    </div>
+  </div>
+
+  <div style="max-width:1120px;margin:0 auto;padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px">
+    <sc-for list="{{ tables }}" as="t" hint-placeholder-count="12">
+      <div style="border-radius:14px;background:#f3e7d4;border:2px solid {{ t.border }};overflow:hidden;display:flex;flex-direction:column;opacity:{{ t.opacity }}">
+        <div style="padding:12px 13px 10px;display:flex;flex-direction:column;gap:7px">
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <span style="font-family:Bitter,serif;font-size:21px;font-weight:700;flex:1">{{ t.name }}</span>
+            <span style="font-size:12.5px;color:#5a4c3f;font-variant-numeric:tabular-nums">{{ t.seats }} seats</span>
+          </div>
+          <span style="font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:{{ t.statusFg }};background:{{ t.statusBg }};border-radius:6px;padding:4px 8px;align-self:flex-start">{{ t.status }}</span>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:{{ t.tokenColor }}">
+            <span style="width:7px;height:7px;border-radius:50%;background:{{ t.tokenColor }}"></span>{{ t.token }}
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1.5px solid #e3d3b8">
+          <button type="button" onClick="{{ t.viewQr }}" style="min-height:52px;border:0;border-right:1.5px solid #e3d3b8;background:transparent;color:#2b211a;font-size:13.5px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif" style-hover="background:#ecdcc2">QR</button>
+          <button type="button" onClick="{{ t.edit }}" style="min-height:52px;border:0;background:transparent;color:#2b211a;font-size:13.5px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif" style-hover="background:#ecdcc2">Edit</button>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="position:fixed;left:0;right:0;bottom:0;z-index:30;padding:0 10px 10px;pointer-events:none">
+    <div style="max-width:1120px;margin:0 auto;pointer-events:auto">
+      <button type="button" onClick="{{ addTable }}" style="width:100%;min-height:60px;border:0;border-radius:14px;background:#a31621;color:#fbf3e7;font-size:17px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 18px;box-shadow:0 -2px 24px -8px rgba(43,33,26,.5)"><span>Add table</span><span style="font-size:24px">+</span></button>
+    </div>
+  </div>
+
+  <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:40;display:flex;align-items:flex-end;justify-content:center;background:rgba(43,33,26,.55);animation:fade .18s ease" onClick="{{ closeSheet }}">
+      <div onClick="{{ stop }}" style="width:100%;max-width:520px;max-height:92vh;overflow-y:auto;background:#fbf3e7;border-radius:18px 18px 0 0;animation:sheetUp .24s cubic-bezier(.2,.8,.3,1)">
+        <div style="position:sticky;top:0;background:#fbf3e7;padding:10px 0 6px;display:flex;justify-content:center;z-index:2"><span style="width:44px;height:5px;border-radius:99px;background:#d8c6ab"></span></div>
+
+        <sc-if value="{{ isEdit }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:2px 16px 22px;display:flex;flex-direction:column;gap:14px">
+            <span style="font-family:Bitter,serif;font-size:21px;font-weight:700">{{ editTitle }}</span>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <label for="tb-name" style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5a4c3f">Table name</label>
+              <input id="tb-name" type="text" value="{{ formName }}" onChange="{{ onFormName }}" style="height:56px;box-sizing:border-box;border-radius:6px;border:1.5px solid #ddcbb1;background:#fffaf2;padding:0 13px;font-size:16px;font-family:Archivo,sans-serif;color:#2b211a">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <label for="tb-seats" style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5a4c3f">Seats</label>
+              <div style="display:flex;align-items:center;gap:0;background:#fffaf2;border:1.5px solid #ddcbb1;border-radius:6px;width:fit-content">
+                <button type="button" onClick="{{ seatsDown }}" style="width:60px;height:56px;border:0;background:transparent;font-size:26px;font-weight:700;color:#a31621;cursor:pointer">−</button>
+                <span style="min-width:56px;text-align:center;font-family:Bitter,serif;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums">{{ formSeats }}</span>
+                <button type="button" onClick="{{ seatsUp }}" style="width:60px;height:56px;border:0;background:transparent;font-size:26px;font-weight:700;color:#a31621;cursor:pointer">+</button>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;background:#f3e7d4;border-radius:12px;padding:12px 14px">
+              <span style="flex:1;display:flex;flex-direction:column;gap:2px">
+                <span style="font-size:15.5px;font-weight:600">Table is active</span>
+                <span style="font-size:12px;color:#5a4c3f">Deactivated tables disappear from the tills</span>
+              </span>
+              <button type="button" onClick="{{ toggleActive }}" aria-label="Active" style="width:68px;height:40px;border-radius:99px;border:0;cursor:pointer;background:{{ activeTrack }};position:relative;flex:none">
+                <span style="position:absolute;top:4px;left:{{ activeKnob }};width:32px;height:32px;border-radius:50%;background:#fbf3e7;transition:left .13s ease"></span>
+              </button>
+            </div>
+            <button type="button" onClick="{{ saveTable }}" style="min-height:60px;border:0;border-radius:14px;background:#a31621;color:#fbf3e7;font-size:17px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 18px"><span>Save table</span><span>→</span></button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isQr }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:2px 16px 22px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <span style="font-family:Bitter,serif;font-size:21px;font-weight:700">{{ qrTitle }}</span>
+              <span style="font-size:11.5px;color:#8a7967;font-family:ui-monospace,Menlo,monospace">{{ qrToken }}</span>
+            </div>
+
+            <div style="background:#a31621;border-radius:14px;padding:16px">
+              <div style="background:#fbf3e7;border:3px solid #fbf3e7;border-radius:8px;padding:18px 16px;display:flex;flex-direction:column;align-items:center;gap:12px">
+                {{ warliTop }}
+                <div style="display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center">
+                  <span style="font-family:Bitter,serif;font-size:17px;font-weight:700;line-height:1.15;color:#a31621">Next Level</span>
+                  <span style="font-family:Bitter,serif;font-size:13px;font-weight:600;color:#5a4c3f;letter-spacing:.04em">Family Restaurant &amp; Dhaba</span>
+                </div>
+                <div style="padding:8px;background:#fff;border-radius:6px">{{ qrSvg }}</div>
+                <div style="font-family:Bitter,serif;font-size:30px;font-weight:700;color:#2b211a;line-height:1">{{ qrTitle }}</div>
+                <div style="font-size:14px;font-weight:600;color:#5a4c3f;letter-spacing:.06em">Scan to order from your phone</div>
+                {{ warliBottom }}
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+              <button type="button" style="min-height:56px;border:0;border-radius:10px;background:#2b211a;color:#fbf3e7;font-size:15px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 14px">Download PDF</button>
+              <button type="button" style="min-height:56px;border:1.5px solid #2b211a;border-radius:10px;background:transparent;color:#2b211a;font-size:15px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 14px">Print card</button>
+            </div>
+            <span style="font-size:12px;color:#8a7967;line-height:1.5">Printed at 100 × 140 mm — the size the restaurant laminates and stands on the table.</span>
+
+            <button type="button" onClick="{{ openRegen }}" style="min-height:56px;border:1.5px solid #e3a522;border-radius:10px;background:#fbeecb;color:#7a5a10;font-size:15px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 14px">Regenerate QR token…</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isRegen }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:2px 16px 22px;display:flex;flex-direction:column;gap:15px">
+            <span style="font-family:Bitter,serif;font-size:21px;font-weight:700">Regenerate the QR for {{ qrTitle }}?</span>
+            <div style="display:flex;gap:11px;background:#fbeecb;border-left:4px solid #e3a522;border-radius:8px;padding:13px">
+              <span style="flex:none;width:22px;height:22px;border-radius:50%;background:#e3a522;color:#2b211a;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center">!</span>
+              <span style="font-size:14px;color:#5a4c3f;line-height:1.5">The QR code printed and laminated on {{ qrTitle }} will stop working the moment you do this. Anyone who scans the old card gets an error. You must print and place the new card before the next service.</span>
+            </div>
+            <button type="button" onClick="{{ doRegen }}" style="min-height:60px;border:0;border-radius:14px;background:#a31621;color:#fbf3e7;font-size:17px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 18px"><span>Yes, invalidate the printed QR</span><span>→</span></button>
+            <button type="button" onClick="{{ viewQrBack }}" style="min-height:52px;border:1.5px solid #ddcbb1;border-radius:10px;background:transparent;color:#5a4c3f;font-size:15px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif">Keep the current code</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isBulk }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:2px 16px 22px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <span style="font-family:Bitter,serif;font-size:21px;font-weight:700">Print all table QRs</span>
+              <span style="font-size:13px;color:#5a4c3f">Four cards per A4 sheet, cut marks included.</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <sc-for list="{{ bulkRows }}" as="b" hint-placeholder-count="6">
+                <button type="button" onClick="{{ b.toggle }}" style="display:flex;align-items:center;gap:12px;min-height:56px;border:1.5px solid {{ b.border }};border-radius:10px;background:{{ b.bg }};cursor:pointer;padding:0 13px;font-family:Archivo,sans-serif;text-align:left">
+                  <span style="width:26px;height:26px;border-radius:6px;border:2px solid #a31621;background:{{ b.boxBg }};display:flex;align-items:center;justify-content:center;flex:none">{{ b.tick }}</span>
+                  <span style="flex:1;font-size:15.5px;font-weight:600">{{ b.name }}</span>
+                  <span style="font-size:12px;color:#5a4c3f">{{ b.seats }} seats</span>
+                </button>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;padding:2px">
+              <span style="font-size:13px;color:#5a4c3f">{{ bulkCount }} selected</span>
+              <span style="font-size:13px;color:#5a4c3f;font-variant-numeric:tabular-nums">{{ bulkSheets }} A4 sheets</span>
+            </div>
+            <button type="button" style="min-height:60px;border:0;border-radius:14px;background:#2b211a;color:#fbf3e7;font-size:17px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 18px"><span>Generate print sheet</span><span>→</span></button>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:430,&quot;height&quot;:950}}">
+class Component extends DCLogic {
+  state = {
+    sheet: null, cur: null, form: null,
+    sel: {},
+    tables: [
+      { id:1, name:'Table 1', seats:4, status:'free', token:'ok' },
+      { id:2, name:'Table 2', seats:2, status:'occupied', token:'ok' },
+      { id:3, name:'Table 3', seats:6, status:'free', token:'missing' },
+      { id:4, name:'Table 4', seats:4, status:'reserved', token:'ok' },
+      { id:6, name:'Table 6', seats:8, status:'occupied', token:'ok' },
+      { id:7, name:'Table 7', seats:4, status:'free', token:'ok' },
+      { id:8, name:'Table 8', seats:2, status:'occupied', token:'stale' },
+      { id:9, name:'Table 9', seats:4, status:'free', token:'ok' },
+      { id:10, name:'Garden 1', seats:6, status:'reserved', token:'ok' },
+      { id:11, name:'Garden 2', seats:6, status:'free', token:'ok', inactive:true }
+    ]
+  };
+
+  qr(seed) {
+    const e = React.createElement, n = 21, cells = [];
+    let x = seed * 9301 + 49297;
+    const rnd = () => ((x = (x * 9301 + 49297) % 233280) / 233280);
+    const finder = (ox, oy) => {
+      for (let i = 0; i < 7; i++) for (let j = 0; j < 7; j++) {
+        const edge = i === 0 || i === 6 || j === 0 || j === 6;
+        const core = i >= 2 && i <= 4 && j >= 2 && j <= 4;
+        if (edge || core) cells.push([ox + j, oy + i]);
+      }
+    };
+    finder(0, 0); finder(14, 0); finder(0, 14);
+    const inFinder = (cx, cy) => (cx < 8 && cy < 8) || (cx > 12 && cy < 8) || (cx < 8 && cy > 12);
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+      if (inFinder(j, i)) continue;
+      if (rnd() > 0.52) cells.push([j, i]);
+    }
+    return e('svg', { width:146, height:146, viewBox:'0 0 21 21', shapeRendering:'crispEdges' },
+      e('rect', { width:21, height:21, fill:'#fff' }),
+      ...cells.map(([cx, cy], k) => e('rect', { key:k, x:cx, y:cy, width:1, height:1, fill:'#14100d' })));
+  }
+
+  warli(flip) {
+    const e = React.createElement;
+    return e('svg', { viewBox:'0 0 220 18', width:'100%', height:14, fill:'none', stroke:'#a31621', strokeWidth:1, strokeLinecap:'round',
+      style:{ transform: flip ? 'scaleY(-1)' : 'none' } },
+      e('line', { x1:0, y1:16, x2:220, y2:16 }),
+      ...[18, 62, 106, 150, 194].map((cx, i) => i % 2 === 0
+        ? e('g', { key:i }, e('circle', { cx, cy:4, r:2.6 }), e('path', { d:`M${cx} 6.6 L${cx - 5} 13 M${cx} 6.6 L${cx + 5} 13 M${cx - 5} 8.4 L${cx + 5} 8.4` }))
+        : e('g', { key:i }, e('path', { d:`M${cx} 7 L${cx + 5} 13 L${cx - 5} 13 Z M${cx + 5} 1.5 L${cx} 7 L${cx - 5} 1.5` }))));
+  }
+
+  renderVals() {
+    const s = this.state;
+    const cur = s.tables.find(t => t.id === s.cur);
+    const f = s.form || {};
+
+    const statusMap = {
+      free: ['#f3e7d4', '#5a4c3f', '#e3d3b8'],
+      occupied: ['#f7dfe1', '#a31621', '#a31621'],
+      reserved: ['#fbeecb', '#8a6a14', '#e3a522']
+    };
+    const tokenMap = {
+      ok: ['QR active', '#4b6b3d'],
+      stale: ['QR regenerated — reprint', '#e3a522'],
+      missing: ['No QR printed yet', '#a31621']
+    };
+
+    return {
+      summary: s.tables.filter(t => !t.inactive).length + ' active tables · ' + s.tables.filter(t => t.token !== 'ok').length + ' need a new printed card',
+      tables: s.tables.map(t => {
+        const [bg, fg, border] = statusMap[t.status];
+        const [tl, tc] = tokenMap[t.token];
+        return {
+          name: t.name, seats: t.seats, status: t.inactive ? 'inactive' : t.status,
+          statusBg: t.inactive ? '#e5dbc8' : bg, statusFg: t.inactive ? '#8a7967' : fg,
+          border: t.inactive ? '#e3d3b8' : border, opacity: t.inactive ? '.55' : '1',
+          token: tl, tokenColor: tc,
+          viewQr: () => this.setState({ sheet:'qr', cur: t.id }),
+          edit: () => this.setState({ sheet:'edit', cur: t.id, form: { name: t.name, seats: t.seats, active: !t.inactive } })
+        };
+      }),
+      addTable: () => this.setState({ sheet:'edit', cur:null, form: { name:'Table ' + (s.tables.length + 1), seats:4, active:true } }),
+      openBulk: () => this.setState({ sheet:'bulk' }),
+      closeSheet: () => this.setState({ sheet:null }), stop: ev => ev.stopPropagation(),
+      sheetOpen: !!s.sheet, isEdit: s.sheet === 'edit', isQr: s.sheet === 'qr', isRegen: s.sheet === 'regen', isBulk: s.sheet === 'bulk',
+      editTitle: s.cur ? 'Edit ' + (cur ? cur.name : '') : 'New table',
+      formName: f.name || '', formSeats: f.seats || 0,
+      onFormName: ev => this.setState(st => ({ form: { ...st.form, name: ev.target.value } })),
+      seatsUp: () => this.setState(st => ({ form: { ...st.form, seats: Math.min(20, st.form.seats + 1) } })),
+      seatsDown: () => this.setState(st => ({ form: { ...st.form, seats: Math.max(1, st.form.seats - 1) } })),
+      toggleActive: () => this.setState(st => ({ form: { ...st.form, active: !st.form.active } })),
+      activeTrack: f.active ? '#4b6b3d' : '#c9b69a', activeKnob: f.active ? '32px' : '4px',
+      saveTable: () => this.setState(st => ({
+        tables: st.cur
+          ? st.tables.map(t => t.id === st.cur ? { ...t, name: st.form.name, seats: st.form.seats, inactive: !st.form.active } : t)
+          : [...st.tables, { id: Date.now(), name: st.form.name, seats: st.form.seats, status:'free', token:'missing', inactive: !st.form.active }],
+        sheet: null
+      })),
+      qrTitle: cur ? cur.name : '', qrToken: cur ? 'tok_' + (cur.id * 7919).toString(36).toUpperCase() : '',
+      qrSvg: this.qr(cur ? cur.id : 1), warliTop: this.warli(false), warliBottom: this.warli(true),
+      openRegen: () => this.setState({ sheet:'regen' }),
+      viewQrBack: () => this.setState({ sheet:'qr' }),
+      doRegen: () => this.setState(st => ({ tables: st.tables.map(t => t.id === st.cur ? { ...t, token:'stale', id: t.id } : t), sheet:'qr' })),
+      bulkRows: s.tables.filter(t => !t.inactive).map(t => {
+        const on = s.sel[t.id] !== false;
+        return {
+          name: t.name, seats: t.seats,
+          bg: on ? '#f8eddb' : '#fbf3e7', border: on ? '#a31621' : '#e3d3b8',
+          boxBg: on ? '#a31621' : 'transparent',
+          tick: on ? React.createElement('svg', { width:16, height:16, viewBox:'0 0 24 24', fill:'none', stroke:'#fbf3e7', strokeWidth:3.4, strokeLinecap:'round', strokeLinejoin:'round' }, React.createElement('path', { d:'M4 12.5l5 5L20 6.5' })) : null,
+          toggle: () => this.setState(st => ({ sel: { ...st.sel, [t.id]: st.sel[t.id] === false } }))
+        };
+      }),
+      bulkCount: s.tables.filter(t => !t.inactive && s.sel[t.id] !== false).length,
+      bulkSheets: Math.ceil(s.tables.filter(t => !t.inactive && s.sel[t.id] !== false).length / 4)
+    };
+  }
+}
+</script>
+</body>
+</html>

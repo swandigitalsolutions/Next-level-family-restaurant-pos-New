@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-598406d1-4b4d-40c4-a649-fbae09130236/styles.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700&family=Archivo:wght@400;500;600;700&display=swap">
+<style>
+  body { margin:0; background:#fbf3e7; font-family:Archivo,system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#7c0f19; } a:hover { color:#a31621; }
+  button:focus-visible, input:focus-visible { outline:2px solid #7c0f19; outline-offset:2px; }
+  .hscroll { overflow-x:auto; scrollbar-width:none; } .hscroll::-webkit-scrollbar { display:none; }
+  @keyframes sheetUp { from { transform:translateY(100%); } to { transform:none; } }
+  @keyframes fade { from { opacity:0; } to { opacity:1; } }
+  @keyframes pop { 0%{transform:scale(.9);opacity:0} 60%{transform:scale(1.03)} 100%{transform:scale(1);opacity:1} }
+  @keyframes shake { 10%,90%{transform:translateX(-2px)} 30%,70%{transform:translateX(3px)} 50%{transform:translateX(-3px)} 100%{transform:none} }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#fbf3e7;color:#2b211a;padding-bottom:104px">
+
+  <div style="position:sticky;top:0;z-index:20;background:#7c0f19;color:#fbf3e7;border-bottom:4px solid #2b211a">
+    <div style="max-width:1120px;margin:0 auto;padding:9px 12px;display:flex;align-items:center;gap:10px">
+      <span style="flex:none;background:#f6c445;color:#2b211a;font-family:Bitter,serif;font-weight:700;font-size:16px;letter-spacing:.14em;padding:6px 11px;border-radius:6px">BAR</span>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+        <div style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#f6c445;font-weight:700">Alcohol billing</div>
+        <div style="font-size:11.5px;color:rgba(251,243,231,.82)">Every line is taxed · settles as ALCOHOL-xxxxxx</div>
+      </div>
+      <button type="button" style="display:flex;align-items:center;gap:7px;min-height:40px;padding:5px 8px;border-radius:6px;border:1px solid rgba(251,243,231,.28);background:rgba(251,243,231,.1);color:#fbf3e7;cursor:pointer" style-hover="background:rgba(251,243,231,.2)">
+        <span style="width:26px;height:26px;border-radius:50%;background:#f6c445;color:#7c0f19;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center">VK</span>
+        <span style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.1"><span style="font-size:12px;font-weight:600">Vikram</span><span style="font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#f6c445">Billing</span></span>
+      </button>
+    </div>
+  </div>
+
+  <div style="max-width:1120px;margin:0 auto;padding:12px 12px 0;display:flex;flex-direction:column;gap:12px">
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#efe0c9;padding:5px;border-radius:8px">
+      <button type="button" onClick="{{ setTable }}" style="min-height:48px;border:0;border-radius:6px;cursor:pointer;font-size:15px;font-weight:700;font-family:Archivo,sans-serif;background:{{ tableModeBg }};color:{{ tableModeFg }}">Table</button>
+      <button type="button" onClick="{{ setDirect }}" style="min-height:48px;border:0;border-radius:6px;cursor:pointer;font-size:15px;font-weight:700;font-family:Archivo,sans-serif;background:{{ directModeBg }};color:{{ directModeFg }}">Direct</button>
+    </div>
+
+    <sc-if value="{{ isTableMode }}" hint-placeholder-val="{{ true }}">
+      <div class="hscroll" style="display:flex;gap:8px;padding-bottom:4px">
+        <sc-for list="{{ tables }}" as="t" hint-placeholder-count="6">
+          <button type="button" onClick="{{ t.open }}" style="flex:none;width:106px;min-height:78px;border-radius:14px;border:2px solid {{ t.border }};background:{{ t.bg }};cursor:pointer;padding:9px 10px;display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left">
+            <span style="font-family:Bitter,serif;font-size:16px;font-weight:700;color:{{ t.fg }}">{{ t.name }}</span>
+            <span style="font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:{{ t.statusColor }}">{{ t.status }}</span>
+            <span style="font-family:Bitter,serif;font-size:13.5px;font-weight:700;color:{{ t.fg }};font-variant-numeric:tabular-nums">{{ t.amount }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ stockWarning }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;gap:10px;background:#fbeecb;border-left:4px solid #e3a522;border-radius:6px;padding:12px 13px;animation:shake .4s ease">
+        <span style="flex:none;width:20px;height:20px;border-radius:50%;background:#e3a522;color:#2b211a;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center">!</span>
+        <span style="font-size:13.5px;color:#5a4c3f;line-height:1.4">{{ stockWarning }}</span>
+      </div>
+    </sc-if>
+
+    <div style="display:flex;align-items:center;gap:8px;background:#fffaf2;border:1.5px solid #ddcbb1;border-radius:6px;padding:0 12px;height:52px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8a7967" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+      <input type="text" value="{{ query }}" onChange="{{ onQuery }}" placeholder="Search brand or size — “kingfisher”, “60ml”" style="flex:1;border:0;background:transparent;font-family:Archivo,sans-serif;font-size:16px;color:#2b211a;height:100%;outline:none">
+    </div>
+
+    <div class="hscroll" style="display:flex;gap:7px">
+      <sc-for list="{{ categories }}" as="c" hint-placeholder-count="6">
+        <button type="button" onClick="{{ c.pick }}" style="flex:none;min-height:44px;padding:0 15px;border-radius:6px;border:1.5px solid {{ c.border }};background:{{ c.bg }};color:{{ c.fg }};font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap">{{ c.name }}</button>
+      </sc-for>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:9px">
+      <sc-for list="{{ items }}" as="it" hint-placeholder-count="8">
+        <div style="border-radius:14px;background:{{ it.bg }};border:1.5px solid {{ it.border }};overflow:hidden;display:flex;flex-direction:column;opacity:{{ it.opacity }}">
+          <button type="button" onClick="{{ it.add }}" disabled="{{ it.disabled }}" style="flex:1;min-height:84px;border:0;background:transparent;cursor:{{ it.cursor }};padding:10px 11px 8px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;width:100%" style-hover="background:rgba(124,15,25,.05)">
+            <span style="font-size:14px;font-weight:600;line-height:1.25">{{ it.brand }}</span>
+            <span style="font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#7c0f19;background:#f2dcd0;border-radius:6px;padding:2px 6px">{{ it.unit }}</span>
+            <span style="display:flex;align-items:baseline;gap:7px;width:100%">
+              <span style="font-family:Bitter,serif;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums">{{ it.price }}</span>
+              <span style="font-size:10.5px;color:#5a4c3f">+{{ it.tax }} tax</span>
+            </span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:{{ it.stockColor }};font-variant-numeric:tabular-nums">
+              <span style="width:7px;height:7px;border-radius:50%;background:{{ it.stockColor }}"></span>{{ it.stockLabel }}
+            </span>
+          </button>
+          <sc-if value="{{ it.inCart }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;border-top:1.5px solid #e3d3b8;background:#f8eddb">
+              <button type="button" onClick="{{ it.dec }}" style="width:56px;height:48px;border:0;background:transparent;cursor:pointer;font-size:24px;font-weight:700;color:#7c0f19">−</button>
+              <span style="flex:1;text-align:center;font-family:Bitter,serif;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums">{{ it.qty }}</span>
+              <button type="button" onClick="{{ it.add }}" style="width:56px;height:48px;border:0;background:transparent;cursor:pointer;font-size:24px;font-weight:700;color:#7c0f19">+</button>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="position:fixed;left:0;right:0;bottom:0;z-index:30;padding:0 10px 10px;pointer-events:none">
+    <div style="max-width:1120px;margin:0 auto;pointer-events:auto">
+      <button type="button" onClick="{{ openBill }}" disabled="{{ cartEmpty }}" style="width:100%;min-height:68px;border:0;border-radius:14px;background:{{ barBg }};color:#fbf3e7;cursor:pointer;display:flex;align-items:center;gap:12px;padding:0 16px;box-shadow:0 -2px 24px -8px rgba(43,33,26,.5)" style-hover="filter:brightness(1.07)">
+        <span style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;flex:1">
+          <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(251,243,231,.85)">Bar · {{ barLabel }}</span>
+          <span style="font-size:13px;color:rgba(251,243,231,.85)">{{ barCount }}</span>
+        </span>
+        <span style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1">
+          <span style="font-family:Bitter,serif;font-size:26px;font-weight:700;font-variant-numeric:tabular-nums">{{ grandTotal }}</span>
+          <span style="font-size:10.5px;color:rgba(251,243,231,.8)">incl. tax</span>
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:40;display:flex;align-items:flex-end;justify-content:center;background:rgba(43,33,26,.55);animation:fade .18s ease" onClick="{{ closeSheet }}">
+      <div onClick="{{ stop }}" style="width:100%;max-width:520px;max-height:92vh;overflow-y:auto;background:#fbf3e7;border-radius:18px 18px 0 0;animation:sheetUp .24s cubic-bezier(.2,.8,.3,1)">
+        <div style="position:sticky;top:0;background:#fbf3e7;padding:10px 0 6px;display:flex;justify-content:center"><span style="width:44px;height:5px;border-radius:99px;background:#d8c6ab"></span></div>
+
+        <sc-if value="{{ isBill }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:2px 16px 20px;display:flex;flex-direction:column;gap:13px">
+            <div style="display:flex;align-items:center;gap:9px">
+              <span style="background:#7c0f19;color:#f6c445;font-family:Bitter,serif;font-weight:700;font-size:13px;letter-spacing:.14em;padding:4px 9px;border-radius:6px">BAR</span>
+              <span style="font-family:Bitter,serif;font-size:20px;font-weight:700">{{ billTitle }}</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <sc-for list="{{ lines }}" as="l" hint-placeholder-count="3">
+                <div style="background:#f3e7d4;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px">
+                  <span style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0">
+                    <span style="font-size:15px;font-weight:600;line-height:1.25">{{ l.name }}</span>
+                    <span style="font-size:11.5px;color:#5a4c3f;font-variant-numeric:tabular-nums">{{ l.unitPrice }} · tax {{ l.rate }}</span>
+                  </span>
+                  <span style="display:flex;align-items:center;background:#fffaf2;border:1.5px solid #ddcbb1;border-radius:6px">
+                    <button type="button" onClick="{{ l.dec }}" style="width:48px;height:48px;border:0;background:transparent;cursor:pointer;font-size:22px;font-weight:700;color:#7c0f19">−</button>
+                    <span style="min-width:26px;text-align:center;font-family:Bitter,serif;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums">{{ l.qty }}</span>
+                    <button type="button" onClick="{{ l.inc }}" style="width:48px;height:48px;border:0;background:transparent;cursor:pointer;font-size:22px;font-weight:700;color:#7c0f19">+</button>
+                  </span>
+                  <span style="font-family:Bitter,serif;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;min-width:72px;text-align:right">{{ l.amount }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <label for="bar-disc" style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5a4c3f">Discount (₹)</label>
+              <input id="bar-disc" type="number" value="{{ discount }}" onChange="{{ onDiscount }}" placeholder="0" style="height:52px;box-sizing:border-box;border-radius:6px;border:1.5px solid #ddcbb1;background:#fffaf2;padding:0 12px;font-size:16px;font-family:Archivo,sans-serif;font-variant-numeric:tabular-nums">
+            </div>
+            <div style="background:#f3e7d4;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:9px">{{ totalsBlock }}</div>
+            <button type="button" onClick="{{ openSettle }}" style="min-height:62px;border:0;border-radius:14px;background:#7c0f19;color:#fbf3e7;font-size:19px;font-weight:700;font-family:Archivo,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 20px;cursor:pointer" style-hover="filter:brightness(1.12)">
+              <span>Settle bar bill</span><span style="font-family:Bitter,serif;font-variant-numeric:tabular-nums">{{ grandTotal }}</span>
+            </button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isSettle }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:2px 16px 20px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <span style="font-family:Bitter,serif;font-size:21px;font-weight:700">Confirm settlement</span>
+              <span style="font-size:13px;color:#5a4c3f;line-height:1.45">One immutable ALCOHOL bill will be created. Tax is charged per item at its own rate.</span>
+            </div>
+            {{ settleCard }}
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5a4c3f">Payment method</span>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+                <sc-for list="{{ methods }}" as="m" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ m.pick }}" style="min-height:60px;border-radius:10px;border:2px solid {{ m.border }};background:{{ m.bg }};color:{{ m.fg }};font-size:15px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif">{{ m.name }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <button type="button" onClick="{{ confirmSettle }}" style="min-height:62px;border:0;border-radius:14px;background:#4b6b3d;color:#fbf3e7;font-size:19px;font-weight:700;font-family:Archivo,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 20px;cursor:pointer"><span>Confirm · create bill</span><span>→</span></button>
+            <button type="button" onClick="{{ openBill }}" style="min-height:48px;border:1.5px solid #ddcbb1;border-radius:10px;background:transparent;color:#5a4c3f;font-size:15px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif">Back to bill</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isSuccess }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:2px 16px 22px;display:flex;flex-direction:column;gap:14px;animation:pop .3s ease">
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="width:52px;height:52px;border-radius:50%;background:#4b6b3d;display:flex;align-items:center;justify-content:center;flex:none">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fbf3e7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg>
+              </span>
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <span style="font-family:Bitter,serif;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums">ALCOHOL-000938</span>
+                <span style="font-size:13px;color:#5a4c3f">Settled · {{ paidMethod }} · {{ grandTotal }}</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:9px;background:#f3e7d4;border-left:4px solid #2b211a;border-radius:6px;padding:12px">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2b211a" stroke-width="2" stroke-linecap="round" style="flex:none;margin-top:1px"><rect x="5" y="11" width="14" height="9" rx="1"></rect><path d="M8 11V8a4 4 0 018 0v3"></path></svg>
+              <span style="font-size:13px;line-height:1.45"><strong>This bill is final.</strong> Stock has been decremented. Corrections are issued as a new bill.</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+              <button type="button" style="min-height:56px;border:0;border-radius:10px;background:#2b211a;color:#fbf3e7;font-size:15.5px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;padding:0 14px;text-align:left">Print</button>
+              <button type="button" style="min-height:56px;border:1.5px solid #2b211a;border-radius:10px;background:transparent;color:#2b211a;font-size:15.5px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;padding:0 14px;text-align:left">Share</button>
+            </div>
+            <button type="button" onClick="{{ closeSheet }}" style="min-height:56px;border:0;border-radius:10px;background:#7c0f19;color:#fbf3e7;font-size:16px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 18px"><span>New bar sale</span><span>→</span></button>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:430,&quot;height&quot;:1000}}">
+const BAR = [
+  ['Kingfisher Premium', '650 ml bottle', 260, 18, 24, 'Beer'],
+  ['Kingfisher Premium', '330 ml bottle', 150, 18, 40, 'Beer'],
+  ['Bira 91 White', '330 ml bottle', 190, 18, 6, 'Beer'],
+  ['Old Monk', '60 ml peg', 140, 20, 31, 'Rum'],
+  ['Old Monk', '30 ml peg', 80, 20, 31, 'Rum'],
+  ['Royal Stag', '60 ml peg', 160, 20, 12, 'Whisky'],
+  ['Blenders Pride', '60 ml peg', 220, 20, 2, 'Whisky'],
+  ['Blenders Pride', '30 ml peg', 120, 20, 2, 'Whisky'],
+  ['Magic Moments', '60 ml peg', 150, 20, 0, 'Vodka'],
+  ['Sula Chenin Blanc', '150 ml glass', 320, 20, 9, 'Wine'],
+  ['Breezer Cranberry', '275 ml bottle', 130, 18, 18, 'Beer'],
+  ['Jack Daniel\u2019s', '30 ml peg', 320, 20, 5, 'Whisky']
+];
+const CATS = ['All', 'Beer', 'Whisky', 'Rum', 'Vodka', 'Wine'];
+
+class Component extends DCLogic {
+  state = { mode:'table', table:8, cat:'All', query:'', cart:{ '0':2, '3':3 }, sheet:null, discount:'', method:'Cash', warn:'', settled:null };
+
+  money = n => '₹' + n.toLocaleString('en-IN', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  money0 = n => '₹' + Math.round(n).toLocaleString('en-IN');
+
+  add = i => {
+    const stock = BAR[i][4], have = this.state.cart[i] || 0;
+    if (have >= stock) {
+      this.setState({ warn: BAR[i][0] + ' ' + BAR[i][1] + ' — only ' + stock + ' left in stock, and all ' + stock + ' are already on this bill. Ask the bar to open a new case before adding more.' });
+      return;
+    }
+    this.setState(s => ({ cart:{ ...s.cart, [i]: have + 1 }, warn:'' }));
+  };
+  dec = i => this.setState(s => { const c = { ...s.cart }; c[i] = (c[i] || 0) - 1; if (c[i] <= 0) delete c[i]; return { cart:c, warn:'' }; });
+
+  renderVals() {
+    const e = React.createElement, s = this.state;
+    const keys = Object.keys(s.cart);
+    const sub = keys.reduce((a, k) => a + BAR[k][2] * s.cart[k], 0);
+    const disc = Math.min(Number(s.discount) || 0, sub);
+    const tax = keys.reduce((a, k) => {
+      const line = BAR[k][2] * s.cart[k];
+      const share = sub ? disc * (line / sub) : 0;
+      return a + (line - share) * BAR[k][3] / 100;
+    }, 0);
+    const grand = sub - disc + tax;
+    const count = keys.reduce((a, k) => a + s.cart[k], 0);
+
+    const q = s.query.trim().toLowerCase();
+    const items = BAR.map((b, i) => ({ b, i }))
+      .filter(({ b }) => q ? (b[0] + ' ' + b[1]).toLowerCase().includes(q) : (s.cat === 'All' || b[5] === s.cat))
+      .map(({ b, i }) => {
+        const [brand, unit, price, rate, stock] = b;
+        const qty = s.cart[i] || 0;
+        const out = stock === 0, low = stock > 0 && stock <= 5;
+        return {
+          brand, unit, price: this.money0(price), tax: rate + '%', qty, inCart: qty > 0,
+          stockLabel: out ? 'Out of stock' : (stock - qty) + ' left',
+          stockColor: out ? '#8a7967' : (low ? '#e3a522' : '#4b6b3d'),
+          bg: out ? '#f0e7d8' : (qty ? '#f8eddb' : '#f3e7d4'),
+          border: qty ? '#7c0f19' : '#e3d3b8',
+          opacity: out ? '.55' : '1', disabled: out, cursor: out ? 'not-allowed' : 'pointer',
+          add: () => this.add(i), dec: () => this.dec(i)
+        };
+      });
+
+    const lines = keys.map(k => ({
+      name: BAR[k][0] + ' · ' + BAR[k][1], qty: s.cart[k], rate: BAR[k][3] + '%',
+      unitPrice: this.money0(BAR[k][2]), amount: this.money0(BAR[k][2] * s.cart[k]),
+      inc: () => this.add(Number(k)), dec: () => this.dec(Number(k))
+    }));
+
+    const row = (label, value, opts = {}) => e('div', { key:label, style:{ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:12 } },
+      e('span', { style:{ fontSize: opts.big ? 15 : 13.5, color: opts.big ? '#2b211a' : '#5a4c3f', fontWeight: opts.big ? 700 : 500 } }, label),
+      e('span', { style:{ fontFamily:'Bitter,serif', fontVariantNumeric:'tabular-nums', fontSize: opts.big ? 24 : 15, fontWeight: opts.big ? 700 : 600, color: opts.color || '#2b211a' } }, value));
+
+    const totalsBlock = [
+      row('Subtotal', this.money(sub)),
+      disc > 0 ? row('Discount', '− ' + this.money(disc), { color:'#a31621' }) : null,
+      row('Tax (18–20% per item)', this.money(tax)),
+      e('div', { key:'r', style:{ height:1, background:'#e3d3b8', margin:'3px 0' } }),
+      row('Total', this.money(grand), { big:true })
+    ].filter(Boolean);
+
+    const settleCard = e('div', { style:{ background:'#f3e7d4', borderRadius:14, padding:14, display:'flex', flexDirection:'column', gap:8, borderLeft:'5px solid #7c0f19' } },
+      e('div', { style:{ fontSize:11, fontWeight:700, letterSpacing:'.14em', textTransform:'uppercase', color:'#7c0f19' } }, 'Alcohol bill'),
+      row('Subtotal', this.money(sub)),
+      disc > 0 ? row('Discount', '− ' + this.money(disc), { color:'#a31621' }) : null,
+      row('Tax', this.money(tax)),
+      e('div', { style:{ height:1, background:'#e3d3b8' } }),
+      row('Total', this.money(grand), { big:true }));
+
+    const tableData = [['T2','occupied',740],['T6','occupied',1880],['T8','occupied',3260],['T1','free',0],['T7','free',0],['T9','free',0]];
+    const tables = tableData.map(([name, status, amt]) => {
+      const active = name === 'T' + s.table;
+      return { name, status, amount: amt ? this.money0(amt) : '—',
+        bg: active ? '#7c0f19' : (status === 'occupied' ? '#f7dfe1' : '#f3e7d4'),
+        border: active ? '#2b211a' : (status === 'occupied' ? '#a31621' : '#e3d3b8'),
+        fg: active ? '#fbf3e7' : '#2b211a',
+        statusColor: active ? '#f6c445' : (status === 'occupied' ? '#a31621' : '#5a4c3f'),
+        open: () => this.setState({ table: Number(name.slice(1)) }) };
+    });
+
+    return {
+      isTableMode: s.mode === 'table',
+      setTable: () => this.setState({ mode:'table' }), setDirect: () => this.setState({ mode:'direct' }),
+      tableModeBg: s.mode === 'table' ? '#7c0f19' : 'transparent', tableModeFg: s.mode === 'table' ? '#fbf3e7' : '#5a4c3f',
+      directModeBg: s.mode === 'direct' ? '#7c0f19' : 'transparent', directModeFg: s.mode === 'direct' ? '#fbf3e7' : '#5a4c3f',
+      tables, stockWarning: s.warn,
+      query: s.query, onQuery: ev => this.setState({ query: ev.target.value }),
+      categories: CATS.map(c => ({ name:c, pick: () => this.setState({ cat:c, query:'' }),
+        bg: s.cat === c && !q ? '#2b211a' : 'transparent', fg: s.cat === c && !q ? '#fbf3e7' : '#2b211a',
+        border: s.cat === c && !q ? '#2b211a' : '#d8c6ab' })),
+      items, lines,
+      cartEmpty: count === 0, barBg: count ? '#7c0f19' : '#c9b69a',
+      barLabel: s.mode === 'table' ? 'Table ' + s.table : 'Counter',
+      barCount: count ? count + ' items · tap to open bill' : 'Tap a bottle or peg to start',
+      grandTotal: this.money0(grand),
+      discount: s.discount, onDiscount: ev => this.setState({ discount: ev.target.value }),
+      totalsBlock, settleCard,
+      methods: ['Cash','Card','UPI'].map(m => ({ name:m, pick: () => this.setState({ method:m }),
+        bg: s.method === m ? '#7c0f19' : '#f3e7d4', fg: s.method === m ? '#fbf3e7' : '#2b211a',
+        border: s.method === m ? '#2b211a' : '#e3d3b8' })),
+      billTitle: s.mode === 'table' ? 'Table ' + s.table : 'Counter sale',
+      openBill: () => this.setState({ sheet:'bill' }), openSettle: () => this.setState({ sheet:'settle' }),
+      confirmSettle: () => this.setState({ sheet:'success', settled: s.method }),
+      closeSheet: () => this.setState({ sheet:null }), stop: ev => ev.stopPropagation(),
+      sheetOpen: !!s.sheet, isBill: s.sheet === 'bill', isSettle: s.sheet === 'settle', isSuccess: s.sheet === 'success',
+      paidMethod: s.settled || s.method
+    };
+  }
+}
+</script>
+</body>
+</html>

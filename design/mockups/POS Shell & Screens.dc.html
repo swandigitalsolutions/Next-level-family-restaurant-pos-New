@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-598406d1-4b4d-40c4-a649-fbae09130236/styles.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700&family=Archivo:wght@400;500;600;700&display=swap">
+<style>
+  body { margin:0; background:#fbf3e7; font-family:Archivo,system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#a31621; text-decoration:none; } a:hover { color:#7c0f19; }
+  button:focus-visible, a:focus-visible { outline:2px solid #a31621; outline-offset:2px; }
+  .hscroll { overflow-x:auto; scrollbar-width:none; } .hscroll::-webkit-scrollbar { display:none; }
+  @keyframes pulseDot { 0%,100%{opacity:1} 50%{opacity:.3} }
+  @keyframes toastIn { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:none; } }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#fbf3e7;color:#2b211a;padding-bottom:56px">
+
+  <div style="background:#a31621;color:#fbf3e7;padding:18px 16px 16px">
+    <div style="max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:10px">
+      <svg viewBox="0 0 360 22" width="100%" height="16" fill="none" stroke="#fbf3e7" stroke-width="1.1" stroke-linecap="round" style="display:block;opacity:.8;max-width:420px">
+        <line x1="0" y1="20" x2="360" y2="20"></line>
+        <g><circle cx="20" cy="5" r="3"></circle><path d="M20 8 L14 16 M20 8 L26 16 M14 10 L26 10"></path></g>
+        <g><path d="M104 8 L110 16 L98 16 Z M110 3 L104 8 L98 3"></path></g>
+        <g><circle cx="150" cy="5" r="3"></circle><path d="M150 8 L144 16 M150 8 L156 16 M144 10 L156 10"></path></g>
+        <g><path d="M274 8 L280 16 L268 16 Z M280 3 L274 8 L268 3"></path></g>
+        <g><circle cx="320" cy="5" r="3"></circle><path d="M320 8 L314 16 M320 8 L326 16 M314 10 L326 10"></path></g>
+      </svg>
+      <div style="font-family:Bitter,serif;font-size:26px;font-weight:700;line-height:1.1">Next Level Family Restaurant &amp; Dhaba</div>
+      <div style="font-size:13px;color:#f6c445;font-weight:600;letter-spacing:.1em;text-transform:uppercase">Point of sale · design system &amp; screens</div>
+    </div>
+  </div>
+
+  <div style="max-width:1120px;margin:0 auto;padding:16px 14px 0;display:flex;flex-direction:column;gap:20px">
+
+    <a href="Public%20Website.dc.html" style="display:flex;align-items:center;gap:13px;background:#f3e7d4;border:2px solid #2b211a;border-radius:14px;padding:14px;text-decoration:none;color:#2b211a" style-hover="border-color:#a31621;background:#f8eddb">
+      <span style="flex:none;width:46px;height:46px;border-radius:50%;background:#a31621;color:#f6c445;font-family:Bitter,serif;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center">NL</span>
+      <span style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0">
+        <span style="font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#138808">Main UI · public, no login</span>
+        <span style="font-family:Bitter,serif;font-size:18px;font-weight:700;line-height:1.2">The restaurant website</span>
+        <span style="font-size:12.5px;color:#5a4c3f;line-height:1.4">Browse, pre-order with a 50% advance, book a table. Staff sign-in sits quietly in its footer.</span>
+      </span>
+      <span style="font-size:20px;color:#a31621">→</span>
+    </a>
+
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <span style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#5a4c3f">Staff sign-in — separate, one login per role</span>
+      <div class="hscroll" style="display:flex;gap:7px">
+        <sc-for list="{{ roles }}" as="r" hint-placeholder-count="6">
+          <button type="button" onClick="{{ r.pick }}" style="flex:none;min-height:48px;padding:0 15px;border-radius:6px;border:1.5px solid {{ r.border }};background:{{ r.bg }};color:{{ r.fg }};font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:Archivo,sans-serif">{{ r.name }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="border:2px solid #2b211a;border-radius:16px;overflow:hidden;background:#f3e7d4">
+      <div style="background:#a31621;color:#fbf3e7;padding:9px 12px;display:flex;align-items:center;gap:10px">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+          <span style="font-family:Bitter,serif;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Next Level Family Restaurant &amp; Dhaba</span>
+          <span style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#f6c445;font-weight:700">{{ landing }}</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(251,243,231,.82)"><span style="width:7px;height:7px;border-radius:50%;background:{{ connDot }};animation:pulseDot 2.2s ease-in-out infinite"></span>{{ connLabel }}</span>
+          </span>
+        </div>
+        <button type="button" onClick="{{ cycleConn }}" style="display:flex;align-items:center;gap:7px;min-height:44px;padding:5px 8px;border-radius:6px;border:1px solid rgba(251,243,231,.28);background:rgba(251,243,231,.1);color:#fbf3e7;cursor:pointer;font-family:Archivo,sans-serif">
+          <span style="width:26px;height:26px;border-radius:50%;background:#f6c445;color:#7c0f19;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center">{{ initials }}</span>
+          <span style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.1">
+            <span style="font-size:12px;font-weight:600">{{ userName }}</span>
+            <span style="font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#f6c445">{{ roleLabel }}</span>
+          </span>
+        </button>
+      </div>
+
+      <sc-if value="{{ offline }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#2b211a;color:#f3e7d4;padding:11px 13px;display:flex;gap:10px;align-items:flex-start">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f6c445" stroke-width="2.2" stroke-linecap="round" style="flex:none;margin-top:1px"><path d="M3 3l18 18M8.5 16.5a5 5 0 017 0M5 13a10 10 0 014-2.6M19 13a10 10 0 00-3-2.3"></path></svg>
+          <span style="font-size:12.5px;line-height:1.45">Internet is down. Billing, the kitchen and every till keep working from the server inside the restaurant — only the website-order feed is paused. Nothing is lost.</span>
+        </div>
+      </sc-if>
+
+      <div style="padding:13px;display:flex;flex-direction:column;gap:11px">
+        <div style="background:#2b211a;color:#fbf3e7;border-radius:12px;padding:12px 13px;display:flex;align-items:center;gap:11px;animation:toastIn .25s ease">
+          <span style="width:34px;height:34px;border-radius:50%;background:#f6c445;color:#2b211a;font-family:Bitter,serif;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex:none">1</span>
+          <span style="flex:1;display:flex;flex-direction:column;gap:2px">
+            <span style="font-size:14px;font-weight:700">Order received · Table 6 · #A31</span>
+            <span style="font-size:12px;color:#c9b69a;font-variant-numeric:tabular-nums">₹540 · tap to jump to the card</span>
+          </span>
+          <span style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:#c9b69a;font-size:20px">×</span>
+        </div>
+        <span style="font-size:11.5px;color:#5a4c3f;line-height:1.5">Global toast layer · shown on every order-facing screen. Tap the user chip above to cycle the connection dot through connected, reconnecting and offline.</span>
+      </div>
+
+      <div style="border-top:2px solid #2b211a;background:#f3e7d4">
+        <div style="display:grid;grid-template-columns:repeat({{ tabCols }},1fr);padding:6px 8px 10px">
+          <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+            <a href="{{ t.href }}" style="min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border-radius:6px;color:{{ t.fg }};text-decoration:none;padding:4px 2px" style-hover="background:#ecdcc2">
+              <span style="font-size:19px">{{ t.glyph }}</span>
+              <span style="font-size:10.5px;font-weight:700;letter-spacing:.02em;text-align:center;line-height:1.15">{{ t.name }}</span>
+            </a>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="font-size:12.5px;color:#5a4c3f;line-height:1.55;background:#f3e7d4;border-left:4px solid #a31621;border-radius:6px;padding:12px 13px">{{ roleNote }}</div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="height:2px;background:#2b211a"></div>
+      <span style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#5a4c3f">All screens</span>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px">
+        <sc-for list="{{ allScreens }}" as="s" hint-placeholder-count="12">
+          <a href="{{ s.href }}" style="display:flex;flex-direction:column;gap:5px;background:#f3e7d4;border:1.5px solid #e3d3b8;border-radius:12px;padding:13px;min-height:88px;text-decoration:none;color:#2b211a" style-hover="border-color:#a31621;background:#f8eddb">
+            <span style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:{{ s.tagColor }}">{{ s.tag }}</span>
+            <span style="font-family:Bitter,serif;font-size:16px;font-weight:700;line-height:1.2">{{ s.name }}</span>
+            <span style="font-size:12px;color:#5a4c3f;line-height:1.4">{{ s.desc }}</span>
+          </a>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="height:2px;background:#2b211a"></div>
+      <span style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#5a4c3f">Primitives &amp; tokens</span>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
+        <div style="background:#f3e7d4;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px">
+          <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5a4c3f">Buttons · all ≥48px</span>
+          <button type="button" style="min-height:56px;border:0;border-radius:10px;background:#a31621;color:#fbf3e7;font-size:16px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 15px" style-active="background:#7c0f19">Primary</button>
+          <button type="button" style="min-height:56px;border:1.5px solid #2b211a;border-radius:10px;background:transparent;color:#2b211a;font-size:16px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 15px" style-hover="background:#ecdcc2">Secondary</button>
+          <button type="button" style="min-height:56px;border:0;border-radius:10px;background:#7c0f19;color:#fbf3e7;font-size:16px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 15px">Danger</button>
+          <button type="button" style="min-height:48px;border:0;border-radius:10px;background:transparent;color:#5a4c3f;font-size:15px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 15px" style-hover="background:#ecdcc2">Ghost</button>
+        </div>
+
+        <div style="background:#f3e7d4;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px">
+          <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5a4c3f">Stepper · Money · Pills</span>
+          <div style="display:flex;align-items:center;background:#fffaf2;border:1.5px solid #ddcbb1;border-radius:8px;width:fit-content">
+            <button type="button" onClick="{{ decQty }}" style="width:56px;height:56px;border:0;background:transparent;color:#a31621;font-size:26px;font-weight:700;cursor:pointer">−</button>
+            <span style="min-width:40px;text-align:center;font-family:Bitter,serif;font-size:20px;font-weight:700;font-variant-numeric:tabular-nums">{{ qty }}</span>
+            <button type="button" onClick="{{ incQty }}" style="width:56px;height:56px;border:0;background:transparent;color:#a31621;font-size:26px;font-weight:700;cursor:pointer">+</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <span style="font-family:Bitter,serif;font-size:26px;font-weight:700;font-variant-numeric:tabular-nums">{{ moneySample }}</span>
+            <span style="font-size:11.5px;color:#8a7967">Tabular figures, ₹ prefix, 2 dp</span>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span style="font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:#4b6b3d;color:#fbf3e7;padding:5px 9px;border-radius:6px">Paid</span>
+            <span style="font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:#ff9933;color:#2b211a;padding:5px 9px;border-radius:6px">Preparing</span>
+            <span style="font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:#e3a522;color:#2b211a;padding:5px 9px;border-radius:6px">Waiting</span>
+            <span style="font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:#a31621;color:#fbf3e7;padding:5px 9px;border-radius:6px">Late</span>
+          </div>
+        </div>
+
+        <div style="background:#f3e7d4;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px">
+          <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5a4c3f">Palette</span>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:7px">
+            <sc-for list="{{ swatches }}" as="s" hint-placeholder-count="10">
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <span style="height:40px;border-radius:6px;background:{{ s.hex }};border:1px solid rgba(43,33,26,.12)"></span>
+                <span style="font-size:9.5px;color:#5a4c3f;font-family:ui-monospace,Menlo,monospace">{{ s.name }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:430,&quot;height&quot;:1000}}">
+const SCREENS = {
+  dashboard: ['Dashboard', 'POS%20Dashboard.dc.html', '▤'],
+  food: ['Food billing', 'POS%20Food%20Billing.dc.html', '▦'],
+  alcohol: ['Bar billing', 'POS%20Alcohol%20Billing.dc.html', '▨'],
+  cafe: ['Cafe till', 'POS%20Cafe%20Till.dc.html', '◲'],
+  orders: ['Bills', 'POS%20Bill%20History.dc.html', '≣'],
+  qr: ['QR orders', 'POS%20QR%20Orders.dc.html', '◇'],
+  web: ['Website', 'POS%20Website%20Orders.dc.html', '◈'],
+  menu: ['Menu', 'POS%20Catalog%20Manager.dc.html', '☰'],
+  tables: ['QR tables', 'POS%20Table%20Manager.dc.html', '⊞'],
+  kitchen: ['Kitchen', 'POS%20Kitchen%20Display.dc.html', '◐'],
+  staff: ['Staff', 'POS%20Staff%20Accounts.dc.html', '☗'],
+  audit: ['Audit log', 'POS%20Audit%20Log.dc.html', '⧉']
+};
+const NAV = {
+  admin: ['dashboard','food','alcohol','cafe','orders','qr','web','menu','tables','kitchen','staff','audit'],
+  manager: ['dashboard','food','alcohol','cafe','orders','qr','web','menu','tables','kitchen'],
+  owner: ['dashboard','audit'],
+  billing: ['dashboard','food','alcohol','orders','qr','web'],
+  kitchen: ['kitchen'],
+  cafe_billing: ['cafe']
+};
+const PEOPLE = {
+  admin: ['Priya', 'Admin', 'PS'], manager: ['Anil', 'Manager', 'AK'], owner: ['R. Shetty', 'Owner', 'RS'],
+  billing: ['Vikram', 'Billing', 'VK'], kitchen: ['Rekha', 'Kitchen', 'RD'], cafe_billing: ['Meena', 'Cafe', 'MR']
+};
+const NOTES = {
+  admin: 'Admin sees every screen, including Staff and the Audit log. Even here there is no way to edit or delete a bill — that rule is absolute and enforced in the database.',
+  manager: 'Manager gets everything except Staff accounts and the Audit log. They can change the catalog and prices, and every price change is written to the log they cannot read.',
+  owner: 'Owner sees the Dashboard and the Audit log, nothing else, and strictly read-only — no create, edit or settle control is rendered anywhere for this role.',
+  billing: 'Billing runs the tills and the order boards. No Menu, no QR tables, no Staff, no Audit, no Kitchen screen and no Cafe till.',
+  kitchen: 'Kitchen is a single-screen role. The wall display never shows money — no prices, no totals, no payment state, nowhere for money to appear.',
+  cafe_billing: 'Cafe billing is a single-screen role too. The outside counter has to be completely self-sufficient, which is why it carries its own “today at this counter” summary.'
+};
+const ALL = [
+  ['Public', 'Restaurant website', 'Public%20Website.dc.html', 'The main UI — anyone can browse, pre-order with 50% advance, book a table', '#138808'],
+  ['Guest', 'Guest QR menu', 'Guest%20QR%20Menu.dc.html', 'What a diner sees after scanning the table QR — menu, cart, tracking', '#4b6b3d'],
+  ['Auth', 'Login', 'POS%20Login.dc.html', 'Shared-device sign in, error states, role hand-off', '#a31621'],
+  ['Read only', 'Dashboard', 'POS%20Dashboard.dc.html', 'Owner/manager figures at a glance, plus the 9 AM empty state', '#a31621'],
+  ['Till', 'Food billing', 'POS%20Food%20Billing.dc.html', 'Table and direct modes, bill sheet, two-bill settlement', '#a31621'],
+  ['Till', 'Bar billing', 'POS%20Alcohol%20Billing.dc.html', 'Per-item tax, unit sizes, stock limits', '#7c0f19'],
+  ['Till', 'Cafe counter', 'POS%20Cafe%20Till.dc.html', 'Two-tap sale, pinned best-sellers, day summary', '#e3a522'],
+  ['Realtime', 'QR orders board', 'POS%20QR%20Orders.dc.html', 'Accept to kitchen, new-order alert, muted warning', '#a31621'],
+  ['Realtime', 'Website orders', 'POS%20Website%20Orders.dc.html', 'Advance vs balance, gateway-only payment states', '#4b6b3d'],
+  ['Wall', 'Kitchen display', 'POS%20Kitchen%20Display.dc.html', 'Dark, oversized, oldest first, no money anywhere', '#2b211a'],
+  ['Device', 'Sound manager', 'POS%20Sound%20Manager.dc.html', 'Per-channel tones, repeat until acknowledged, first-run unlock', '#e3a522'],
+  ['Admin', 'Catalog manager', 'POS%20Catalog%20Manager.dc.html', 'Three catalogs, audited price changes, one-tap availability', '#7c0f19'],
+  ['Admin', 'Tables & QR', 'POS%20Table%20Manager.dc.html', 'Printable Warli QR card, regenerate confirm, bulk print', '#7c0f19'],
+  ['Records', 'Bill history', 'POS%20Bill%20History.dc.html', 'Filterable, immutable, CSV export', '#a31621'],
+  ['Admin', 'Staff accounts', 'POS%20Staff%20Accounts.dc.html', 'Six role cards in plain words, deactivate not delete', '#7c0f19'],
+  ['Records', 'Audit log', 'POS%20Audit%20Log.dc.html', 'Ledger-style, before/after, managers excluded', '#2b211a']
+];
+
+class Component extends DCLogic {
+  state = { role: 'admin', conn: 0, qty: 2 };
+
+  renderVals() {
+    const s = this.state;
+    const [name, roleLabel, initials] = PEOPLE[s.role];
+    const conn = [['#7ee06b', 'Connected'], ['#f6c445', 'Reconnecting'], ['#ff6b6b', 'Offline']][s.conn];
+    const keys = NAV[s.role];
+
+    return {
+      roles: Object.keys(NAV).map(r => ({
+        name: r, pick: () => this.setState({ role: r }),
+        bg: s.role === r ? '#a31621' : 'transparent', fg: s.role === r ? '#fbf3e7' : '#2b211a',
+        border: s.role === r ? '#7c0f19' : '#d8c6ab'
+      })),
+      userName: name, roleLabel, initials,
+      landing: SCREENS[keys[0]][0],
+      connDot: conn[0], connLabel: conn[1],
+      cycleConn: () => this.setState({ conn: (s.conn + 1) % 3 }),
+      offline: s.conn === 2,
+      tabs: keys.map(k => ({
+        name: SCREENS[k][0], href: SCREENS[k][1], glyph: SCREENS[k][2],
+        fg: k === keys[0] ? '#a31621' : '#5a4c3f'
+      })),
+      tabCols: Math.min(keys.length, 6),
+      roleNote: NOTES[s.role],
+      allScreens: ALL.map(([tag, name, href, desc, tagColor]) => ({ tag, name, href, desc, tagColor })),
+      qty: s.qty, incQty: () => this.setState({ qty: s.qty + 1 }), decQty: () => this.setState({ qty: Math.max(0, s.qty - 1) }),
+      moneySample: '₹' + (1540.5 * s.qty).toLocaleString('en-IN', { minimumFractionDigits:2, maximumFractionDigits:2 }),
+      swatches: [
+        ['cardinal', '#a31621'], ['deep', '#7c0f19'], ['marigold', '#e3a522'], ['sunflower', '#f6c445'],
+        ['cream', '#fbf3e7'], ['cream-dim', '#f3e7d4'], ['ink', '#2b211a'], ['ink-soft', '#5a4c3f'],
+        ['basil', '#4b6b3d'], ['saffron', '#ff9933'], ['india-green', '#138808'], ['kitchen', '#14100d']
+      ].map(([name, hex]) => ({ name, hex }))
+    };
+  }
+}
+</script>
+</body>
+</html>

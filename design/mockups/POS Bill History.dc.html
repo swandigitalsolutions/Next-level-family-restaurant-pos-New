@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-598406d1-4b4d-40c4-a649-fbae09130236/styles.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700&family=Archivo:wght@400;500;600;700&display=swap">
+<style>
+  body { margin:0; background:#fbf3e7; font-family:Archivo,system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#a31621; } a:hover { color:#7c0f19; }
+  button:focus-visible, input:focus-visible { outline:2px solid #a31621; outline-offset:2px; }
+  .hscroll { overflow-x:auto; scrollbar-width:none; } .hscroll::-webkit-scrollbar { display:none; }
+  @keyframes sheetUp { from { transform:translateY(100%); } to { transform:none; } }
+  @keyframes fade { from { opacity:0; } to { opacity:1; } }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#fbf3e7;color:#2b211a;padding-bottom:40px">
+
+  <div style="position:sticky;top:0;z-index:20;background:#fbf3e7;border-bottom:2px solid #2b211a">
+    <div style="max-width:1120px;margin:0 auto;padding:12px 12px 10px;display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-family:Bitter,serif;font-size:20px;font-weight:700;flex:1">Bills</span>
+        <button type="button" style="min-height:44px;padding:0 13px;border-radius:6px;border:1.5px solid #2b211a;background:transparent;color:#2b211a;font-size:13.5px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif">Export CSV</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;background:#fffaf2;border:1.5px solid #ddcbb1;border-radius:6px;padding:0 12px;height:50px">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#8a7967" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+        <input type="text" value="{{ query }}" onChange="{{ onQuery }}" placeholder="Bill number, customer name or phone" style="flex:1;border:0;background:transparent;font-size:16px;font-family:Archivo,sans-serif;color:#2b211a;height:100%;outline:none">
+      </div>
+      <div class="hscroll" style="display:flex;gap:7px">
+        <sc-for list="{{ ranges }}" as="r" hint-placeholder-count="4">
+          <button type="button" onClick="{{ r.pick }}" style="flex:none;min-height:42px;padding:0 13px;border-radius:6px;border:1.5px solid {{ r.border }};background:{{ r.bg }};color:{{ r.fg }};font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap">{{ r.name }}</button>
+        </sc-for>
+      </div>
+      <div class="hscroll" style="display:flex;gap:7px">
+        <sc-for list="{{ tillFilters }}" as="t" hint-placeholder-count="5">
+          <button type="button" onClick="{{ t.pick }}" style="flex:none;min-height:42px;padding:0 13px;border-radius:6px;border:1.5px solid {{ t.border }};background:{{ t.bg }};color:{{ t.fg }};font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap">{{ t.name }}</button>
+        </sc-for>
+        <span style="flex:none;width:1px;background:#d8c6ab;margin:6px 4px"></span>
+        <sc-for list="{{ payFilters }}" as="p" hint-placeholder-count="4">
+          <button type="button" onClick="{{ p.pick }}" style="flex:none;min-height:42px;padding:0 13px;border-radius:6px;border:1.5px solid {{ p.border }};background:{{ p.bg }};color:{{ p.fg }};font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap">{{ p.name }}</button>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width:1120px;margin:0 auto;padding:12px;display:flex;flex-direction:column;gap:12px">
+
+    <div style="background:#2b211a;color:#f3e7d4;border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:11px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#c9b69a">{{ rangeLabel }}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:12px">
+        <sc-for list="{{ summary }}" as="s" hint-placeholder-count="5">
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <span style="font-family:Bitter,serif;font-size:21px;font-weight:700;color:{{ s.color }};font-variant-numeric:tabular-nums;line-height:1.1">{{ s.value }}</span>
+            <span style="font-size:11px;color:#c9b69a;letter-spacing:.08em;text-transform:uppercase">{{ s.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column">
+      <sc-for list="{{ bills }}" as="b" hint-placeholder-count="8">
+        <button type="button" onClick="{{ b.open }}" style="display:flex;align-items:center;gap:11px;min-height:64px;border:0;border-bottom:1px solid #e3d3b8;background:transparent;cursor:pointer;padding:10px 4px;text-align:left;font-family:Archivo,sans-serif" style-hover="background:#f3e7d4">
+          <span style="flex:none;width:8px;height:38px;border-radius:99px;background:{{ b.tillColor }}"></span>
+          <span style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0">
+            <span style="display:flex;align-items:baseline;gap:8px">
+              <span style="font-family:Bitter,serif;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums">{{ b.number }}</span>
+              <span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:{{ b.tillColor }}">{{ b.till }}</span>
+            </span>
+            <span style="font-size:12.5px;color:#5a4c3f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.meta }}</span>
+          </span>
+          <span style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+            <span style="font-family:Bitter,serif;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums">{{ b.amount }}</span>
+            <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#5a4c3f">{{ b.method }}</span>
+          </span>
+        </button>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:9px;padding:40px 16px;text-align:center">
+        <span style="font-size:15.5px;font-weight:600;color:#5a4c3f">No bills match these filters</span>
+        <span style="font-size:13px;color:#8a7967;max-width:260px;line-height:1.45">Widen the date range or clear the search.</span>
+      </div>
+    </sc-if>
+
+    <div style="font-size:11.5px;color:#8a7967;line-height:1.5">Bills are immutable — there is no edit and no delete anywhere in this system, for any role. A mistake is corrected by issuing a corrective bill, which appears here as its own record.</div>
+  </div>
+
+  <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:40;display:flex;align-items:flex-end;justify-content:center;background:rgba(43,33,26,.55);animation:fade .18s ease" onClick="{{ closeSheet }}">
+      <div onClick="{{ stop }}" style="width:100%;max-width:520px;max-height:92vh;overflow-y:auto;background:#fbf3e7;border-radius:18px 18px 0 0;animation:sheetUp .24s cubic-bezier(.2,.8,.3,1)">
+        <div style="position:sticky;top:0;background:#fbf3e7;padding:10px 0 6px;display:flex;justify-content:center;z-index:2"><span style="width:44px;height:5px;border-radius:99px;background:#d8c6ab"></span></div>
+        <div style="padding:2px 16px 22px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+              <span style="font-family:Bitter,serif;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums">{{ billNumber }}</span>
+              <span style="font-size:12.5px;color:#5a4c3f">{{ billMeta }}</span>
+            </div>
+            <span style="font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#fbf3e7;background:{{ billTillColor }};padding:5px 9px;border-radius:6px">{{ billTill }}</span>
+          </div>
+
+          <div style="background:#f3e7d4;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:9px">
+            <sc-for list="{{ billLines }}" as="l" hint-placeholder-count="3">
+              <div style="display:flex;align-items:baseline;gap:10px">
+                <span style="font-family:Bitter,serif;font-size:14.5px;font-weight:700;width:30px;font-variant-numeric:tabular-nums">×{{ l.qty }}</span>
+                <span style="flex:1;font-size:14.5px;font-weight:600">{{ l.name }}</span>
+                <span style="font-family:Bitter,serif;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums">{{ l.amount }}</span>
+              </div>
+            </sc-for>
+            <div style="height:1px;background:#e3d3b8;margin:2px 0"></div>
+            {{ billTotals }}
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:6px;background:#ece0ca;border-radius:10px;padding:12px">
+            <div style="display:flex;justify-content:space-between;gap:10px"><span style="font-size:12.5px;color:#5a4c3f">Created by</span><span style="font-size:12.5px;font-weight:600">{{ billBy }}</span></div>
+            <div style="display:flex;justify-content:space-between;gap:10px"><span style="font-size:12.5px;color:#5a4c3f">Settled at</span><span style="font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums">{{ billAt }}</span></div>
+            <div style="display:flex;justify-content:space-between;gap:10px"><span style="font-size:12.5px;color:#5a4c3f">Payment</span><span style="font-size:12.5px;font-weight:600">{{ billMethod }}</span></div>
+          </div>
+
+          <div style="display:flex;align-items:flex-start;gap:9px;background:#f3e7d4;border-left:4px solid #2b211a;border-radius:6px;padding:12px">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2b211a" stroke-width="2" stroke-linecap="round" style="flex:none;margin-top:1px"><rect x="5" y="11" width="14" height="9" rx="1"></rect><path d="M8 11V8a4 4 0 018 0v3"></path></svg>
+            <span style="font-size:13px;line-height:1.45"><strong>Immutable record.</strong> This bill cannot be edited or deleted. If it is wrong, issue a corrective bill from the till.</span>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+            <button type="button" style="min-height:56px;border:0;border-radius:10px;background:#2b211a;color:#fbf3e7;font-size:15px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 14px">Reprint</button>
+            <button type="button" style="min-height:56px;border:1.5px solid #2b211a;border-radius:10px;background:transparent;color:#2b211a;font-size:15px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 14px">Share</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:430,&quot;height&quot;:950}}">
+const BILLS = [
+  ['FOOD-004182', 'Food', '9:41 PM', 'Iqbal · +91 98450 22110', 'UPI', 1690, 150, 0, 'Vikram (billing)', [[2,'Butter Chicken',620],[6,'Tandoori Roti',120],[1,'Chicken Dum Biryani',320]]],
+  ['ALCOHOL-000937', 'Alcohol', '9:41 PM', 'Iqbal · +91 98450 22110', 'UPI', 1136, 60, 176, 'Vikram (billing)', [[2,'Kingfisher 650ml',520],[3,'Old Monk 60ml peg',420]]],
+  ['CAFE-000117', 'Cafe', '9:28 PM', '', 'Cash', 45, 0, 0, 'Meena (cafe)', [[1,'Masala Chai',20],[1,'Filter Coffee',30]]],
+  ['FOOD-004181', 'Food', '9:12 PM', 'Sandeep K · +91 99012 34455', 'Card', 1240, 0, 0, 'Vikram (billing)', [[1,'Chicken Dum Biryani',320],[1,'Tandoori Chicken ½',330],[2,'Butter Naan',90]]],
+  ['WEB-000124', 'Website', '9:02 PM', 'Fatima Sheikh · +91 90080 77123', 'Gateway', 620, 0, 0, 'Website (gateway)', [[2,'Veg Biryani',460]]],
+  ['CAFE-000116', 'Cafe', '8:55 PM', '', 'UPI', 20, 0, 0, 'Meena (cafe)', [[1,'Masala Chai',20]]],
+  ['FOOD-004180', 'Food', '8:47 PM', 'Table 8 walk-in', 'Cash', 880, 80, 0, 'Vikram (billing)', [[2,'Paneer Butter Masala',520],[4,'Butter Naan',180]]],
+  ['ALCOHOL-000936', 'Alcohol', '8:31 PM', 'Table 8 walk-in', 'Cash', 760, 0, 140, 'Vikram (billing)', [[4,'Kingfisher 330ml',600]]],
+  ['FOOD-004179', 'Food', '8:04 PM', 'Rohit Menon · +91 97400 55210', 'UPI', 460, 0, 0, 'Vikram (billing)', [[1,'Butter Chicken',310],[3,'Tandoori Roti',60]]],
+  ['CAFE-000115', 'Cafe', '7:40 PM', '', 'Cash', 60, 0, 0, 'Meena (cafe)', [[3,'Masala Chai',60]]]
+];
+const TILL_COLOR = { Food:'#a31621', Alcohol:'#7c0f19', Cafe:'#e3a522', Website:'#4b6b3d' };
+
+class Component extends DCLogic {
+  state = { query:'', till:'All tills', pay:'All payments', range:'Today', open:null };
+  money = n => '₹' + n.toLocaleString('en-IN');
+  money2 = n => '₹' + n.toLocaleString('en-IN', { minimumFractionDigits:2, maximumFractionDigits:2 });
+
+  renderVals() {
+    const e = React.createElement, s = this.state;
+    const q = s.query.trim().toLowerCase();
+    const list = BILLS.filter(b =>
+      (s.till === 'All tills' || b[1] === s.till) &&
+      (s.pay === 'All payments' || b[4] === s.pay) &&
+      (!q || (b[0] + ' ' + b[3]).toLowerCase().includes(q)));
+
+    const gross = list.reduce((a, b) => a + b[5], 0);
+    const disc = list.reduce((a, b) => a + b[6], 0);
+    const tax = list.reduce((a, b) => a + b[7], 0);
+
+    const chip = (name, cur) => ({
+      name, bg: name === cur ? '#2b211a' : 'transparent', fg: name === cur ? '#fbf3e7' : '#2b211a',
+      border: name === cur ? '#2b211a' : '#d8c6ab'
+    });
+
+    const cur = list.find(b => b[0] === s.open) || BILLS.find(b => b[0] === s.open);
+    const row = (label, value, opts = {}) => e('div', { key:label, style:{ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:12 } },
+      e('span', { style:{ fontSize: opts.big ? 15 : 13, color: opts.big ? '#2b211a' : '#5a4c3f', fontWeight: opts.big ? 700 : 500 } }, label),
+      e('span', { style:{ fontFamily:'Bitter,serif', fontVariantNumeric:'tabular-nums', fontSize: opts.big ? 23 : 14.5, fontWeight: opts.big ? 700 : 600, color: opts.color || '#2b211a' } }, value));
+
+    return {
+      query: s.query, onQuery: ev => this.setState({ query: ev.target.value }),
+      ranges: ['Today', 'Yesterday', 'Last 7 days', 'This month', 'Custom…'].map(n => ({ ...chip(n, s.range), pick: () => this.setState({ range:n }) })),
+      tillFilters: ['All tills', 'Food', 'Alcohol', 'Cafe', 'Website'].map(n => ({ ...chip(n, s.till), pick: () => this.setState({ till:n }) })),
+      payFilters: ['All payments', 'Cash', 'Card', 'UPI'].map(n => ({ ...chip(n, s.pay), pick: () => this.setState({ pay:n }) })),
+      rangeLabel: s.range + ' · ' + s.till.toLowerCase() + ' · ' + s.pay.toLowerCase(),
+      summary: [
+        { label:'Bills', value: list.length, color:'#fbf3e7' },
+        { label:'Gross', value: this.money(gross), color:'#fbf3e7' },
+        { label:'Discount', value: '− ' + this.money(disc), color:'#f6c445' },
+        { label:'Tax', value: this.money(tax), color:'#f6c445' },
+        { label:'Net', value: this.money(gross - disc + tax), color:'#7ee06b' }
+      ],
+      bills: list.map(b => ({
+        number: b[0], till: b[1], tillColor: TILL_COLOR[b[1]], amount: this.money(b[5] - b[6] + b[7]),
+        method: b[4], meta: b[2] + (b[3] ? ' · ' + b[3] : ' · walk-in'),
+        open: () => this.setState({ open: b[0] })
+      })),
+      empty: list.length === 0,
+      sheetOpen: !!cur, closeSheet: () => this.setState({ open:null }), stop: ev => ev.stopPropagation(),
+      billNumber: cur ? cur[0] : '', billTill: cur ? cur[1] : '', billTillColor: cur ? TILL_COLOR[cur[1]] : '#2b211a',
+      billMeta: cur ? ('Wed 19 Sep · ' + cur[2] + (cur[3] ? ' · ' + cur[3] : '')) : '',
+      billLines: cur ? cur[9].map(([qty, name, amt]) => ({ qty, name, amount: this.money(amt) })) : [],
+      billTotals: cur ? [
+        row('Subtotal', this.money2(cur[5])),
+        cur[6] > 0 ? row('Discount', '− ' + this.money2(cur[6]), { color:'#a31621' }) : null,
+        cur[7] > 0 ? row('Tax on alcohol', this.money2(cur[7])) : row('Tax', 'None — untaxed till'),
+        row('Total', this.money2(cur[5] - cur[6] + cur[7]), { big:true })
+      ].filter(Boolean) : [],
+      billBy: cur ? cur[8] : '', billAt: cur ? ('19 Sep 2026, ' + cur[2] + ' IST') : '', billMethod: cur ? cur[4] : ''
+    };
+  }
+}
+</script>
+</body>
+</html>

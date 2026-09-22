@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-598406d1-4b4d-40c4-a649-fbae09130236/styles.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700&family=Archivo:wght@400;500;600;700&display=swap">
+<style>
+  body { margin:0; background:#fbf3e7; font-family:Archivo,system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#a31621; } a:hover { color:#7c0f19; }
+  button:focus-visible, input:focus-visible { outline:2px solid #a31621; outline-offset:2px; }
+  @keyframes sheetUp { from { transform:translateY(100%); } to { transform:none; } }
+  @keyframes fade { from { opacity:0; } to { opacity:1; } }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#fbf3e7;color:#2b211a;padding-bottom:96px">
+
+  <div style="position:sticky;top:0;z-index:20;background:#fbf3e7;border-bottom:2px solid #2b211a">
+    <div style="max-width:1120px;margin:0 auto;padding:13px 12px;display:flex;align-items:center;gap:10px">
+      <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+        <span style="font-family:Bitter,serif;font-size:20px;font-weight:700">Staff accounts</span>
+        <span style="font-size:12px;color:#5a4c3f">{{ summary }}</span>
+      </div>
+      <span style="font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#fbf3e7;background:#a31621;padding:6px 9px;border-radius:6px">Admin only</span>
+    </div>
+  </div>
+
+  <div style="max-width:1120px;margin:0 auto;padding:12px;display:flex;flex-direction:column;gap:0">
+    <sc-for list="{{ staff }}" as="p" hint-placeholder-count="7">
+      <div style="display:flex;align-items:center;gap:11px;padding:11px 4px;border-bottom:1px solid #e3d3b8;opacity:{{ p.opacity }}">
+        <span style="flex:none;width:46px;height:46px;border-radius:50%;background:{{ p.avatarBg }};color:#fbf3e7;font-family:Bitter,serif;font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center">{{ p.initials }}</span>
+        <div style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0">
+          <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+            <span style="font-size:15.5px;font-weight:700">{{ p.name }}</span>
+            <span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:{{ p.roleFg }};background:{{ p.roleBg }};padding:3px 7px;border-radius:6px">{{ p.role }}</span>
+          </div>
+          <span style="font-size:12.5px;color:#5a4c3f;font-variant-numeric:tabular-nums">{{ p.username }} · {{ p.lastSeen }}</span>
+        </div>
+        <button type="button" onClick="{{ p.manage }}" aria-label="Manage account" style="width:48px;height:48px;border-radius:8px;border:1.5px solid #d8c6ab;background:transparent;color:#5a4c3f;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none" style-hover="background:#f3e7d4">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 6h.01M12 12h.01M12 18h.01"></path></svg>
+        </button>
+      </div>
+    </sc-for>
+    <div style="font-size:11.5px;color:#8a7967;line-height:1.5;padding-top:14px">Accounts are never deleted — bills permanently reference the person who created them. Someone who leaves is deactivated instead.</div>
+  </div>
+
+  <div style="position:fixed;left:0;right:0;bottom:0;z-index:30;padding:0 10px 10px;pointer-events:none">
+    <div style="max-width:1120px;margin:0 auto;pointer-events:auto">
+      <button type="button" onClick="{{ create }}" style="width:100%;min-height:60px;border:0;border-radius:14px;background:#a31621;color:#fbf3e7;font-size:17px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 18px;box-shadow:0 -2px 24px -8px rgba(43,33,26,.5)"><span>Create account</span><span style="font-size:24px">+</span></button>
+    </div>
+  </div>
+
+  <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:40;display:flex;align-items:flex-end;justify-content:center;background:rgba(43,33,26,.55);animation:fade .18s ease" onClick="{{ closeSheet }}">
+      <div onClick="{{ stop }}" style="width:100%;max-width:520px;max-height:92vh;overflow-y:auto;background:#fbf3e7;border-radius:18px 18px 0 0;animation:sheetUp .24s cubic-bezier(.2,.8,.3,1)">
+        <div style="position:sticky;top:0;background:#fbf3e7;padding:10px 0 6px;display:flex;justify-content:center;z-index:2"><span style="width:44px;height:5px;border-radius:99px;background:#d8c6ab"></span></div>
+
+        <sc-if value="{{ isMenu }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:2px 16px 22px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;flex-direction:column;gap:2px;padding-bottom:6px">
+              <span style="font-family:Bitter,serif;font-size:21px;font-weight:700">{{ curName }}</span>
+              <span style="font-size:12.5px;color:#5a4c3f">{{ curMeta }}</span>
+            </div>
+            <button type="button" onClick="{{ openRole }}" style="min-height:58px;border:1.5px solid #ddcbb1;border-radius:10px;background:#f3e7d4;color:#2b211a;font-size:15.5px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 15px">Change role</button>
+            <button type="button" onClick="{{ openReset }}" style="min-height:58px;border:1.5px solid #ddcbb1;border-radius:10px;background:#f3e7d4;color:#2b211a;font-size:15.5px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 15px">Reset password</button>
+            <button type="button" onClick="{{ openDeactivate }}" style="min-height:58px;border:1.5px solid #e3a522;border-radius:10px;background:#fbeecb;color:#7a5a10;font-size:15.5px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 15px">{{ deactivateLabel }}</button>
+            <button type="button" onClick="{{ closeSheet }}" style="min-height:52px;border:0;background:transparent;color:#5a4c3f;font-size:15px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 15px">Cancel</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isRole }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:2px 16px 22px;display:flex;flex-direction:column;gap:13px">
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <span style="font-family:Bitter,serif;font-size:21px;font-weight:700">{{ roleTitle }}</span>
+              <span style="font-size:13px;color:#5a4c3f;line-height:1.45">Pick what this person will be able to do. The screens they see are decided entirely by this choice.</span>
+            </div>
+            <sc-if value="{{ isCreate }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <label for="st-name" style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5a4c3f">Full name</label>
+                  <input id="st-name" type="text" value="{{ formName }}" onChange="{{ onFormName }}" style="height:56px;box-sizing:border-box;border-radius:6px;border:1.5px solid #ddcbb1;background:#fffaf2;padding:0 13px;font-size:16px;font-family:Archivo,sans-serif;color:#2b211a">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <label for="st-user" style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5a4c3f">Username</label>
+                  <input id="st-user" type="text" value="{{ formUser }}" onChange="{{ onFormUser }}" style="height:56px;box-sizing:border-box;border-radius:6px;border:1.5px solid #ddcbb1;background:#fffaf2;padding:0 13px;font-size:16px;font-family:Archivo,sans-serif;color:#2b211a">
+                </div>
+              </div>
+            </sc-if>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ roleCards }}" as="r" hint-placeholder-count="6">
+                <button type="button" onClick="{{ r.pick }}" style="display:flex;align-items:flex-start;gap:12px;border:2px solid {{ r.border }};background:{{ r.bg }};border-radius:12px;padding:13px;cursor:pointer;text-align:left;font-family:Archivo,sans-serif;min-height:56px">
+                  <span style="flex:none;width:22px;height:22px;border-radius:50%;border:2px solid {{ r.dotBorder }};background:{{ r.dotFill }};margin-top:2px"></span>
+                  <span style="flex:1;display:flex;flex-direction:column;gap:4px;min-width:0">
+                    <span style="font-size:16px;font-weight:700;color:#2b211a">{{ r.name }}</span>
+                    <span style="font-size:13.5px;color:#5a4c3f;line-height:1.4">{{ r.can }}</span>
+                    <span style="font-size:12.5px;color:#8a7967;line-height:1.4">{{ r.cannot }}</span>
+                  </span>
+                </button>
+              </sc-for>
+            </div>
+            <button type="button" onClick="{{ saveRole }}" style="min-height:60px;border:0;border-radius:14px;background:#a31621;color:#fbf3e7;font-size:17px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 18px"><span>{{ saveRoleLabel }}</span><span>→</span></button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isReset }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:2px 16px 22px;display:flex;flex-direction:column;gap:14px">
+            <span style="font-family:Bitter,serif;font-size:21px;font-weight:700">Reset password for {{ curName }}</span>
+            <span style="font-size:13.5px;color:#5a4c3f;line-height:1.5">Set a temporary password and tell it to them in person. They will be asked to change it the first time they sign in.</span>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <label for="st-pw" style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5a4c3f">Temporary password</label>
+              <input id="st-pw" type="text" value="{{ tempPw }}" onChange="{{ onTempPw }}" style="height:56px;box-sizing:border-box;border-radius:6px;border:1.5px solid #ddcbb1;background:#fffaf2;padding:0 13px;font-size:18px;font-family:ui-monospace,Menlo,monospace;color:#2b211a">
+            </div>
+            <button type="button" onClick="{{ regenPw }}" style="min-height:48px;border:1.5px solid #ddcbb1;border-radius:8px;background:transparent;color:#5a4c3f;font-size:14px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 14px">Generate another</button>
+            <button type="button" onClick="{{ closeSheet }}" style="min-height:60px;border:0;border-radius:14px;background:#a31621;color:#fbf3e7;font-size:17px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 18px"><span>Set this password</span><span>→</span></button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isDeactivate }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:2px 16px 22px;display:flex;flex-direction:column;gap:15px">
+            <span style="font-family:Bitter,serif;font-size:21px;font-weight:700">{{ deactivateTitle }}</span>
+            <div style="display:flex;gap:11px;background:#fbeecb;border-left:4px solid #e3a522;border-radius:8px;padding:13px">
+              <span style="flex:none;width:22px;height:22px;border-radius:50%;background:#e3a522;color:#2b211a;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center">!</span>
+              <span style="font-size:13.5px;color:#5a4c3f;line-height:1.5">{{ deactivateBody }}</span>
+            </div>
+            <button type="button" onClick="{{ doDeactivate }}" style="min-height:60px;border:0;border-radius:14px;background:#a31621;color:#fbf3e7;font-size:17px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 18px"><span>{{ deactivateConfirm }}</span><span>→</span></button>
+            <button type="button" onClick="{{ closeSheet }}" style="min-height:52px;border:1.5px solid #ddcbb1;border-radius:10px;background:transparent;color:#5a4c3f;font-size:15px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif">Cancel</button>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:430,&quot;height&quot;:950}}">
+const ROLES = [
+  ['Admin', 'admin', 'Everything, including staff accounts and the audit log.', 'No restrictions — give this to the owner-operator only.', '#a31621'],
+  ['Manager', 'manager', 'Everything except staff accounts and the audit log.', 'Cannot create staff, cannot read the audit log.', '#7c0f19'],
+  ['Owner', 'owner', 'Dashboard and audit log only, read-only.', 'Cannot bill, cannot settle, cannot change anything.', '#4b6b3d'],
+  ['Billing', 'billing', 'The tills, the tables and the order boards.', 'Cannot edit the menu, staff, QR tables or the audit log; no kitchen, no cafe till.', '#e3a522'],
+  ['Kitchen', 'kitchen', 'The kitchen screen only.', 'Never sees prices, totals or any money at all.', '#ff9933'],
+  ['Cafe billing', 'cafe_billing', 'The outside cafe counter only.', 'Nothing else in the system is visible to them.', '#138808']
+];
+
+class Component extends DCLogic {
+  state = {
+    sheet: null, cur: null, pickRole: 'billing', tempPw: 'chai-8412',
+    form: { name:'', user:'' },
+    staff: [
+      { id:1, name:'Priya Shetty', user:'priya.s', role:'admin', last:'Today 9:02 PM' },
+      { id:2, name:'Anil Kumar', user:'anil.k', role:'manager', last:'Today 6:40 PM' },
+      { id:3, name:'R. Shetty', user:'owner', role:'owner', last:'Today 10:15 AM' },
+      { id:4, name:'Vikram Naik', user:'vikram.n', role:'billing', last:'Today 9:41 PM' },
+      { id:5, name:'Rekha Devi', user:'rekha.d', role:'kitchen', last:'Today 9:38 PM' },
+      { id:6, name:'Meena Rao', user:'meena.r', role:'cafe_billing', last:'Today 8:55 PM' },
+      { id:7, name:'Suresh Patil', user:'suresh.p', role:'billing', last:'12 Aug 2026', inactive:true }
+    ]
+  };
+
+  roleMeta = key => ROLES.find(r => r[1] === key) || ROLES[3];
+
+  renderVals() {
+    const s = this.state;
+    const cur = s.staff.find(p => p.id === s.cur);
+    const isCreate = s.sheet === 'role' && !s.cur;
+
+    return {
+      summary: s.staff.filter(p => !p.inactive).length + ' active · ' + s.staff.filter(p => p.inactive).length + ' deactivated',
+      staff: s.staff.map(p => {
+        const m = this.roleMeta(p.role);
+        return {
+          name: p.name, username: p.user, role: m[0], initials: p.name.split(' ').map(x => x[0]).join(''),
+          roleBg: p.inactive ? '#e5dbc8' : m[4] + '22', roleFg: p.inactive ? '#8a7967' : m[4],
+          avatarBg: p.inactive ? '#c9b69a' : m[4],
+          lastSeen: p.inactive ? 'Deactivated · last in ' + p.last : 'Last signed in ' + p.last,
+          opacity: p.inactive ? '.6' : '1',
+          manage: () => this.setState({ sheet:'menu', cur: p.id, pickRole: p.role })
+        };
+      }),
+      create: () => this.setState({ sheet:'role', cur:null, pickRole:'billing', form:{ name:'', user:'' } }),
+      closeSheet: () => this.setState({ sheet:null }), stop: ev => ev.stopPropagation(),
+      sheetOpen: !!s.sheet, isMenu: s.sheet === 'menu', isRole: s.sheet === 'role',
+      isReset: s.sheet === 'reset', isDeactivate: s.sheet === 'deactivate', isCreate,
+      curName: cur ? cur.name : '', curMeta: cur ? (cur.user + ' · ' + this.roleMeta(cur.role)[0]) : '',
+      openRole: () => this.setState({ sheet:'role' }),
+      openReset: () => this.setState({ sheet:'reset' }),
+      openDeactivate: () => this.setState({ sheet:'deactivate' }),
+      deactivateLabel: cur && cur.inactive ? 'Reactivate account' : 'Deactivate account',
+      roleTitle: isCreate ? 'New staff account' : 'Role for ' + (cur ? cur.name : ''),
+      formName: s.form.name, formUser: s.form.user,
+      onFormName: ev => this.setState(st => ({ form: { ...st.form, name: ev.target.value } })),
+      onFormUser: ev => this.setState(st => ({ form: { ...st.form, user: ev.target.value } })),
+      roleCards: ROLES.map(([name, key, can, cannot, color]) => ({
+        name, can, cannot,
+        bg: s.pickRole === key ? '#f8eddb' : '#f3e7d4',
+        border: s.pickRole === key ? color : '#e3d3b8',
+        dotBorder: s.pickRole === key ? color : '#c9b69a',
+        dotFill: s.pickRole === key ? color : 'transparent',
+        pick: () => this.setState({ pickRole: key })
+      })),
+      saveRoleLabel: isCreate ? 'Create account' : 'Save role',
+      saveRole: () => this.setState(st => ({
+        staff: st.cur
+          ? st.staff.map(p => p.id === st.cur ? { ...p, role: st.pickRole } : p)
+          : [...st.staff, { id: Date.now(), name: st.form.name || 'New staff', user: st.form.user || 'new.user', role: st.pickRole, last:'never' }],
+        sheet: null
+      })),
+      tempPw: s.tempPw, onTempPw: ev => this.setState({ tempPw: ev.target.value }),
+      regenPw: () => this.setState({ tempPw: ['chai','naan','dhaba','tandoor'][Math.floor(Math.random() * 4)] + '-' + Math.floor(1000 + Math.random() * 9000) }),
+      deactivateTitle: cur && cur.inactive ? 'Reactivate ' + cur.name + '?' : 'Deactivate ' + (cur ? cur.name : '') + '?',
+      deactivateBody: cur && cur.inactive
+        ? 'They will be able to sign in again immediately with their existing username and password.'
+        : 'The account is switched off, not removed. Staff records are never deleted because past bills permanently reference who created them — deleting this person would break those records. They simply cannot sign in any more.',
+      deactivateConfirm: cur && cur.inactive ? 'Reactivate account' : 'Deactivate account',
+      doDeactivate: () => this.setState(st => ({
+        staff: st.staff.map(p => p.id === st.cur ? { ...p, inactive: !p.inactive } : p), sheet:null
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

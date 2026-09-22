@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-598406d1-4b4d-40c4-a649-fbae09130236/styles.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap">
+<script src="./image-slot.js"></script>
+<style>
+  body { margin:0; background:#faf8f5; font-family:Archivo,system-ui,sans-serif; -webkit-font-smoothing:antialiased; color:#201e1d; }
+  a { color:#a31621; text-decoration:none; } a:hover { color:#7c0f19; }
+  button:focus-visible, a:focus-visible, input:focus-visible { outline:2px solid #a31621; outline-offset:2px; }
+  .hscroll { overflow-x:auto; scrollbar-width:none; } .hscroll::-webkit-scrollbar { display:none; }
+  @keyframes sheetUp { from { transform:translateY(100%); } to { transform:none; } }
+  @keyframes fade { from { opacity:0; } to { opacity:1; } }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#faf8f5;padding-bottom:110px">
+
+  <div style="position:sticky;top:0;z-index:30;background:#faf8f5;border-bottom:2px solid #201e1d">
+    <div style="max-width:1100px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:16px">
+      <button type="button" onClick="{{ goHome }}" style="border:0;background:transparent;padding:0;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;font-family:Archivo,sans-serif">
+        <span style="font-size:16px;font-weight:700;letter-spacing:-.01em;color:#201e1d">Next Level</span>
+        <span style="font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#6b635d">Family Restaurant</span>
+      </button>
+      <div class="hscroll" style="display:none"></div>
+      <button type="button" onClick="{{ goOrder }}" style="min-height:44px;padding:0 18px;border:0;background:#a31621;color:#faf8f5;font-size:14px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif;white-space:nowrap;text-align:left" style-hover="background:#7c0f19">Pre-order</button>
+      <a href="POS%20Login.dc.html" title="Staff &amp; admin sign-in" aria-label="Staff and admin sign-in" style="flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1.5px solid #cfc8c0;color:#8d857e" style-hover="border-color:#201e1d;color:#201e1d">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="9"></rect><path d="M8 11V8a4 4 0 018 0v3"></path></svg>
+      </a>
+    </div>
+    <div class="hscroll" style="border-top:1px solid #e2ddd6">
+      <div style="max-width:1100px;margin:0 auto;display:flex;gap:26px;padding:0 20px">
+        <sc-for list="{{ nav }}" as="n" hint-placeholder-count="4">
+          <button type="button" onClick="{{ n.pick }}" style="flex:none;min-height:46px;padding:0;border:0;border-bottom:2px solid {{ n.line }};background:transparent;color:{{ n.fg }};font-size:13.5px;font-weight:{{ n.weight }};cursor:pointer;font-family:Archivo,sans-serif;white-space:nowrap;letter-spacing:.01em">{{ n.name }}</button>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+    <div style="max-width:1100px;margin:0 auto;padding:0 20px;display:flex;flex-direction:column">
+
+      <div style="padding:48px 0 40px;display:flex;flex-direction:column;gap:22px;max-width:680px">
+        <span style="font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#6b635d">Family-run · near Bengaluru</span>
+        <h1 style="margin:0;font-size:46px;line-height:1.04;font-weight:700;letter-spacing:-.03em;text-wrap:pretty">Home-style Indian,<br>done properly.</h1>
+        <p style="margin:0;font-size:17px;line-height:1.6;color:#4a443f;max-width:520px;text-wrap:pretty">Slow-cooked curries, tandoor grills, unlimited thalis and clay-pot chai. Order ahead and collect at your slot, or reserve a table.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button type="button" onClick="{{ goOrder }}" style="min-height:52px;padding:0 22px;border:0;background:#a31621;color:#faf8f5;font-size:15px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;white-space:nowrap" style-hover="background:#7c0f19">Pre-order online</button>
+          <button type="button" onClick="{{ goVisit }}" style="min-height:52px;padding:0 22px;border:2px solid #201e1d;background:transparent;color:#201e1d;font-size:15px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;white-space:nowrap" style-hover="background:#efeae3">Reserve a table</button>
+        </div>
+      </div>
+
+      <div style="height:2px;background:#201e1d"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:#e2ddd6;border-bottom:2px solid #201e1d">
+        <sc-for list="{{ stats }}" as="s" hint-placeholder-count="3">
+          <div style="background:#faf8f5;padding:20px 0;display:flex;flex-direction:column;gap:5px">
+            <span style="font-size:30px;font-weight:700;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums">{{ s.value }}</span>
+            <span style="font-size:12.5px;color:#6b635d;line-height:1.35">{{ s.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="padding:36px 0 0;width:100%">
+        <div style="width:100%;height:320px;overflow:hidden">
+          <image-slot id="nl2-hero" shape="rect" src="https://www.nextlevelfamilyrestaurant.com/images/venue-hero.jpg" placeholder="Venue — red roof and painted mural wall"></image-slot>
+        </div>
+      </div>
+
+      <div style="padding:44px 0 36px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:36px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#6b635d">Order online</span>
+          <h2 style="margin:0;font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.15">Pre-order your table's food</h2>
+          <p style="margin:0;font-size:15.5px;line-height:1.6;color:#4a443f">Choose your dishes, pay a 50% advance, and we'll have everything cooked fresh for your slot. The balance is settled at the counter when you collect.</p>
+          <button type="button" onClick="{{ goOrder }}" style="align-self:flex-start;min-height:52px;padding:0 22px;border:0;background:#a31621;color:#faf8f5;font-size:15px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;white-space:nowrap" style-hover="background:#7c0f19">Start a pre-order</button>
+        </div>
+        <div style="display:flex;flex-direction:column">
+          <sc-for list="{{ steps }}" as="s" hint-placeholder-count="4">
+            <div style="display:flex;gap:16px;align-items:baseline;padding:13px 0;border-bottom:1px solid #e2ddd6">
+              <span style="font-size:12px;font-weight:600;color:#a31621;font-variant-numeric:tabular-nums;width:18px;flex:none">{{ s.n }}</span>
+              <span style="flex:1;font-size:15px;font-weight:600">{{ s.title }}</span>
+              <span style="font-size:13px;color:#6b635d;text-align:right">{{ s.note }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="height:2px;background:#201e1d"></div>
+      <div style="padding:34px 0 40px;display:flex;flex-direction:column;gap:20px">
+        <h2 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-.02em">What the place is known for</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:22px">
+          <sc-for list="{{ features }}" as="f" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;gap:11px">
+              <div style="width:100%;height:150px;overflow:hidden">
+                <image-slot id="{{ f.slot }}" shape="rect" src="{{ f.src }}" placeholder="{{ f.placeholder }}"></image-slot>
+              </div>
+              <span style="font-size:16px;font-weight:600">{{ f.title }}</span>
+              <span style="font-size:13.5px;color:#6b635d;line-height:1.45">{{ f.note }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="height:2px;background:#201e1d"></div>
+      <div style="padding:34px 0 8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:26px">
+        <sc-for list="{{ reviews }}" as="r" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:11px">
+            <p style="margin:0;font-size:15.5px;line-height:1.6;color:#201e1d">{{ r.text }}</p>
+            <span style="font-size:12.5px;color:#6b635d">{{ r.who }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isMenu }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:900px;margin:0 auto;padding:0 20px;display:flex;flex-direction:column">
+      <div style="padding:34px 0 18px;display:flex;flex-direction:column;gap:10px">
+        <h2 style="margin:0;font-size:30px;font-weight:700;letter-spacing:-.02em">Menu</h2>
+        <p style="margin:0;font-size:15px;color:#4a443f;line-height:1.55;max-width:520px">Prices are live from the kitchen. Add what you want, pick a pickup time and pay the 50% advance.</p>
+      </div>
+
+      <div class="hscroll" style="display:flex;gap:22px;position:sticky;top:96px;background:#faf8f5;padding:10px 0;z-index:15;border-bottom:2px solid #201e1d">
+        <sc-for list="{{ categories }}" as="c" hint-placeholder-count="6">
+          <button type="button" onClick="{{ c.pick }}" style="flex:none;min-height:36px;padding:0;border:0;background:transparent;color:{{ c.fg }};font-size:13.5px;font-weight:{{ c.weight }};cursor:pointer;white-space:nowrap;font-family:Archivo,sans-serif;border-bottom:2px solid {{ c.line }}">{{ c.name }}</button>
+        </sc-for>
+      </div>
+
+      <div style="display:flex;flex-direction:column">
+        <sc-for list="{{ dishes }}" as="d" hint-placeholder-count="8">
+          <div style="display:flex;gap:16px;align-items:flex-start;padding:16px 0;border-bottom:1px solid #e2ddd6;opacity:{{ d.opacity }}">
+            <sc-if value="{{ d.hasPhoto }}" hint-placeholder-val="{{ true }}">
+              <div style="flex:none;width:72px;height:72px;overflow:hidden">
+                <image-slot id="{{ d.slot }}" shape="rect" src="{{ d.src }}" placeholder="{{ d.name }}"></image-slot>
+              </div>
+            </sc-if>
+            <sc-if value="{{ d.noPhoto }}" hint-placeholder-val="{{ false }}">
+              <div style="flex:none;width:72px;height:1px"></div>
+            </sc-if>
+            <div style="flex:1;display:flex;flex-direction:column;gap:5px;min-width:0">
+              <div style="display:flex;align-items:center;gap:9px">
+                <span style="flex:none;width:12px;height:12px;border:1.5px solid {{ d.vegColor }};display:flex;align-items:center;justify-content:center"><span style="width:5px;height:5px;border-radius:50%;background:{{ d.vegColor }}"></span></span>
+                <span style="font-size:16px;font-weight:600;line-height:1.3">{{ d.name }}</span>
+              </div>
+              <span style="font-size:13.5px;color:#6b635d;line-height:1.45">{{ d.desc }}</span>
+            </div>
+            <div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:9px;min-width:104px">
+              <span style="font-size:16px;font-weight:600;font-variant-numeric:tabular-nums">{{ d.price }}</span>
+              <sc-if value="{{ d.unavailable }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size:11.5px;color:#8d857e">Off today</span>
+              </sc-if>
+              <sc-if value="{{ d.addable }}" hint-placeholder-val="{{ true }}">
+                <button type="button" onClick="{{ d.add }}" style="min-height:44px;min-width:76px;border:1.5px solid #201e1d;background:transparent;color:#201e1d;font-size:14px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif" style-hover="background:#201e1d;color:#faf8f5">Add</button>
+              </sc-if>
+              <sc-if value="{{ d.inCart }}" hint-placeholder-val="{{ false }}">
+                <span style="display:flex;align-items:center;border:1.5px solid #201e1d">
+                  <button type="button" onClick="{{ d.dec }}" style="width:42px;height:44px;border:0;background:transparent;color:#201e1d;font-size:19px;cursor:pointer">−</button>
+                  <span style="min-width:26px;text-align:center;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums">{{ d.qty }}</span>
+                  <button type="button" onClick="{{ d.add }}" style="width:42px;height:44px;border:0;background:#201e1d;color:#faf8f5;font-size:19px;cursor:pointer">+</button>
+                </span>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isAbout }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:760px;margin:0 auto;padding:0 20px;display:flex;flex-direction:column;gap:22px">
+      <div style="padding:34px 0 0;display:flex;flex-direction:column;gap:14px">
+        <span style="font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#6b635d">Since day one</span>
+        <h2 style="margin:0;font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.15">Run by the same family that opened the door</h2>
+        <p style="margin:0;font-size:16px;line-height:1.65;color:#4a443f">What started as a kitchen table has grown into a full dining room — brick facade, red tin roof and walls the family painted by hand. The spice blends and the slow-cooked dals haven't changed.</p>
+        <p style="margin:0;font-size:18px;line-height:1.5;color:#201e1d;border-left:2px solid #a31621;padding-left:16px">“We cook the way we'd feed our own kids. That's the whole recipe.”</p>
+      </div>
+      <div style="height:2px;background:#201e1d"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;padding-bottom:8px">
+        <sc-for list="{{ gallery }}" as="g" hint-placeholder-count="6">
+          <div style="width:100%;height:170px;overflow:hidden">
+            <image-slot id="{{ g.slot }}" shape="rect" src="{{ g.src }}" placeholder="{{ g.placeholder }}"></image-slot>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isVisit }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:860px;margin:0 auto;padding:0 20px;display:flex;flex-direction:column;gap:24px">
+      <div style="padding:34px 0 0;display:flex;flex-direction:column;gap:16px">
+        <h2 style="margin:0;font-size:30px;font-weight:700;letter-spacing:-.02em">Visit</h2>
+        <div style="display:flex;flex-direction:column">
+          <sc-for list="{{ visitRows }}" as="v" hint-placeholder-count="5">
+            <div style="display:flex;gap:16px;align-items:baseline;padding:13px 0;border-bottom:1px solid #e2ddd6">
+              <span style="flex:none;width:150px;font-size:12.5px;color:#6b635d;letter-spacing:.02em">{{ v.label }}</span>
+              <span style="flex:1;font-size:15.5px;font-weight:600;line-height:1.4">{{ v.value }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <h3 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em">Reserve a table</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px">
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <label for="rv2-name" style="font-size:12px;color:#6b635d">Name</label>
+            <input id="rv2-name" type="text" style="height:52px;box-sizing:border-box;border:1.5px solid #cfc8c0;background:#fff;padding:0 13px;font-size:15.5px;font-family:Archivo,sans-serif;color:#201e1d">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <label for="rv2-phone" style="font-size:12px;color:#6b635d">Phone</label>
+            <input id="rv2-phone" type="tel" style="height:52px;box-sizing:border-box;border:1.5px solid #cfc8c0;background:#fff;padding:0 13px;font-size:15.5px;font-family:Archivo,sans-serif;font-variant-numeric:tabular-nums;color:#201e1d">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <label for="rv2-people" style="font-size:12px;color:#6b635d">Guests</label>
+            <input id="rv2-people" type="number" value="4" style="height:52px;box-sizing:border-box;border:1.5px solid #cfc8c0;background:#fff;padding:0 13px;font-size:15.5px;font-family:Archivo,sans-serif;font-variant-numeric:tabular-nums;color:#201e1d">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <label for="rv2-time" style="font-size:12px;color:#6b635d">Time</label>
+            <input id="rv2-time" type="text" value="8:00 PM" style="height:52px;box-sizing:border-box;border:1.5px solid #cfc8c0;background:#fff;padding:0 13px;font-size:15.5px;font-family:Archivo,sans-serif;color:#201e1d">
+          </div>
+        </div>
+        <button type="button" style="align-self:flex-start;min-height:52px;padding:0 22px;border:0;background:#a31621;color:#faf8f5;font-size:15px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;white-space:nowrap" style-hover="background:#7c0f19">Request this table</button>
+      </div>
+
+      <div style="height:2px;background:#201e1d"></div>
+      <div style="display:flex;flex-direction:column;padding-bottom:8px">
+        <sc-for list="{{ faqs }}" as="f" hint-placeholder-count="4">
+          <div style="border-bottom:1px solid #e2ddd6">
+            <button type="button" onClick="{{ f.toggle }}" style="width:100%;display:flex;align-items:center;gap:14px;min-height:56px;border:0;background:transparent;cursor:pointer;text-align:left;font-family:Archivo,sans-serif;padding:8px 0">
+              <span style="flex:1;font-size:15.5px;font-weight:600;line-height:1.4">{{ f.q }}</span>
+              <span style="font-size:18px;color:#a31621">{{ f.sign }}</span>
+            </button>
+            <sc-if value="{{ f.open }}" hint-placeholder-val="{{ false }}">
+              <p style="margin:0;font-size:14.5px;color:#4a443f;line-height:1.6;padding:0 0 16px;max-width:600px">{{ f.a }}</p>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="max-width:1100px;margin:44px auto 0;padding:0 20px;width:100%;box-sizing:border-box">
+    <div style="height:2px;background:#201e1d"></div>
+    <div style="padding:22px 0;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+      <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:6px">
+        <span style="font-size:15px;font-weight:700">Next Level Family Restaurant</span>
+        <span style="font-size:13px;color:#6b635d;line-height:1.55">Highway-side, near Bengaluru · 11:00 AM – 10:30 PM, to 11:00 PM at weekends</span>
+        <a href="tel:+919071080138" style="font-size:13.5px;font-weight:600">+91 90710 80138</a>
+      </div>
+      <a href="POS%20Login.dc.html" style="min-height:44px;display:flex;align-items:center;gap:8px;padding:0 14px;border:1.5px solid #cfc8c0;color:#4a443f;font-size:13px;font-weight:600">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="5" y="11" width="14" height="9"></rect><path d="M8 11V8a4 4 0 018 0v3"></path></svg>
+        Staff &amp; admin sign-in
+      </a>
+    </div>
+  </div>
+
+  <sc-if value="{{ showCartBtn }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:0;right:0;bottom:0;z-index:35;background:#201e1d;color:#faf8f5">
+      <div style="max-width:1100px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:16px">
+        <span style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0">
+          <span style="font-size:12.5px;color:#b3aaa2">{{ cartCount }} items · pay {{ advance }} now</span>
+          <span style="font-size:19px;font-weight:700;font-variant-numeric:tabular-nums">{{ cartTotal }}</span>
+        </span>
+        <button type="button" onClick="{{ openCart }}" style="min-height:52px;padding:0 22px;border:0;background:#a31621;color:#faf8f5;font-size:15px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;white-space:nowrap" style-hover="background:#7c0f19">Review order</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:45;display:flex;align-items:flex-end;justify-content:center;background:rgba(32,30,29,.5);animation:fade .16s ease" onClick="{{ closeSheet }}">
+      <div onClick="{{ stop }}" style="width:100%;max-width:560px;max-height:92vh;overflow-y:auto;background:#faf8f5;border-top:2px solid #201e1d;animation:sheetUp .22s cubic-bezier(.2,.8,.3,1)">
+
+        <sc-if value="{{ isCart }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:22px 20px 24px;display:flex;flex-direction:column;gap:18px">
+            <div style="display:flex;align-items:baseline;gap:12px">
+              <span style="font-size:20px;font-weight:700;letter-spacing:-.01em;flex:1">Your pre-order</span>
+              <button type="button" onClick="{{ closeSheet }}" style="border:0;background:transparent;color:#6b635d;font-size:13.5px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif;min-height:44px">Close</button>
+            </div>
+            <div style="display:flex;flex-direction:column">
+              <sc-for list="{{ cartLines }}" as="l" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #e2ddd6">
+                  <span style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0">
+                    <span style="font-size:15.5px;font-weight:600;line-height:1.3">{{ l.name }}</span>
+                    <span style="font-size:12.5px;color:#6b635d;font-variant-numeric:tabular-nums">{{ l.unit }} each</span>
+                  </span>
+                  <span style="display:flex;align-items:center;border:1.5px solid #cfc8c0">
+                    <button type="button" onClick="{{ l.dec }}" style="width:42px;height:44px;border:0;background:transparent;color:#201e1d;font-size:19px;cursor:pointer">−</button>
+                    <span style="min-width:26px;text-align:center;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums">{{ l.qty }}</span>
+                    <button type="button" onClick="{{ l.inc }}" style="width:42px;height:44px;border:0;background:transparent;color:#201e1d;font-size:19px;cursor:pointer">+</button>
+                  </span>
+                  <span style="font-size:15.5px;font-weight:600;font-variant-numeric:tabular-nums;min-width:66px;text-align:right">{{ l.amount }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:9px">{{ moneyBlock }}</div>
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <span style="font-size:12px;color:#6b635d">Pickup time</span>
+              <div class="hscroll" style="display:flex;gap:8px">
+                <sc-for list="{{ slots }}" as="t" hint-placeholder-count="5">
+                  <button type="button" onClick="{{ t.pick }}" style="flex:none;min-height:46px;padding:0 15px;border:1.5px solid {{ t.border }};background:{{ t.bg }};color:{{ t.fg }};font-size:14.5px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif;font-variant-numeric:tabular-nums">{{ t.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <button type="button" onClick="{{ goCheckout }}" style="min-height:56px;border:0;background:#a31621;color:#faf8f5;font-size:16px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 20px"><span>Continue · pay {{ advance }}</span><span>→</span></button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isCheckout }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:22px 20px 24px;display:flex;flex-direction:column;gap:18px">
+            <span style="font-size:20px;font-weight:700;letter-spacing:-.01em">Who is collecting?</span>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px">
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <label for="co2-name" style="font-size:12px;color:#6b635d">Name</label>
+                <input id="co2-name" type="text" value="{{ name }}" onChange="{{ onName }}" style="height:52px;box-sizing:border-box;border:1.5px solid #cfc8c0;background:#fff;padding:0 13px;font-size:15.5px;font-family:Archivo,sans-serif;color:#201e1d">
+              </div>
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <label for="co2-phone" style="font-size:12px;color:#6b635d">Phone</label>
+                <input id="co2-phone" type="tel" value="{{ phone }}" onChange="{{ onPhone }}" style="height:52px;box-sizing:border-box;border:1.5px solid #cfc8c0;background:#fff;padding:0 13px;font-size:15.5px;font-family:Archivo,sans-serif;font-variant-numeric:tabular-nums;color:#201e1d">
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:9px">{{ moneyBlock }}</div>
+            <p style="margin:0;font-size:13px;color:#6b635d;line-height:1.6">The 50% advance is taken by the payment gateway. Staff cannot mark an order paid by hand — it is confirmed the moment the gateway confirms.</p>
+            <button type="button" onClick="{{ pay }}" style="min-height:56px;border:0;background:#201e1d;color:#faf8f5;font-size:16px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 20px"><span>Pay {{ advance }}</span><span>→</span></button>
+            <button type="button" onClick="{{ openCart }}" style="min-height:48px;border:1.5px solid #cfc8c0;background:transparent;color:#4a443f;font-size:14.5px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 16px">Back to order</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isDone }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:26px 20px 26px;display:flex;flex-direction:column;gap:16px">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#6b635d">Advance received · order confirmed</span>
+            <span style="font-size:34px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums">WEB-000127</span>
+            <div style="display:flex;flex-direction:column;gap:9px">{{ moneyBlock }}</div>
+            <p style="margin:0;font-size:14.5px;color:#4a443f;line-height:1.6">Collect at <strong>{{ pickup }}</strong>. Pay the balance at the counter — we'll text this number when it's ready.</p>
+            <button type="button" onClick="{{ reset }}" style="min-height:54px;border:0;background:#a31621;color:#faf8f5;font-size:15.5px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 20px"><span>Back to the menu</span><span>→</span></button>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:430,&quot;height&quot;:1100}}">
+const MENU = [
+  ['Unlimited Thali', 220, 'Thalis', 1, 'Seasonal sabzi, dal, rice, curd, sweet and unlimited rotis', 1],
+  ['Family Feast (4)', 1180, 'Thalis', 0, '2 mains, dal, rice, 4 breads, raita, papad and gulab jamun', 1],
+  ['Paneer 65', 240, 'Starters', 1, 'Cottage cheese tossed with curry leaf and chilli', 1],
+  ['Chicken Lollipop', 280, 'Starters', 0, 'Six frenched wings, Andhra style, served dry', 1],
+  ['Butter Chicken', 310, 'Mains', 0, 'Slow-cooked in tomato, butter and fenugreek', 1],
+  ['Paneer Butter Masala', 260, 'Mains', 1, 'Mild, rich and a little sweet', 1],
+  ['Mutton Rogan Josh', 380, 'Mains', 0, 'Kashmiri chilli, yoghurt, whole spices', 0],
+  ['Dal Tadka', 180, 'Mains', 1, 'Yellow lentils finished with ghee and cumin', 1],
+  ['Chicken Dum Biryani', 320, 'Biryani', 0, 'Sealed and slow-cooked, with raita and salan', 1],
+  ['Veg Biryani', 230, 'Biryani', 1, 'Seasonal vegetables, saffron rice', 1],
+  ['Tandoori Chicken ½', 330, 'Tandoor', 0, 'Overnight marinade, straight off the clay oven', 1],
+  ['Butter Naan', 45, 'Tandoor', 1, 'Soft, brushed with butter', 1],
+  ['Tandoori Chai', 40, 'Chai & juice', 1, 'Smoked in a hot clay kulhad', 1],
+  ['Fresh Lime Soda', 60, 'Chai & juice', 1, 'Pressed to order, sweet or salted', 1]
+];
+const CATS = ['All', 'Thalis', 'Starters', 'Mains', 'Biryani', 'Tandoor', 'Chai & juice'];
+const NAV = ['Home', 'Menu', 'About', 'Visit'];
+const PHOTO = 'https://www.nextlevelfamilyrestaurant.com/images/';
+const DISH_PHOTO = {
+  'Unlimited Thali': 'https://commons.wikimedia.org/wiki/Special:FilePath/South_Indian_Thali.jpg?width=600',
+  'Family Feast (4)': 'https://commons.wikimedia.org/wiki/Special:FilePath/Indian_thali.jpg?width=600',
+  'Paneer 65': 'https://commons.wikimedia.org/wiki/Special:FilePath/Paneer_65.jpg?width=600',
+  'Chicken Lollipop': 'https://commons.wikimedia.org/wiki/Special:FilePath/Chicken_lollipop.jpg?width=600',
+  'Butter Chicken': 'https://commons.wikimedia.org/wiki/Special:FilePath/Chicken_makhani.jpg?width=600',
+  'Paneer Butter Masala': 'https://commons.wikimedia.org/wiki/Special:FilePath/Paneer_Butter_Masala.jpg?width=600',
+  'Mutton Rogan Josh': 'https://commons.wikimedia.org/wiki/Special:FilePath/Mutton_Rogan_Josh.jpg?width=600',
+  'Dal Tadka': 'https://commons.wikimedia.org/wiki/Special:FilePath/Dal_Tadka.jpg?width=600',
+  'Chicken Dum Biryani': 'https://commons.wikimedia.org/wiki/Special:FilePath/Chicken_Biryani.jpg?width=600',
+  'Veg Biryani': 'https://commons.wikimedia.org/wiki/Special:FilePath/Veg_Biryani.jpg?width=600',
+  'Tandoori Chicken ½': 'https://commons.wikimedia.org/wiki/Special:FilePath/Tandoori_chicken.jpg?width=600',
+  'Butter Naan': 'https://commons.wikimedia.org/wiki/Special:FilePath/Butter_naan.jpg?width=600',
+  'Tandoori Chai': 'https://commons.wikimedia.org/wiki/Special:FilePath/Tandoori_chai.jpg?width=600',
+  'Fresh Lime Soda': PHOTO + 'juice-stall.jpg'
+};
+
+class Component extends DCLogic {
+  state = { page:'Home', cat:'All', cart:{ 0:2, 8:1 }, sheet:null, slot:'8:30 PM', name:'', phone:'', faq:{} };
+
+  money = n => '₹' + Math.round(n).toLocaleString('en-IN');
+  add = i => this.setState(s => ({ cart: { ...s.cart, [i]: (s.cart[i] || 0) + 1 } }));
+  dec = i => this.setState(s => { const c = { ...s.cart }; c[i] = (c[i] || 0) - 1; if (c[i] <= 0) delete c[i]; return { cart:c }; });
+
+  renderVals() {
+    const e = React.createElement, s = this.state;
+    const keys = Object.keys(s.cart);
+    const total = keys.reduce((a, k) => a + MENU[k][1] * s.cart[k], 0);
+    const count = keys.reduce((a, k) => a + s.cart[k], 0);
+    const adv = Math.round(total / 2);
+
+    const row = (label, value, opts = {}) => e('div', { key:label, style:{ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:12,
+        paddingTop: opts.big ? 9 : 0, borderTop: opts.big ? '2px solid #201e1d' : 'none' } },
+      e('span', { style:{ fontSize: opts.big ? 15 : 13.5, color: opts.big ? '#201e1d' : '#6b635d', fontWeight: opts.big ? 600 : 400 } }, label),
+      e('span', { style:{ fontVariantNumeric:'tabular-nums', fontSize: opts.big ? 24 : 15, fontWeight: opts.big ? 700 : 600, color:'#201e1d', letterSpacing: opts.big ? '-.02em' : 0 } }, value));
+
+    const moneyBlock = [
+      row('Order total', this.money(total)),
+      row('50% advance, paid now', this.money(adv)),
+      row('Balance at pickup', this.money(total - adv), { big:true })
+    ];
+
+    return {
+      nav: NAV.map(n => ({ name:n, pick: () => this.setState({ page:n }),
+        fg: s.page === n ? '#201e1d' : '#6b635d', line: s.page === n ? '#a31621' : 'transparent',
+        weight: s.page === n ? 600 : 400 })),
+      goHome: () => this.setState({ page:'Home' }),
+      goOrder: () => this.setState({ page:'Menu' }), goVisit: () => this.setState({ page:'Visit' }),
+      isHome: s.page === 'Home', isMenu: s.page === 'Menu', isAbout: s.page === 'About', isVisit: s.page === 'Visit',
+      stats: [['12', 'years cooking for regulars'], ['120+', 'dishes made fresh daily'], ['4.8', 'average guest rating']]
+        .map(([value, label]) => ({ value, label })),
+      steps: [['1', 'Browse the menu', 'Live kitchen prices'], ['2', 'Add your dishes', 'Any quantity'],
+        ['3', 'Pay 50% advance', 'Card or UPI'], ['4', 'Collect at your slot', 'Balance at the counter']]
+        .map(([n, title, note]) => ({ n, title, note })),
+      features: [
+        ['nl2-f1', 'Tandoori chai', 'Smoked in a hot clay kulhad', 'Juice and chai counter', 'juice-stall.jpg'],
+        ['nl2-f2', 'Unlimited thali', "Refilled till you're full", 'Thali with rice, sambar, curries', 'food-thali.jpg'],
+        ['nl2-f3', 'Warli walls', 'Hand-painted, floor to roof', 'Warli art on the outer wall', 'mural-warli-wall.jpg'],
+        ['nl2-f4', 'Garden seating', 'Open-air, under the pots', 'Garden pergola with flower pots', 'garden-pergola.jpg']
+      ].map(([slot, title, note, placeholder, img]) => ({ slot, title, note, placeholder, src: PHOTO + img })),
+      reviews: [
+        ['“Portions are generous and nothing tastes like it came out of a factory kitchen. The thali is unbeatable value.”', 'Anjali R. — regular, Sunday lunch'],
+        ['“Took my in-laws here and they have asked to come back three times since. The painted walls make it feel special.”', 'Praveen S. — family of six'],
+        ['“Great for birthdays. They remembered our order from last time — small touch, but it matters.”', 'Deepa & family — since 2021']
+      ].map(([text, who]) => ({ text, who })),
+      gallery: [
+        ['nl2-g1', 'Entrance archway and sign', 'venue-gate.jpg'], ['nl2-g2', 'Warli mural, woman carrying a pot', 'mural-warli-woman.jpg'],
+        ['nl2-g3', 'Garden seating', 'garden-pergola.jpg'], ['nl2-g4', 'Juice and chai counter', 'juice-stall.jpg'],
+        ['nl2-g5', 'Warli art on the red wall', 'mural-warli-wall.jpg'], ['nl2-g6', 'Dining hall mural', 'venue-interior.jpg']
+      ].map(([slot, placeholder, img]) => ({ slot, placeholder, src: PHOTO + img })),
+      visitRows: [
+        ['Monday – Friday', '11:00 AM – 10:30 PM'], ['Saturday – Sunday', '11:00 AM – 11:00 PM'],
+        ['Phone / WhatsApp', '+91 90710 80138'], ['Parking', 'Open forecourt, cars and two-wheelers'],
+        ['Address', 'Highway-side, near Bengaluru']
+      ].map(([label, value]) => ({ label, value })),
+      faqs: [
+        ['Do you have vegetarian and Jain options?', 'Plenty of vegetarian across the menu. Jain — no onion or garlic — can be done for most curries; mention it when you order.'],
+        ['Is there garden seating?', 'Yes, a garden area with hanging flower pots and the painted Warli verandah. Ask for it when you arrive.'],
+        ['Can we book for a group or a birthday?', "Yes. Tell us the date, time and headcount and we'll set aside a table, and a cake-cutting corner if you like."],
+        ['Do you deliver?', "Takeaway only for now — pre-order here and we'll have it packed. We are not on delivery apps yet."]
+      ].map(([q, a], i) => ({ q, a, open: !!s.faq[i], sign: s.faq[i] ? '−' : '+',
+        toggle: () => this.setState(st => ({ faq: { ...st.faq, [i]: !st.faq[i] } })) })),
+      categories: CATS.map(c => ({ name:c, pick: () => this.setState({ cat:c }),
+        fg: s.cat === c ? '#201e1d' : '#6b635d', line: s.cat === c ? '#a31621' : 'transparent',
+        weight: s.cat === c ? 600 : 400 })),
+      dishes: MENU.map((m, i) => ({ m, i })).filter(({ m }) => s.cat === 'All' || m[2] === s.cat).map(({ m, i }) => {
+        const [name, price, , veg, desc, avail] = m;
+        const qty = s.cart[i] || 0;
+        const img = DISH_PHOTO[name];
+        return { name, desc, price: this.money(price), qty, slot: 'nl2-d' + i,
+          hasPhoto: !!img, noPhoto: !img, src: img || '',
+          vegColor: veg ? '#138808' : '#a31621', opacity: avail ? '1' : '.5',
+          unavailable: !avail, addable: !!avail && qty === 0, inCart: qty > 0,
+          add: () => avail && this.add(i), dec: () => this.dec(i) };
+      }),
+      showCartBtn: count > 0 && !s.sheet,
+      cartCount: count, cartTotal: this.money(total), advance: this.money(adv),
+      openCart: () => this.setState({ sheet:'cart' }),
+      closeSheet: () => this.setState({ sheet:null }), stop: ev => ev.stopPropagation(),
+      sheetOpen: !!s.sheet, isCart: s.sheet === 'cart', isCheckout: s.sheet === 'checkout', isDone: s.sheet === 'done',
+      cartLines: keys.map(k => ({ name: MENU[k][0], qty: s.cart[k], unit: this.money(MENU[k][1]),
+        amount: this.money(MENU[k][1] * s.cart[k]), inc: () => this.add(Number(k)), dec: () => this.dec(Number(k)) })),
+      moneyBlock,
+      slots: ['7:30 PM', '8:00 PM', '8:30 PM', '9:00 PM', '9:30 PM'].map(label => ({
+        label, pick: () => this.setState({ slot: label }),
+        bg: s.slot === label ? '#201e1d' : 'transparent', fg: s.slot === label ? '#faf8f5' : '#201e1d',
+        border: s.slot === label ? '#201e1d' : '#cfc8c0'
+      })),
+      pickup: s.slot, name: s.name, phone: s.phone,
+      onName: ev => this.setState({ name: ev.target.value }),
+      onPhone: ev => this.setState({ phone: ev.target.value }),
+      goCheckout: () => this.setState({ sheet:'checkout' }),
+      pay: () => this.setState({ sheet:'done' }),
+      reset: () => this.setState({ sheet:null, cart:{}, page:'Menu' })
+    };
+  }
+}
+</script>
+</body>
+</html>

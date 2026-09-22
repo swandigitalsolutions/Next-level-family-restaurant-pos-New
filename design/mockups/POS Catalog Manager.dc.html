@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-598406d1-4b4d-40c4-a649-fbae09130236/styles.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700&family=Archivo:wght@400;500;600;700&display=swap">
+<style>
+  body { margin:0; background:#fbf3e7; font-family:Archivo,system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#a31621; } a:hover { color:#7c0f19; }
+  button:focus-visible, input:focus-visible { outline:2px solid #a31621; outline-offset:2px; }
+  .hscroll { overflow-x:auto; scrollbar-width:none; } .hscroll::-webkit-scrollbar { display:none; }
+  @keyframes sheetUp { from { transform:translateY(100%); } to { transform:none; } }
+  @keyframes fade { from { opacity:0; } to { opacity:1; } }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#fbf3e7;color:#2b211a;padding-bottom:96px">
+
+  <div style="position:sticky;top:0;z-index:25;background:#fbf3e7;border-bottom:2px solid #2b211a">
+    <div style="max-width:1120px;margin:0 auto;padding:12px 12px 0;display:flex;flex-direction:column;gap:11px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-family:Bitter,serif;font-size:20px;font-weight:700;flex:1">Catalog</span>
+        <span style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5a4c3f;border:1.5px solid #d8c6ab;border-radius:6px;padding:5px 8px">Admin · Manager</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0">
+        <sc-for list="{{ catalogs }}" as="c" hint-placeholder-count="3">
+          <button type="button" onClick="{{ c.pick }}" style="min-height:52px;border:0;border-bottom:4px solid {{ c.line }};background:transparent;color:{{ c.fg }};font-size:14.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;font-family:Archivo,sans-serif">{{ c.name }}</button>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width:1120px;margin:0 auto;padding:12px 12px 0;display:flex;flex-direction:column;gap:12px">
+
+    <div style="display:flex;align-items:center;gap:8px;background:#fffaf2;border:1.5px solid #ddcbb1;border-radius:6px;padding:0 12px;height:52px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8a7967" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+      <input type="text" value="{{ query }}" onChange="{{ onQuery }}" placeholder="Search {{ itemCount }} items in this catalog" style="flex:1;border:0;background:transparent;font-size:16px;font-family:Archivo,sans-serif;color:#2b211a;height:100%;outline:none">
+    </div>
+
+    <div class="hscroll" style="display:flex;gap:7px;align-items:center">
+      <button type="button" onClick="{{ openCats }}" style="flex:none;min-height:44px;padding:0 13px;border-radius:6px;border:1.5px solid #2b211a;background:#2b211a;color:#fbf3e7;font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;font-family:Archivo,sans-serif">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>Categories
+      </button>
+      <sc-for list="{{ categories }}" as="c" hint-placeholder-count="6">
+        <button type="button" onClick="{{ c.pick }}" style="flex:none;min-height:44px;padding:0 14px;border-radius:6px;border:1.5px solid {{ c.border }};background:{{ c.bg }};color:{{ c.fg }};font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap">{{ c.name }}</button>
+      </sc-for>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+        <div style="display:flex;flex-direction:column">
+          <div style="position:sticky;top:118px;z-index:10;background:#efe0c9;border-radius:6px;padding:8px 12px;display:flex;align-items:center;gap:10px">
+            <span style="font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5a4c3f;flex:1">{{ g.name }}</span>
+            <span style="font-size:12px;color:#8a7967;font-variant-numeric:tabular-nums">{{ g.count }} items · {{ g.offCount }} off</span>
+          </div>
+          <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid #e3d3b8;opacity:{{ it.opacity }}">
+              <button type="button" onClick="{{ it.edit }}" style="flex:1;display:flex;align-items:center;gap:11px;min-height:56px;border:0;background:transparent;cursor:pointer;text-align:left;padding:0;font-family:Archivo,sans-serif;min-width:0">
+                <span style="flex:none;width:44px;height:44px;border-radius:6px;background:{{ it.swatch }};color:#fbf3e7;font-family:Bitter,serif;font-weight:700;font-size:17px;display:flex;align-items:center;justify-content:center">{{ it.initial }}</span>
+                <span style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0">
+                  <span style="font-size:15.5px;font-weight:600;line-height:1.25">{{ it.name }}</span>
+                  <span style="font-size:12px;color:#5a4c3f;font-variant-numeric:tabular-nums">{{ it.meta }}</span>
+                </span>
+                <span style="font-family:Bitter,serif;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums">{{ it.price }}</span>
+              </button>
+              <button type="button" onClick="{{ it.toggle }}" aria-label="Availability" style="width:62px;height:40px;border-radius:99px;border:0;cursor:pointer;background:{{ it.track }};position:relative;flex:none">
+                <span style="position:absolute;top:4px;left:{{ it.knob }};width:32px;height:32px;border-radius:50%;background:#fbf3e7;transition:left .13s ease;box-shadow:0 1px 4px rgba(43,33,26,.3)"></span>
+              </button>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="font-size:11.5px;color:#8a7967;line-height:1.5">Tap the switch to mark an item unavailable — that is the one action you need during service. Price and name changes live behind the item, and every price change is written to the audit log.</div>
+  </div>
+
+  <div style="position:fixed;left:0;right:0;bottom:0;z-index:30;padding:0 10px 10px;pointer-events:none">
+    <div style="max-width:1120px;margin:0 auto;pointer-events:auto">
+      <button type="button" onClick="{{ addItem }}" style="width:100%;min-height:62px;border:0;border-radius:14px;background:#a31621;color:#fbf3e7;font-size:17px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 18px;box-shadow:0 -2px 24px -8px rgba(43,33,26,.5)"><span>Add item to {{ catalogName }}</span><span style="font-size:24px">+</span></button>
+    </div>
+  </div>
+
+  <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:40;display:flex;align-items:flex-end;justify-content:center;background:rgba(43,33,26,.55);animation:fade .18s ease" onClick="{{ closeSheet }}">
+      <div onClick="{{ stop }}" style="width:100%;max-width:520px;max-height:92vh;overflow-y:auto;background:#fbf3e7;border-radius:18px 18px 0 0;animation:sheetUp .24s cubic-bezier(.2,.8,.3,1)">
+        <div style="position:sticky;top:0;background:#fbf3e7;padding:10px 0 6px;display:flex;justify-content:center;z-index:2"><span style="width:44px;height:5px;border-radius:99px;background:#d8c6ab"></span></div>
+
+        <sc-if value="{{ isEdit }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:2px 16px 22px;display:flex;flex-direction:column;gap:14px">
+            <span style="font-family:Bitter,serif;font-size:21px;font-weight:700">{{ editTitle }}</span>
+
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div style="flex:none;width:96px;height:96px;border-radius:10px;border:2px dashed #c9b69a;background:#f3e7d4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#8a7967">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10" r="1.6"></circle><path d="M5 17l5-5 4 4 2-2 3 3"></path></svg>
+                <span style="font-size:11px;font-weight:600">Photo</span>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+                <button type="button" style="min-height:48px;border:1.5px solid #2b211a;border-radius:8px;background:transparent;color:#2b211a;font-size:14px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 13px">Upload photo</button>
+                <button type="button" style="min-height:48px;border:1.5px solid #d8c6ab;border-radius:8px;background:transparent;color:#5a4c3f;font-size:14px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 13px">Crop to square</button>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <label for="it-name" style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5a4c3f">Name</label>
+              <input id="it-name" type="text" value="{{ formName }}" onChange="{{ onFormName }}" style="height:56px;box-sizing:border-box;border-radius:6px;border:1.5px solid #ddcbb1;background:#fffaf2;padding:0 13px;font-size:16px;font-family:Archivo,sans-serif;color:#2b211a">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <label for="it-desc" style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5a4c3f">Description</label>
+              <input id="it-desc" type="text" value="{{ formDesc }}" onChange="{{ onFormDesc }}" placeholder="Shown on the customer menu" style="height:56px;box-sizing:border-box;border-radius:6px;border:1.5px solid #ddcbb1;background:#fffaf2;padding:0 13px;font-size:16px;font-family:Archivo,sans-serif;color:#2b211a">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <label for="it-price" style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5a4c3f">Price (₹)</label>
+                <input id="it-price" type="number" value="{{ formPrice }}" onChange="{{ onFormPrice }}" style="height:56px;box-sizing:border-box;border-radius:6px;border:1.5px solid #ddcbb1;background:#fffaf2;padding:0 13px;font-size:16px;font-family:Archivo,sans-serif;font-variant-numeric:tabular-nums;color:#2b211a">
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <label for="it-cat" style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5a4c3f">Category</label>
+                <select id="it-cat" value="{{ formCat }}" onChange="{{ onFormCat }}" style="height:56px;border-radius:6px;border:1.5px solid #ddcbb1;background:#fffaf2;padding:0 10px;font-size:16px;font-family:Archivo,sans-serif;color:#2b211a">
+                  <sc-for list="{{ catOptions }}" as="o" hint-placeholder-count="5">
+                    <option value="{{ o.name }}">{{ o.name }}</option>
+                  </sc-for>
+                </select>
+              </div>
+            </div>
+
+            <sc-if value="{{ isAlcoholCatalog }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;background:#f2dcd0;border-radius:12px;padding:12px">
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <label for="it-tax" style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#7c0f19">Tax rate (%)</label>
+                  <input id="it-tax" type="number" value="{{ formTax }}" onChange="{{ onFormTax }}" style="height:56px;box-sizing:border-box;border-radius:6px;border:1.5px solid #d5b4ab;background:#fffaf2;padding:0 13px;font-size:16px;font-family:Archivo,sans-serif;font-variant-numeric:tabular-nums">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <label for="it-stock" style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#7c0f19">Stock count</label>
+                  <input id="it-stock" type="number" value="{{ formStock }}" onChange="{{ onFormStock }}" style="height:56px;box-sizing:border-box;border-radius:6px;border:1.5px solid #d5b4ab;background:#fffaf2;padding:0 13px;font-size:16px;font-family:Archivo,sans-serif;font-variant-numeric:tabular-nums">
+                </div>
+              </div>
+            </sc-if>
+
+            <div style="display:flex;align-items:center;gap:12px;background:#f3e7d4;border-radius:12px;padding:12px 14px">
+              <span style="flex:1;font-size:15.5px;font-weight:600">Available to order</span>
+              <button type="button" onClick="{{ toggleFormAvail }}" aria-label="Available" style="width:68px;height:40px;border-radius:99px;border:0;cursor:pointer;background:{{ formTrack }};position:relative;flex:none">
+                <span style="position:absolute;top:4px;left:{{ formKnob }};width:32px;height:32px;border-radius:50%;background:#fbf3e7;transition:left .13s ease"></span>
+              </button>
+            </div>
+
+            <button type="button" onClick="{{ save }}" style="min-height:60px;border:0;border-radius:14px;background:#a31621;color:#fbf3e7;font-size:17px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 18px"><span>Save item</span><span>→</span></button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isPriceConfirm }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:2px 16px 22px;display:flex;flex-direction:column;gap:15px">
+            <span style="font-family:Bitter,serif;font-size:21px;font-weight:700">Confirm price change</span>
+            <span style="font-size:14px;color:#5a4c3f;line-height:1.5">You are changing the price of <strong>{{ priceItem }}</strong>. This writes a permanent audit record against your account.</span>
+            <div style="display:flex;align-items:center;gap:12px;background:#f3e7d4;border-radius:14px;padding:16px">
+              <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+                <span style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#5a4c3f">Old price</span>
+                <span style="font-family:Bitter,serif;font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;color:#8a7967;text-decoration:line-through">{{ oldPrice }}</span>
+              </div>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2b211a" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+              <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+                <span style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a31621">New price</span>
+                <span style="font-family:Bitter,serif;font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;color:#a31621">{{ newPrice }}</span>
+              </div>
+            </div>
+            <div style="font-size:12.5px;color:#8a7967;line-height:1.5">Recorded as: price change · {{ priceItem }} · {{ oldPrice }} → {{ newPrice }} · by Anil (manager) · today</div>
+            <button type="button" onClick="{{ confirmPrice }}" style="min-height:60px;border:0;border-radius:14px;background:#a31621;color:#fbf3e7;font-size:17px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 18px"><span>Confirm and record</span><span>→</span></button>
+            <button type="button" onClick="{{ backToEdit }}" style="min-height:52px;border:1.5px solid #ddcbb1;border-radius:10px;background:transparent;color:#5a4c3f;font-size:15px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif">Go back</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isCats }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:2px 16px 22px;display:flex;flex-direction:column;gap:13px">
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <span style="font-family:Bitter,serif;font-size:21px;font-weight:700">{{ catalogName }} categories</span>
+              <span style="font-size:12.5px;color:#5a4c3f">Drag the grip to reorder — this is the order cashiers and guests see.</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <sc-for list="{{ catRows }}" as="c" hint-placeholder-count="6">
+                <div draggable="true" onDragStart="{{ c.dragStart }}" onDragOver="{{ c.dragOver }}" onDragEnd="{{ c.dragEnd }}" style="display:flex;align-items:center;gap:10px;background:{{ c.bg }};border:1.5px solid #e3d3b8;border-radius:10px;padding:7px 10px">
+                  <span style="width:36px;height:48px;display:flex;align-items:center;justify-content:center;color:#a2907c;cursor:grab;flex:none">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M8 7h.01M8 12h.01M8 17h.01M16 7h.01M16 12h.01M16 17h.01"></path></svg>
+                  </span>
+                  <input type="text" value="{{ c.name }}" onChange="{{ c.rename }}" style="flex:1;height:48px;border:0;background:transparent;font-size:16px;font-weight:600;font-family:Archivo,sans-serif;color:#2b211a;min-width:0;outline:none">
+                  <span style="font-size:12px;color:#8a7967;font-variant-numeric:tabular-nums">{{ c.count }}</span>
+                  <button type="button" onClick="{{ c.remove }}" aria-label="Remove category" style="width:48px;height:48px;border:0;background:transparent;color:#8a7967;font-size:20px;cursor:pointer;border-radius:6px;flex:none" style-hover="background:#f7dfe1;color:#a31621">×</button>
+                </div>
+              </sc-for>
+            </div>
+            <button type="button" onClick="{{ addCat }}" style="min-height:56px;border:1.5px dashed #c9b69a;border-radius:10px;background:transparent;color:#5a4c3f;font-size:15px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 15px">+ Add category</button>
+            <button type="button" onClick="{{ closeSheet }}" style="min-height:56px;border:0;border-radius:12px;background:#2b211a;color:#fbf3e7;font-size:16px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 16px">Done</button>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:430,&quot;height&quot;:1000}}">
+const SWATCH = ['#a31621', '#7c0f19', '#4b6b3d', '#e3a522', '#ff9933', '#2b211a'];
+const SEED = {
+  FOOD: {
+    cats: ['Starters', 'Main course', 'Breads', 'Rice & biryani', 'Tandoor', 'Desserts'],
+    items: [
+      ['Paneer 65', 240, 'Starters', 1], ['Chilli Gobi', 190, 'Starters', 1], ['Chicken Lollipop', 280, 'Starters', 1],
+      ['Butter Chicken', 310, 'Main course', 1], ['Paneer Butter Masala', 260, 'Main course', 1],
+      ['Dal Tadka', 180, 'Main course', 1], ['Mutton Rogan Josh', 380, 'Main course', 0],
+      ['Tandoori Roti', 20, 'Breads', 1], ['Butter Naan', 45, 'Breads', 1], ['Lachha Paratha', 55, 'Breads', 1],
+      ['Veg Biryani', 230, 'Rice & biryani', 1], ['Chicken Dum Biryani', 320, 'Rice & biryani', 1],
+      ['Jeera Rice', 150, 'Rice & biryani', 1], ['Tandoori Chicken ½', 330, 'Tandoor', 1],
+      ['Seekh Kebab', 290, 'Tandoor', 1], ['Gulab Jamun (2)', 90, 'Desserts', 1], ['Gajar Halwa', 120, 'Desserts', 0]
+    ], total: 198
+  },
+  ALCOHOL: {
+    cats: ['Beer', 'Whisky', 'Rum', 'Vodka', 'Wine'],
+    items: [
+      ['Kingfisher Premium 650 ml', 260, 'Beer', 1, 18, 24], ['Kingfisher Premium 330 ml', 150, 'Beer', 1, 18, 40],
+      ['Bira 91 White 330 ml', 190, 'Beer', 1, 18, 6], ['Royal Stag 60 ml peg', 160, 'Whisky', 1, 20, 12],
+      ['Blenders Pride 60 ml peg', 220, 'Whisky', 1, 20, 2], ['Jack Daniel\u2019s 30 ml peg', 320, 'Whisky', 1, 20, 5],
+      ['Old Monk 60 ml peg', 140, 'Rum', 1, 20, 31], ['Magic Moments 60 ml peg', 150, 'Vodka', 0, 20, 0],
+      ['Sula Chenin Blanc 150 ml', 320, 'Wine', 1, 20, 9]
+    ], total: 42
+  },
+  CAFE: {
+    cats: ['Tea', 'Coffee', 'Ice creams', 'Water bottles', 'Cool drinks', 'Juices', 'Other'],
+    items: [
+      ['Masala Chai', 20, 'Tea', 1], ['Ginger Chai', 25, 'Tea', 1], ['Black Tea', 15, 'Tea', 1],
+      ['Filter Coffee', 30, 'Coffee', 1], ['Cold Coffee', 70, 'Coffee', 1], ['Vanilla Cone', 40, 'Ice creams', 1],
+      ['Chocobar', 35, 'Ice creams', 0], ['Water 1 L', 20, 'Water bottles', 1], ['Thums Up 250 ml', 25, 'Cool drinks', 1],
+      ['Fresh Lime', 40, 'Juices', 1], ['Veg Puff', 30, 'Other', 1]
+    ], total: 31
+  }
+};
+
+class Component extends DCLogic {
+  state = {
+    catalog: 'FOOD', cat: 'All', query: '', sheet: null, data: JSON.parse(JSON.stringify(SEED)),
+    form: null, dragIdx: null
+  };
+
+  money = n => '₹' + Number(n).toLocaleString('en-IN');
+
+  renderVals() {
+    const s = this.state;
+    const cur = s.data[s.catalog];
+    const isAlc = s.catalog === 'ALCOHOL';
+    const q = s.query.trim().toLowerCase();
+
+    const visible = cur.items.filter(it => q ? it[0].toLowerCase().includes(q) : (s.cat === 'All' || it[2] === s.cat));
+    const groups = cur.cats
+      .map(c => ({ name: c, items: visible.filter(it => it[2] === c) }))
+      .filter(g => g.items.length)
+      .map(g => ({
+        name: g.name, count: g.items.length, offCount: g.items.filter(it => !it[3]).length,
+        items: g.items.map(it => {
+          const idx = cur.items.indexOf(it);
+          return {
+            name: it[0], price: this.money(it[1]), initial: it[0][0],
+            swatch: it[3] ? SWATCH[idx % SWATCH.length] : '#c9b69a',
+            opacity: it[3] ? '1' : '.55',
+            meta: isAlc ? (it[5] + ' in stock · ' + it[4] + '% tax') : (it[3] ? 'Available' : 'Unavailable — hidden from tills'),
+            track: it[3] ? '#4b6b3d' : '#c9b69a', knob: it[3] ? '26px' : '4px',
+            toggle: () => this.setState(st => {
+              const d = { ...st.data };
+              d[st.catalog] = { ...cur, items: cur.items.map((x, i) => i === idx ? [...x.slice(0, 3), x[3] ? 0 : 1, ...x.slice(4)] : x) };
+              return { data: d };
+            }),
+            edit: () => this.setState({ sheet:'edit', form: { idx, name: it[0], desc:'', price: String(it[1]), cat: it[2], avail: !!it[3], tax: String(it[4] ?? 18), stock: String(it[5] ?? 0), oldPrice: it[1] } })
+          };
+        })
+      }));
+
+    const f = s.form || {};
+    const priceChanged = f.idx != null && Number(f.price) !== f.oldPrice;
+
+    return {
+      catalogs: ['FOOD','ALCOHOL','CAFE'].map(c => ({
+        name: c, pick: () => this.setState({ catalog:c, cat:'All', query:'' }),
+        fg: s.catalog === c ? '#a31621' : '#5a4c3f',
+        line: s.catalog === c ? '#a31621' : 'transparent'
+      })),
+      catalogName: s.catalog.charAt(0) + s.catalog.slice(1).toLowerCase(),
+      isAlcoholCatalog: isAlc,
+      itemCount: cur.total,
+      query: s.query, onQuery: ev => this.setState({ query: ev.target.value }),
+      categories: ['All', ...cur.cats].map(c => ({
+        name: c, pick: () => this.setState({ cat:c, query:'' }),
+        bg: s.cat === c && !q ? '#2b211a' : 'transparent', fg: s.cat === c && !q ? '#fbf3e7' : '#2b211a',
+        border: s.cat === c && !q ? '#2b211a' : '#d8c6ab'
+      })),
+      groups,
+      addItem: () => this.setState({ sheet:'edit', form: { idx:null, name:'', desc:'', price:'', cat: cur.cats[0], avail:true, tax:'18', stock:'0', oldPrice:null } }),
+      openCats: () => this.setState({ sheet:'cats' }),
+      closeSheet: () => this.setState({ sheet:null }), stop: ev => ev.stopPropagation(),
+      sheetOpen: !!s.sheet, isEdit: s.sheet === 'edit', isCats: s.sheet === 'cats', isPriceConfirm: s.sheet === 'price',
+      editTitle: f.idx != null ? 'Edit item' : 'New item',
+      formName: f.name || '', formDesc: f.desc || '', formPrice: f.price || '', formCat: f.cat || '',
+      formTax: f.tax || '', formStock: f.stock || '',
+      catOptions: cur.cats.map(c => ({ name: c })),
+      onFormName: ev => this.setState(st => ({ form: { ...st.form, name: ev.target.value } })),
+      onFormDesc: ev => this.setState(st => ({ form: { ...st.form, desc: ev.target.value } })),
+      onFormPrice: ev => this.setState(st => ({ form: { ...st.form, price: ev.target.value } })),
+      onFormCat: ev => this.setState(st => ({ form: { ...st.form, cat: ev.target.value } })),
+      onFormTax: ev => this.setState(st => ({ form: { ...st.form, tax: ev.target.value } })),
+      onFormStock: ev => this.setState(st => ({ form: { ...st.form, stock: ev.target.value } })),
+      toggleFormAvail: () => this.setState(st => ({ form: { ...st.form, avail: !st.form.avail } })),
+      formTrack: f.avail ? '#4b6b3d' : '#c9b69a', formKnob: f.avail ? '32px' : '4px',
+      save: () => this.setState(st => {
+        if (priceChanged) return { sheet:'price' };
+        const d = { ...st.data }, c = d[st.catalog];
+        if (st.form.idx != null) {
+          c.items = c.items.map((x, i) => i === st.form.idx ? [st.form.name, Number(st.form.price), st.form.cat, st.form.avail ? 1 : 0, ...x.slice(4)] : x);
+        } else {
+          c.items = [...c.items, [st.form.name || 'New item', Number(st.form.price) || 0, st.form.cat, st.form.avail ? 1 : 0, Number(st.form.tax), Number(st.form.stock)]];
+        }
+        return { data: d, sheet:null, form:null };
+      }),
+      priceItem: f.name, oldPrice: this.money(f.oldPrice || 0), newPrice: this.money(f.price || 0),
+      backToEdit: () => this.setState({ sheet:'edit' }),
+      confirmPrice: () => this.setState(st => {
+        const d = { ...st.data }, c = d[st.catalog];
+        c.items = c.items.map((x, i) => i === st.form.idx ? [st.form.name, Number(st.form.price), st.form.cat, st.form.avail ? 1 : 0, ...x.slice(4)] : x);
+        return { data: d, sheet:null, form:null };
+      }),
+      catRows: cur.cats.map((c, i) => ({
+        name: c, count: cur.items.filter(x => x[2] === c).length,
+        bg: s.dragIdx === i ? '#f8eddb' : '#fffaf2',
+        dragStart: () => this.setState({ dragIdx: i }),
+        dragOver: ev => {
+          ev.preventDefault();
+          const from = s.dragIdx;
+          if (from == null || from === i) return;
+          this.setState(st => {
+            const d = { ...st.data }, cc = d[st.catalog], arr = [...cc.cats];
+            arr.splice(i, 0, arr.splice(from, 1)[0]);
+            cc.cats = arr;
+            return { data: d, dragIdx: i };
+          });
+        },
+        dragEnd: () => this.setState({ dragIdx: null }),
+        rename: ev => {
+          const v = ev.target.value;
+          this.setState(st => {
+            const d = { ...st.data }, cc = d[st.catalog];
+            const old = cc.cats[i];
+            cc.cats = cc.cats.map((x, j) => j === i ? v : x);
+            cc.items = cc.items.map(x => x[2] === old ? [x[0], x[1], v, ...x.slice(3)] : x);
+            return { data: d };
+          });
+        },
+        remove: () => this.setState(st => {
+          const d = { ...st.data }, cc = d[st.catalog];
+          cc.cats = cc.cats.filter((_, j) => j !== i);
+          return { data: d };
+        })
+      })),
+      addCat: () => this.setState(st => {
+        const d = { ...st.data }, cc = d[st.catalog];
+        cc.cats = [...cc.cats, 'New category'];
+        return { data: d };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

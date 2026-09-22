@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-598406d1-4b4d-40c4-a649-fbae09130236/styles.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  body { margin:0; background:#fbf3e7; font-family:Archivo,system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#a31621; } a:hover { color:#7c0f19; }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline:2px solid #a31621; outline-offset:2px; }
+  .hscroll { overflow-x:auto; scrollbar-width:none; } .hscroll::-webkit-scrollbar { display:none; }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#fbf3e7;color:#2b211a;padding-bottom:48px">
+
+  <div style="position:sticky;top:0;z-index:20;background:#fbf3e7;border-bottom:2px solid #2b211a">
+    <div style="max-width:1120px;margin:0 auto;padding:12px 12px 10px;display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+          <span style="font-family:Bitter,serif;font-size:20px;font-weight:700">Audit log</span>
+          <span style="font-size:11.5px;color:#5a4c3f">Append-only · admin and owner · managers excluded</span>
+        </div>
+        <button type="button" style="min-height:44px;padding:0 13px;border-radius:6px;border:1.5px solid #2b211a;background:transparent;color:#2b211a;font-size:13.5px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif">Export CSV</button>
+      </div>
+      <div class="hscroll" style="display:flex;gap:7px">
+        <select value="{{ range }}" onChange="{{ onRange }}" style="flex:none;height:44px;border-radius:6px;border:1.5px solid #d8c6ab;background:#fffaf2;font-family:Archivo,sans-serif;font-size:13.5px;font-weight:600;color:#2b211a;padding:0 10px">
+          <option value="Last 7 days">Last 7 days</option><option value="Today">Today</option><option value="This month">This month</option>
+        </select>
+        <select value="{{ actor }}" onChange="{{ onActor }}" style="flex:none;height:44px;border-radius:6px;border:1.5px solid #d8c6ab;background:#fffaf2;font-family:Archivo,sans-serif;font-size:13.5px;font-weight:600;color:#2b211a;padding:0 10px">
+          <sc-for list="{{ actors }}" as="a" hint-placeholder-count="5"><option value="{{ a.name }}">{{ a.name }}</option></sc-for>
+        </select>
+        <select value="{{ action }}" onChange="{{ onAction }}" style="flex:none;height:44px;border-radius:6px;border:1.5px solid #d8c6ab;background:#fffaf2;font-family:Archivo,sans-serif;font-size:13.5px;font-weight:600;color:#2b211a;padding:0 10px">
+          <sc-for list="{{ actionTypes }}" as="a" hint-placeholder-count="5"><option value="{{ a.name }}">{{ a.name }}</option></sc-for>
+        </select>
+        <select value="{{ entity }}" onChange="{{ onEntity }}" style="flex:none;height:44px;border-radius:6px;border:1.5px solid #d8c6ab;background:#fffaf2;font-family:Archivo,sans-serif;font-size:13.5px;font-weight:600;color:#2b211a;padding:0 10px">
+          <sc-for list="{{ entityTypes }}" as="a" hint-placeholder-count="5"><option value="{{ a.name }}">{{ a.name }}</option></sc-for>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width:1120px;margin:0 auto;padding:0 12px">
+    <sc-for list="{{ days }}" as="d" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column">
+        <div style="position:sticky;top:118px;z-index:10;background:#fbf3e7;padding:14px 0 7px;display:flex;align-items:baseline;gap:10px;border-bottom:2px solid #2b211a">
+          <span style="font-family:Bitter,serif;font-size:15px;font-weight:700">{{ d.label }}</span>
+          <span style="flex:1"></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a7967;font-variant-numeric:tabular-nums">{{ d.count }} entries</span>
+        </div>
+        <sc-for list="{{ d.rows }}" as="r" hint-placeholder-count="6">
+          <div style="border-bottom:1px solid #e3d3b8">
+            <button type="button" onClick="{{ r.toggle }}" style="width:100%;display:flex;align-items:flex-start;gap:10px;min-height:52px;border:0;background:transparent;cursor:pointer;padding:9px 2px;text-align:left;font-family:Archivo,sans-serif" style-hover="background:#f3e7d4">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#5a4c3f;font-variant-numeric:tabular-nums;flex:none;padding-top:2px">{{ r.time }}</span>
+              <span style="flex:none;width:6px;height:6px;border-radius:50%;background:{{ r.dot }};margin-top:8px"></span>
+              <span style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0">
+                <span style="font-size:14px;font-weight:600;line-height:1.35">{{ r.summary }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8a7967">{{ r.entity }}</span>
+              </span>
+              <span style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding-top:1px">
+                <span style="font-size:12px;font-weight:600;color:#2b211a;white-space:nowrap">{{ r.actor }}</span>
+                <span style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8a7967">{{ r.role }}</span>
+              </span>
+            </button>
+            <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#f3e7d4;border-left:3px solid #2b211a;border-radius:0 6px 6px 0;margin:0 0 10px 0;padding:12px 13px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
+                  <div style="display:flex;flex-direction:column;gap:3px">
+                    <span style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8a7967">Before</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5a4c3f;line-height:1.5">{{ r.before }}</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:3px">
+                    <span style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a31621">After</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#2b211a;line-height:1.5">{{ r.after }}</span>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid #e3d3b8;padding-top:9px">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8a7967">{{ r.ref }}</span>
+                  <span style="flex:1"></span>
+                  <button type="button" onClick="{{ r.copy }}" style="min-height:44px;padding:0 12px;border-radius:6px;border:1.5px solid #d8c6ab;background:#fffaf2;color:#2b211a;font-size:13px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif">{{ r.copyLabel }}</button>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+
+    <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:9px;padding:46px 16px;text-align:center">
+        <span style="font-size:15.5px;font-weight:600;color:#5a4c3f">No entries match these filters</span>
+        <span style="font-size:13px;color:#8a7967;max-width:270px;line-height:1.45">The log is append-only — nothing is ever removed, so widening the range will always bring records back.</span>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:430,&quot;height&quot;:950}}">
+const LOG = [
+  ['19 Sep 2026', '21:41:07', 'Bill settled', 'Bill', 'FOOD-004182', 'Vikram Naik', 'billing', 'session open · ₹1,690', 'settled · UPI · ₹1,540 · immutable', '#4b6b3d'],
+  ['19 Sep 2026', '21:41:07', 'Bill created', 'Bill', 'ALCOHOL-000937', 'Vikram Naik', 'billing', '—', 'created · subtotal ₹1,136 · tax ₹176', '#4b6b3d'],
+  ['19 Sep 2026', '21:12:44', 'Website order settled', 'Web order', 'WEB-000125', 'system (gateway)', 'gateway', 'CONFIRMED · advance ₹620', 'COMPLETED · balance ₹620 collected', '#138808'],
+  ['19 Sep 2026', '20:58:10', 'Price changed', 'Catalog item', 'item:butter-chicken', 'Anil Kumar', 'manager', 'price ₹290', 'price ₹310', '#e3a522'],
+  ['19 Sep 2026', '20:40:02', 'Item marked unavailable', 'Catalog item', 'item:mutton-rogan-josh', 'Anil Kumar', 'manager', 'available true', 'available false', '#e3a522'],
+  ['19 Sep 2026', '19:22:31', 'QR token regenerated', 'Table', 'table:8', 'Priya Shetty', 'admin', 'tok_1F3QK9', 'tok_7XB2MD · printed card invalid', '#a31621'],
+  ['19 Sep 2026', '18:05:19', 'Staff role changed', 'Staff', 'user:suresh.p', 'Priya Shetty', 'admin', 'role billing · active', 'role billing · deactivated', '#a31621'],
+  ['18 Sep 2026', '23:04:58', 'Bill settled', 'Bill', 'FOOD-004166', 'Vikram Naik', 'billing', 'session open · ₹2,240', 'settled · Cash · ₹2,240', '#4b6b3d'],
+  ['18 Sep 2026', '22:47:12', 'Bill created', 'Bill', 'CAFE-000111', 'Meena Rao', 'cafe_billing', '—', 'created · ₹45 · Cash', '#4b6b3d'],
+  ['18 Sep 2026', '17:30:00', 'Staff account created', 'Staff', 'user:meena.r', 'Priya Shetty', 'admin', '—', 'role cafe_billing · active', '#a31621'],
+  ['18 Sep 2026', '11:14:26', 'Price changed', 'Catalog item', 'item:masala-chai', 'Anil Kumar', 'manager', 'price ₹15', 'price ₹20', '#e3a522']
+];
+
+class Component extends DCLogic {
+  state = { range:'Last 7 days', actor:'All actors', action:'All actions', entity:'All entities', open:{}, copied:null };
+
+  renderVals() {
+    const s = this.state;
+    const rows = LOG.filter(r =>
+      (s.actor === 'All actors' || r[5] === s.actor) &&
+      (s.action === 'All actions' || r[2] === s.action) &&
+      (s.entity === 'All entities' || r[3] === s.entity));
+
+    const dayKeys = [...new Set(rows.map(r => r[0]))];
+    const days = dayKeys.map(d => ({
+      label: d === '19 Sep 2026' ? 'Today · 19 Sep 2026' : d,
+      count: rows.filter(r => r[0] === d).length,
+      rows: rows.filter(r => r[0] === d).map((r, i) => {
+        const key = r[0] + r[1] + i;
+        return {
+          time: r[1], summary: r[2], entity: r[3].toLowerCase() + ' · ' + r[4], actor: r[5], role: r[6],
+          before: r[7], after: r[8], dot: r[9],
+          ref: 'ref ' + r[4] + ' · ' + r[0] + ' ' + r[1] + ' IST',
+          open: !!s.open[key],
+          toggle: () => this.setState(st => ({ open: { ...st.open, [key]: !st.open[key] } })),
+          copyLabel: s.copied === key ? 'Copied' : 'Copy reference',
+          copy: () => {
+            const text = r[4] + ' · ' + r[0] + ' ' + r[1] + ' · ' + r[2] + ' · ' + r[5];
+            if (navigator.clipboard) navigator.clipboard.writeText(text);
+            this.setState({ copied: key });
+            setTimeout(() => this.setState({ copied: null }), 1600);
+          }
+        };
+      })
+    }));
+
+    const uniq = i => ['All ' + (i === 5 ? 'actors' : i === 2 ? 'actions' : 'entities'), ...new Set(LOG.map(r => r[i]))].map(name => ({ name }));
+
+    return {
+      range: s.range, onRange: ev => this.setState({ range: ev.target.value }),
+      actor: s.actor, onActor: ev => this.setState({ actor: ev.target.value }), actors: uniq(5),
+      action: s.action, onAction: ev => this.setState({ action: ev.target.value }), actionTypes: uniq(2),
+      entity: s.entity, onEntity: ev => this.setState({ entity: ev.target.value }), entityTypes: uniq(3),
+      days, empty: rows.length === 0
+    };
+  }
+}
+</script>
+</body>
+</html>

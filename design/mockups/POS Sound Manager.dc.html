@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-598406d1-4b4d-40c4-a649-fbae09130236/styles.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700&family=Archivo:wght@400;500;600;700&display=swap">
+<style>
+  body { margin:0; background:#2b211a; font-family:Archivo,system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#a31621; } a:hover { color:#7c0f19; }
+  button:focus-visible, input:focus-visible { outline:2px solid #a31621; outline-offset:2px; }
+  input[type=range] { -webkit-appearance:none; appearance:none; background:transparent; }
+  input[type=range]::-webkit-slider-runnable-track { height:12px; border-radius:99px; background:#e3d3b8; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:40px; height:40px; border-radius:50%; background:#a31621; border:4px solid #fbf3e7; margin-top:-14px; box-shadow:0 2px 8px rgba(43,33,26,.35); cursor:pointer; }
+  input[type=range]::-moz-range-track { height:12px; border-radius:99px; background:#e3d3b8; }
+  input[type=range]::-moz-range-thumb { width:34px; height:34px; border-radius:50%; background:#a31621; border:4px solid #fbf3e7; cursor:pointer; }
+  @keyframes sheetUp { from { transform:translateY(100%); } to { transform:none; } }
+  @keyframes ringPulse { 0%,100%{ background:#a31621; } 50%{ background:#7c0f19; } }
+  @keyframes barIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:none; } }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#2b211a;display:flex;flex-direction:column;align-items:center;gap:0">
+
+  <sc-if value="{{ isFirstRun }}" hint-placeholder-val="{{ false }}">
+    <div style="width:100%;max-width:520px;padding:22px 14px;display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#8a7967">First run · audio locked by the browser</div>
+      <div style="background:#fbf3e7;border-radius:18px;overflow:hidden">
+        <div style="background:#a31621;padding:16px 18px;display:flex;align-items:center;gap:13px">
+          <span style="width:52px;height:52px;border-radius:50%;background:#f6c445;display:flex;align-items:center;justify-content:center;flex:none">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#7c0f19" stroke-width="2.4" stroke-linecap="round"><path d="M11 5L6 9H3v6h3l5 4V5zM16 9a4 4 0 010 6M19 6a8 8 0 010 12"></path></svg>
+          </span>
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <span style="font-family:Bitter,serif;font-size:21px;font-weight:700;color:#fbf3e7">Tap to enable order sounds</span>
+            <span style="font-size:12.5px;color:#f6c445;font-weight:600">One-time setup on this device</span>
+          </div>
+        </div>
+        <div style="padding:16px 18px 18px;display:flex;flex-direction:column;gap:13px">
+          <span style="font-size:14.5px;color:#5a4c3f;line-height:1.5">Phones and tablets block sound until someone touches the screen. Tap once now and this tablet will chime for every new order for the rest of the shift.</span>
+          <button type="button" onClick="{{ enableAudio }}" style="min-height:64px;border:0;border-radius:14px;background:#a31621;color:#fbf3e7;font-size:18px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 20px" style-hover="filter:brightness(1.08)"><span>Enable order sounds</span><span>→</span></button>
+          <button type="button" onClick="{{ skipAudio }}" style="min-height:48px;border:0;background:transparent;color:#8a7967;font-size:14px;font-weight:600;cursor:pointer;font-family:Archivo,sans-serif;text-align:left">Not now — I will watch the screen</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ ringing }}" hint-placeholder-val="{{ true }}">
+    <div style="width:100%;max-width:520px;padding:14px 14px 0">
+      <button type="button" onClick="{{ silence }}" style="width:100%;min-height:60px;border:0;border-radius:12px;color:#fbf3e7;cursor:pointer;display:flex;align-items:center;gap:12px;padding:0 16px;animation:ringPulse 1s ease-in-out infinite, barIn .2s ease;font-family:Archivo,sans-serif;text-align:left">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" style="flex:none"><path d="M11 5L6 9H3v6h3l5 4V5zM16 9a4 4 0 010 6M19 6a8 8 0 010 12"></path></svg>
+        <span style="flex:1;font-size:16px;font-weight:700">{{ ringingText }}</span>
+        <span style="font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:rgba(251,243,231,.2);padding:7px 11px;border-radius:6px">Silence</span>
+      </button>
+    </div>
+  </sc-if>
+
+  <div style="width:100%;max-width:520px;margin-top:14px;background:#fbf3e7;border-radius:18px 18px 0 0;animation:sheetUp .28s cubic-bezier(.2,.8,.3,1);min-height:70vh">
+    <div style="position:sticky;top:0;background:#fbf3e7;padding:10px 0 6px;display:flex;justify-content:center;border-radius:18px 18px 0 0;z-index:3"><span style="width:44px;height:5px;border-radius:99px;background:#d8c6ab"></span></div>
+
+    <div style="padding:4px 16px 26px;display:flex;flex-direction:column;gap:18px;color:#2b211a">
+
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <span style="font-family:Bitter,serif;font-size:22px;font-weight:700">Order sounds</span>
+        <span style="font-size:14px;color:#5a4c3f;line-height:1.45">Give each kind of order its own tone, so you know what just arrived without looking at the screen.</span>
+        <span style="font-size:11.5px;color:#8a7967;padding-top:2px">These settings apply to this device only.</span>
+      </div>
+
+      <sc-if value="{{ muted }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;gap:10px;background:#e3a522;border-radius:10px;padding:12px 13px;align-items:flex-start">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2b211a" stroke-width="2.2" stroke-linecap="round" style="flex:none;margin-top:1px"><path d="M3 3l18 18M11 5L6 9H3v6h3l5 4V5z"></path></svg>
+          <span style="font-size:13.5px;color:#2b211a;line-height:1.45;font-weight:600">Everything is muted on this device. Every order board will carry a permanent warning strip until you unmute.</span>
+        </div>
+      </sc-if>
+
+      <div style="display:flex;align-items:center;gap:13px;background:#f3e7d4;border-radius:14px;padding:13px 15px">
+        <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+          <span style="font-size:15.5px;font-weight:700">Mute all alerts</span>
+          <span style="font-size:12.5px;color:#5a4c3f">{{ muteHint }}</span>
+        </div>
+        <button type="button" onClick="{{ toggleMute }}" aria-label="Mute all alerts" style="width:76px;height:44px;border-radius:99px;border:0;cursor:pointer;background:{{ muteTrack }};position:relative;flex:none;transition:background .15s ease">
+          <span style="position:absolute;top:4px;left:{{ muteKnob }};width:36px;height:36px;border-radius:50%;background:#fbf3e7;transition:left .15s ease;box-shadow:0 2px 6px rgba(43,33,26,.3)"></span>
+        </button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:11px">
+        <span style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#5a4c3f">Volume</span>
+        <div style="display:flex;align-items:center;gap:13px">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2b211a" stroke-width="2.2" stroke-linecap="round" style="flex:none"><path d="M11 5L6 9H3v6h3l5 4V5zM16 9a4 4 0 010 6M19 6a8 8 0 010 12"></path></svg>
+          <input type="range" min="0" max="100" value="{{ volume }}" onChange="{{ onVolume }}" style="flex:1;height:40px">
+          <span style="font-family:Bitter,serif;font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;min-width:52px;text-align:right">{{ volumeLabel }}</span>
+        </div>
+        <button type="button" onClick="{{ testCurrent }}" style="min-height:52px;border:1.5px solid #2b211a;border-radius:10px;background:transparent;color:#2b211a;font-size:15px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;text-align:left;padding:0 15px" style-hover="background:#f0e2ca">Test · play {{ currentToneName }} at this volume</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#5a4c3f">Tone library</span>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <sc-for list="{{ tones }}" as="t" hint-placeholder-count="8">
+            <div style="display:flex;align-items:center;gap:11px;border-radius:12px;border:2px solid {{ t.border }};background:{{ t.bg }};padding:9px 11px">
+              <button type="button" onClick="{{ t.select }}" style="flex:1;display:flex;align-items:center;gap:12px;min-height:56px;border:0;background:transparent;cursor:pointer;text-align:left;padding:0;font-family:Archivo,sans-serif">
+                <span style="width:22px;height:22px;border-radius:50%;border:2px solid {{ t.dotBorder }};background:{{ t.dotFill }};flex:none"></span>
+                <span style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0">
+                  <span style="font-size:15.5px;font-weight:600;color:#2b211a">{{ t.name }}</span>
+                  <span style="font-size:11.5px;color:#8a7967">{{ t.mood }}</span>
+                </span>
+                <span style="flex:none;width:86px;height:30px;display:flex;align-items:center">{{ t.wave }}</span>
+              </button>
+              <button type="button" onClick="{{ t.play }}" aria-label="Preview tone" style="width:52px;height:52px;border-radius:10px;border:1.5px solid #d8c6ab;background:#fffaf2;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none;color:#a31621" style-hover="background:#f0e2ca">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5l12 7-12 7z"></path></svg>
+              </button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#5a4c3f">Per channel</span>
+        <sc-for list="{{ channels }}" as="c" hint-placeholder-count="3">
+          <div style="background:#f3e7d4;border-radius:14px;padding:13px;display:flex;flex-direction:column;gap:11px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="width:10px;height:10px;border-radius:2px;background:{{ c.color }};flex:none"></span>
+              <span style="flex:1;font-size:15.5px;font-weight:700">{{ c.name }}</span>
+              <button type="button" onClick="{{ c.play }}" style="min-height:44px;padding:0 13px;border-radius:8px;border:1.5px solid #d8c6ab;background:#fffaf2;color:#a31621;font-size:13.5px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif">Play</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:9px">
+              <span style="font-size:12px;color:#5a4c3f;min-width:42px">Tone</span>
+              <select value="{{ c.tone }}" onChange="{{ c.setTone }}" style="flex:1;height:48px;border-radius:6px;border:1.5px solid #ddcbb1;background:#fffaf2;font-family:Archivo,sans-serif;font-size:15px;color:#2b211a;padding:0 10px">
+                <sc-for list="{{ c.options }}" as="o" hint-placeholder-count="8">
+                  <option value="{{ o.name }}">{{ o.name }}</option>
+                </sc-for>
+              </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:9px">
+              <span style="font-size:12px;color:#5a4c3f;min-width:42px">Volume</span>
+              <input type="range" min="0" max="100" value="{{ c.volume }}" onChange="{{ c.setVolume }}" style="flex:1;height:40px">
+              <span style="font-family:Bitter,serif;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;min-width:46px;text-align:right">{{ c.volumeLabel }}</span>
+            </div>
+          </div>
+        </sc-for>
+        <button type="button" onClick="{{ testAll }}" style="min-height:56px;border:0;border-radius:12px;background:#2b211a;color:#fbf3e7;font-size:16px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;display:flex;align-items:center;justify-content:space-between;padding:0 16px" style-hover="filter:brightness(1.35)">
+          <span>Test all three · before service</span><span>{{ testAllState }}</span>
+        </button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:11px;background:#f3e7d4;border-radius:14px;padding:14px">
+        <div style="display:flex;align-items:flex-start;gap:12px">
+          <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+            <span style="font-size:15.5px;font-weight:700">Repeat until acknowledged</span>
+            <span style="font-size:12.5px;color:#5a4c3f;line-height:1.4">Keeps ringing so an order cannot be missed during a rush.</span>
+          </div>
+          <button type="button" onClick="{{ toggleRepeat }}" aria-label="Repeat until acknowledged" style="width:76px;height:44px;border-radius:99px;border:0;cursor:pointer;background:{{ repeatTrack }};position:relative;flex:none">
+            <span style="position:absolute;top:4px;left:{{ repeatKnob }};width:36px;height:36px;border-radius:50%;background:#fbf3e7;transition:left .15s ease;box-shadow:0 2px 6px rgba(43,33,26,.3)"></span>
+          </button>
+        </div>
+        <sc-if value="{{ repeat }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:10px;border-top:1px solid #e3d3b8;padding-top:11px">
+            <span style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5a4c3f">Repeat every</span>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">
+              <sc-for list="{{ intervals }}" as="i" hint-placeholder-count="3">
+                <button type="button" onClick="{{ i.pick }}" style="min-height:52px;border-radius:8px;border:2px solid {{ i.border }};background:{{ i.bg }};color:{{ i.fg }};font-size:15px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;font-variant-numeric:tabular-nums">{{ i.label }}</button>
+              </sc-for>
+            </div>
+            <span style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5a4c3f">Stop after</span>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">
+              <sc-for list="{{ stops }}" as="i" hint-placeholder-count="3">
+                <button type="button" onClick="{{ i.pick }}" style="min-height:52px;border-radius:8px;border:2px solid {{ i.border }};background:{{ i.bg }};color:{{ i.fg }};font-size:15px;font-weight:700;cursor:pointer;font-family:Archivo,sans-serif;font-variant-numeric:tabular-nums">{{ i.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:430,&quot;height&quot;:1000},&quot;view&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;manager&quot;,&quot;firstRun&quot;],&quot;default&quot;:&quot;manager&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;State&quot;}}">
+const TONES = [
+  ['Soft Chime', 'Calm · two soft notes', [880, 1175], 'sine', 0.5],
+  ['Temple Bell', 'Warm, long decay', [523, 784], 'sine', 1.1],
+  ['Marimba', 'Wooden, friendly', [659, 880, 1046], 'triangle', 0.35],
+  ['Doorbell', 'Familiar ding-dong', [784, 587], 'sine', 0.55],
+  ['Two-Tone', 'Clear, cuts through chatter', [988, 1319], 'square', 0.3],
+  ['Kitchen Bell', 'Bright counter bell', [1568, 2093], 'triangle', 0.35],
+  ['Alert Siren', 'Urgent · use sparingly', [740, 988, 740, 988], 'sawtooth', 0.22],
+  ['Classic Beep', 'Plain and unmistakable', [1046, 1046], 'square', 0.18]
+];
+
+class Component extends DCLogic {
+  state = {
+    tone: 'Temple Bell', volume: 78, muted: false, repeat: true, interval: 20, stop: 3,
+    channels: [
+      { name:'QR table orders', tone:'Temple Bell', volume:80, color:'#a31621' },
+      { name:'Website orders', tone:'Marimba', volume:70, color:'#4b6b3d' },
+      { name:'Kitchen: ticket ready', tone:'Kitchen Bell', volume:95, color:'#e3a522' }
+    ],
+    testing: false, ringing: true, firstRun: null
+  };
+
+  ctx() { if (!this._ctx) this._ctx = new (window.AudioContext || window.webkitAudioContext)(); return this._ctx; }
+
+  play(toneName, vol) {
+    if (this.state.muted) return;
+    const t = TONES.find(x => x[0] === toneName) || TONES[0];
+    const ctx = this.ctx();
+    if (ctx.state === 'suspended') ctx.resume();
+    const [, , notes, wave, dur] = t;
+    notes.forEach((f, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = wave; o.frequency.value = f;
+      const t0 = ctx.currentTime + i * dur * 0.55;
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime((vol / 100) * 0.22, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(ctx.destination); o.start(t0); o.stop(t0 + dur + 0.05);
+    });
+  }
+
+  wave(name, active) {
+    const t = TONES.find(x => x[0] === name);
+    const seed = t[2].reduce((a, b) => a + b, 0);
+    const pts = Array.from({ length: 44 }, (_, i) => {
+      const decay = Math.exp(-i / (t[4] * 26));
+      const amp = Math.sin((i * (seed % 7 + 3)) / 3) * decay;
+      return (i * 2) + ',' + (15 - amp * 13);
+    }).join(' ');
+    return React.createElement('svg', { width:86, height:30, viewBox:'0 0 88 30', fill:'none' },
+      React.createElement('polyline', { points: pts, stroke: active ? '#a31621' : '#a2907c', strokeWidth:2, strokeLinecap:'round', strokeLinejoin:'round' }));
+  }
+
+  renderVals() {
+    const s = this.state;
+    const firstRun = s.firstRun === null ? ((this.props.view ?? 'manager') === 'firstRun') : s.firstRun;
+
+    const tones = TONES.map(([name, mood]) => ({
+      name, mood, wave: this.wave(name, s.tone === name),
+      bg: s.tone === name ? '#f8eddb' : '#f3e7d4',
+      border: s.tone === name ? '#a31621' : '#e3d3b8',
+      dotBorder: s.tone === name ? '#a31621' : '#c9b69a',
+      dotFill: s.tone === name ? '#a31621' : 'transparent',
+      select: () => { this.setState({ tone: name }); this.play(name, s.volume); },
+      play: () => this.play(name, s.volume)
+    }));
+
+    const channels = s.channels.map((c, idx) => ({
+      name: c.name, color: c.color, tone: c.tone, volume: c.volume, volumeLabel: c.volume + '%',
+      options: TONES.map(([name]) => ({ name })),
+      setTone: ev => { const v = ev.target.value; this.setState(st => ({ channels: st.channels.map((x, i) => i === idx ? { ...x, tone: v } : x) })); this.play(v, c.volume); },
+      setVolume: ev => { const v = Number(ev.target.value); this.setState(st => ({ channels: st.channels.map((x, i) => i === idx ? { ...x, volume: v } : x) })); },
+      play: () => this.play(c.tone, c.volume)
+    }));
+
+    const chip = (val, cur) => ({
+      bg: val === cur ? '#a31621' : '#fffaf2', fg: val === cur ? '#fbf3e7' : '#2b211a',
+      border: val === cur ? '#7c0f19' : '#ddcbb1'
+    });
+
+    return {
+      isFirstRun: firstRun,
+      enableAudio: () => { this.play(s.tone, s.volume); this.setState({ firstRun:false }); },
+      skipAudio: () => this.setState({ firstRun:false, muted:true }),
+      ringing: s.ringing && !s.muted,
+      ringingText: '1 order waiting — tap to silence',
+      silence: () => this.setState({ ringing:false }),
+      muted: s.muted, toggleMute: () => this.setState({ muted: !s.muted, ringing: s.muted ? s.ringing : false }),
+      muteHint: s.muted ? 'Boards show a permanent warning strip' : 'Sound plays for every new order',
+      muteTrack: s.muted ? '#e3a522' : '#c9b69a', muteKnob: s.muted ? '36px' : '4px',
+      volume: s.volume, volumeLabel: s.volume + '%',
+      onVolume: ev => this.setState({ volume: Number(ev.target.value) }),
+      currentToneName: s.tone,
+      testCurrent: () => this.play(s.tone, s.volume),
+      tones, channels,
+      testAll: () => {
+        s.channels.forEach((c, i) => setTimeout(() => this.play(c.tone, c.volume), i * 1400));
+        this.setState({ testing:true });
+        setTimeout(() => this.setState({ testing:false }), 4400);
+      },
+      testAllState: s.testing ? 'Playing…' : '▶',
+      repeat: s.repeat, toggleRepeat: () => this.setState({ repeat: !s.repeat }),
+      repeatTrack: s.repeat ? '#4b6b3d' : '#c9b69a', repeatKnob: s.repeat ? '36px' : '4px',
+      intervals: [10, 20, 30].map(v => ({ label: 'every ' + v + 's', pick: () => this.setState({ interval:v }), ...chip(v, s.interval) })),
+      stops: [1, 3, 5].map(v => ({ label: v + ' min', pick: () => this.setState({ stop:v }), ...chip(v, s.stop) }))
+    };
+  }
+}
+</script>
+</body>
+</html>
