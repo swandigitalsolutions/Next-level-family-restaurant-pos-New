@@ -13,7 +13,18 @@
  *    clean placeholder for null but a BROKEN-image icon for a dead URL, so
  *    "no image" is strictly safer than a relative path it cannot resolve.
  */
-const ABSOLUTE = /^https:\/\//i;
+/**
+ * An absolute origin the Website can actually fetch from.
+ *
+ * `http://` is accepted as well as `https://` because this system is no longer
+ * only a CloudFront deployment: self-hosted on the restaurant's own hardware,
+ * the POS serves its photos over plain http on the LAN (http://192.168.1.50:8080)
+ * and there is no certificate to be had for a private address. Rejecting that
+ * meant every dish rendered without a photo on any non-CDN install, with no
+ * error to explain why. A relative or empty base is still refused — that was
+ * the case the original check actually existed to catch.
+ */
+const ABSOLUTE = /^https?:\/\//i;
 
 export function posImageUrl(path: string | null | undefined): string | null {
   const p = String(path ?? "").trim();

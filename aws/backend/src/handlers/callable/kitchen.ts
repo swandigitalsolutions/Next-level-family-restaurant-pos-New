@@ -49,7 +49,10 @@ export const handler = dispatch({
 
       if (order.kitchen_ticket_id) {
         const existing = await client.query("SELECT * FROM kitchen_tickets WHERE id=$1", [order.kitchen_ticket_id]);
-        if (existing.rowCount) return ticketRow(existing.rows[0].id, existing.rows[0]);
+        // Already accepted. Return the same ticket and flag that nothing was
+        // created, so the caller does not ring the kitchen a second time for
+        // an order the cooks are already working on.
+        if (existing.rowCount) return { ticket: ticketRow(existing.rows[0].id, existing.rows[0]), created: false };
       }
 
       let items: TicketItem[]; let ref: string; let tableLabel: string | null = null; let customerName = "";
@@ -77,11 +80,16 @@ export const handler = dispatch({
       await client.query(`UPDATE ${table} SET kitchen_ticket_id=$2, kitchen_status='QUEUED' WHERE ${idCol}=$1`, [id, ticketId]);
       await auditInTx(client, { actorUid: caller.uid, actorUsername: caller.username || null, actorRole: caller.role, action: "kitchen.accept", entityType: "kitchen_ticket", entityId: ticketId, details: { source, ref, source_id: id, items: items.length } });
 
-      return ticketRow(ticketId, { source, source_id: id, ref, table_label: tableLabel, customer_name: customerName, items, status: "QUEUED", note: order.note ?? "", accepted_by_username: caller.username || null, created_at: now });
+      return { ticket: ticketRow(ticketId, { source, source_id: id, ref, table_label: tableLabel, customer_name: customerName, items, status: "QUEUED", note: order.note ?? "", accepted_by_username: caller.username || null, created_at: now }), created: true };
     });
 
-    await broadcast("kitchen", { type: "ticket.created", ticket: out }).catch((e) => console.error("broadcast failed (non-fatal)", e));
-    return out;
+    // Ring the kitchen only for a ticket that is genuinely new. Accepting is
+    // idempotent, and a cashier double-tapping "Accept" on a slow tablet must
+    // not put a second alarm through to the cooks for the same food.
+    if (out.created) {
+      await broadcast("kitchen", { type: "ticket.created", ticket: out.ticket }).catch((e) => console.error("broadcast failed (non-fatal)", e));
+    }
+    return out.ticket;
   },
 
   async setKitchenTicketStatus(body, event) {

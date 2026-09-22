@@ -16,6 +16,7 @@ import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda
 import { withTransaction } from "../../lib/db";
 import { dateKey } from "../../lib/money";
 import { verifyWebhookSignature } from "../../lib/razorpay";
+import { broadcast } from "../../lib/broadcastClient";
 
 function rawBodyOf(event: APIGatewayProxyEventV2): string {
   if (!event.body) return "";
@@ -118,6 +119,17 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
     await markInsert({ amountPaise });
     return { status: "confirmed", ref: order.ref };
   });
+
+  // A confirmed advance is the moment a website order becomes real work for
+  // the restaurant, so it is also the moment the front counter must be told.
+  // Broadcast AFTER the transaction commits — never inside it — or a listener
+  // can race in and read the order before the row is visible. Non-fatal: a
+  // failed push must not turn a captured payment into a 500, which Razorpay
+  // would retry and we would then have to de-duplicate.
+  if (result.status === "confirmed") {
+    await broadcast("website_orders", { type: "order.confirmed", ref: result.ref })
+      .catch((e) => console.error("broadcast failed (non-fatal)", e));
+  }
 
   return { statusCode: 200, body: JSON.stringify({ ok: true, ...result }) };
 };

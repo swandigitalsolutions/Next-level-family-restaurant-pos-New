@@ -124,8 +124,22 @@ export async function computeRolling() {
     recentOrders,
     updatedAt: new Date().toISOString(),
   };
+  // UPSERT, not UPDATE.
+  //
+  // `stats_rolling` holds a single row seeded by 001_init.sql. A bare UPDATE
+  // against a missing row does nothing and reports no error, so if that row is
+  // ever lost — a partial restore, a hand-run cleanup, a migration replayed on
+  // an existing database — the owner's dashboard reads zero for the rest of
+  // time while every till keeps working perfectly. There is no symptom to
+  // trace back. Recreating the row costs nothing and makes the screen
+  // self-healing on the next recompute.
   await pool.query(
-    `UPDATE stats_rolling SET today=$1, trend=$2, payment_mix=$3, top_items=$4, hourly_flow=$5, menu_summary=$6, updated_at=now() WHERE id='rolling'`,
+    `INSERT INTO stats_rolling (id, today, trend, payment_mix, top_items, hourly_flow, menu_summary, updated_at)
+     VALUES ('rolling', $1, $2, $3, $4, $5, $6, now())
+     ON CONFLICT (id) DO UPDATE SET
+       today = EXCLUDED.today, trend = EXCLUDED.trend, payment_mix = EXCLUDED.payment_mix,
+       top_items = EXCLUDED.top_items, hourly_flow = EXCLUDED.hourly_flow,
+       menu_summary = EXCLUDED.menu_summary, updated_at = now()`,
     [JSON.stringify(todayBlock), JSON.stringify(trend), JSON.stringify(paymentMix), JSON.stringify(topItems), JSON.stringify(hourlyFlow),
      JSON.stringify({ ...rolling.menuSummary })],
   );
