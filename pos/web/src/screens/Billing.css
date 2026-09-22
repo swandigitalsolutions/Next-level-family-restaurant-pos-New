@@ -1,0 +1,82 @@
+.till { display: flex; flex-direction: column; gap: 11px; padding-bottom: 72px; }
+.till.is-bar { --accent: var(--cardinal-deep); }
+.till-head h1 { font-size: 1.35rem; }
+.till-taxnote { margin: 3px 0 0; font-size: .82rem; color: var(--text-soft); }
+
+/* table strip */
+.till-table-strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.till-table-strip::-webkit-scrollbar { display: none; }
+.till-table {
+  flex: none; min-width: 96px; min-height: 76px; padding: 9px 11px;
+  display: flex; flex-direction: column; gap: 2px; align-items: flex-start;
+  border: 2px solid var(--border); border-radius: var(--r-md);
+  background: var(--surface); color: var(--text); cursor: pointer;
+}
+.till-table strong { font-family: var(--font-display); font-size: 1.05rem; }
+.till-table span { font-size: .8rem; color: var(--text-soft); }
+.till-table em { font-style: normal; font-size: .72rem; color: var(--text-faint); }
+.till-table.is-open { border-color: var(--marigold); background: var(--surface-dim); }
+.till-table.is-active { border-color: var(--cardinal); box-shadow: inset 0 0 0 1px var(--cardinal); }
+
+.till-session-note { margin: 0; font-size: .85rem; color: var(--text-soft); }
+.till-link { border: 0; background: none; color: var(--cardinal); font: inherit; font-weight: 700;
+  text-decoration: underline; cursor: pointer; padding: 4px; }
+
+.till-search { display: flex; }
+
+/* catalog grid */
+.till-grid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.till-item {
+  min-height: 84px; padding: 10px; display: flex; flex-direction: column; gap: 3px; text-align: left;
+  border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface);
+  color: var(--text); cursor: pointer;
+}
+.till-item:not(:disabled):hover { border-color: var(--cardinal); }
+.till-item:not(:disabled):active { transform: scale(.98); }
+.till-item.is-out { opacity: .45; cursor: not-allowed; }
+.till-item-name { font-weight: 600; font-size: .9rem; line-height: 1.25; }
+.till-item-sub { font-size: .74rem; color: var(--text-faint); }
+.till-item-price { margin-top: auto; font-weight: 700; font-size: .95rem; color: var(--cardinal); }
+.till-item-stock { font-size: .7rem; color: var(--basil); font-weight: 600; }
+.till-item-stock.is-out { color: var(--cardinal); }
+
+/* running total bar */
+.till-bar {
+  position: fixed; left: 8px; right: 8px; bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+  z-index: 35; min-height: var(--tap-lg); display: flex; align-items: center; gap: 11px;
+  padding: 0 16px; border: 0; border-radius: var(--r-md); cursor: pointer;
+  background: var(--cardinal); color: var(--cream); font-weight: 700; font-size: 1rem;
+  box-shadow: var(--shadow-md);
+}
+.till-bar-count { background: rgba(255,255,255,.22); border-radius: var(--r-pill); padding: 2px 10px; font-size: .88rem; }
+.till-bar strong { margin-left: auto; font-family: var(--font-display); font-size: 1.15rem; }
+@media (min-width: 1024px) { .till-bar { left: auto; right: 24px; width: 340px; bottom: 24px; } }
+
+/* bill sheet */
+.till-lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.till-lines li { display: flex; align-items: center; gap: 9px; }
+.till-line-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.till-line-text strong { font-size: .9rem; }
+.till-line-text span { font-size: .76rem; color: var(--text-faint); }
+.till-line-total { min-width: 72px; text-align: right; font-size: .92rem; }
+
+.till-totals { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin: 0; font-size: .89rem; }
+.till-totals dt { color: var(--text-soft); }
+.till-totals dd { margin: 0; text-align: right; font-weight: 600; }
+.till-totals .is-total { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700;
+  padding-top: 6px; border-top: 1px solid var(--border); color: var(--text); }
+
+.till-split { display: flex; flex-direction: column; gap: 7px; }
+.till-split > strong { font-family: var(--font-display); font-size: 1rem; color: var(--cardinal); }
+
+/* cafe-specific */
+.cafe-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cafe-summary > div { display: flex; flex-direction: column; }
+.cafe-summary span { font-size: .76rem; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--text-faint); }
+.cafe-summary strong { font-family: var(--font-display); font-size: 1.5rem; }
+.cafe-bills { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.cafe-bills li { display: flex; gap: 10px; align-items: baseline; font-size: .88rem;
+  padding-bottom: 7px; border-bottom: 1px solid var(--border); }
+.cafe-bills li > span:first-child { font-family: var(--font-mono); font-size: .8rem; }
+.cafe-bills li > span:nth-child(2) { flex: 1; color: var(--text-soft); font-size: .8rem; }

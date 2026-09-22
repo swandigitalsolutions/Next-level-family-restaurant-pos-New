@@ -1,0 +1,36 @@
+.orders { display: flex; flex-direction: column; gap: 11px; }
+.orders-filters { display: grid; gap: 10px; grid-template-columns: 1fr; }
+@media (min-width: 560px) { .orders-filters { grid-template-columns: 170px 1fr; } }
+
+.orders-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.orders-summary > div { display: flex; flex-direction: column; }
+.orders-summary span { font-size: .76rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--text-faint); }
+.orders-summary strong { font-family: var(--font-display); font-size: 1.4rem; }
+
+.orders-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.orders-list button {
+  width: 100%; min-height: var(--tap-lg); display: grid; align-items: center; gap: 4px 10px;
+  grid-template-columns: 1fr auto; grid-template-areas: "no amt" "mid amt" "when amt";
+  padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--r-md);
+  background: var(--surface); color: var(--text); cursor: pointer; text-align: left;
+}
+.orders-list button:hover { border-color: var(--cardinal); }
+.orders-no { grid-area: no; font-family: var(--font-mono); font-size: .85rem; font-weight: 600; }
+.orders-mid { grid-area: mid; display: flex; align-items: center; gap: 7px; }
+.orders-mid em { font-style: normal; font-size: .82rem; color: var(--text-soft); }
+.orders-when { grid-area: when; font-size: .74rem; color: var(--text-faint); }
+.orders-list strong { grid-area: amt; font-family: var(--font-display); font-size: 1.1rem; }
+
+@media (min-width: 720px) {
+  .orders-list button { grid-template-columns: 150px 1fr 150px auto;
+    grid-template-areas: "no mid when amt"; }
+}
+
+.orders-customer { margin: 0; font-size: .87rem; color: var(--text-soft); }
+.orders-lines { list-style: none; margin: 0; padding: 9px 0; border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+.orders-lines li { display: flex; gap: 10px; align-items: baseline; font-size: .88rem; }
+.orders-lines li > span:first-child { min-width: 2.6ch; font-weight: 700; color: var(--cardinal); }
+.orders-lines li > span:nth-child(2) { flex: 1; }
+.orders-meta { margin: 0; font-size: .78rem; color: var(--text-faint); }

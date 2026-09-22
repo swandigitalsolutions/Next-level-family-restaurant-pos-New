@@ -1,0 +1,147 @@
+/*
+ * Design tokens for the POS front-end.
+ *
+ * Taken from the approved mockups in /ui-generated, which in turn come from
+ * the venue's own website palette — cardinal walls, marigold boards, cream
+ * plaster, warm ink. Read every colour, font and radius from here so a change
+ * lands everywhere at once.
+ *
+ * Two visual worlds, not one theme with a switch:
+ *   .theme-light  — every till, board and admin screen (cream ground)
+ *   .theme-kitchen — the wall-mounted kitchen display: near-black, oversized,
+ *                    tuned to be read from two metres across a hot kitchen.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Bitter:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+
+:root {
+  /* brand */
+  --cardinal: #a31621;
+  --cardinal-deep: #7c0f19;
+  --marigold: #e3a522;
+  --sunflower: #f6c445;
+  --basil: #4b6b3d;
+  --india-green: #138808;
+
+  /* ink */
+  --ink: #2b211a;
+  --ink-soft: #5a4c3f;
+  --ink-faint: #8a7967;
+
+  /* grounds */
+  --cream: #fbf3e7;
+  --cream-bright: #fffaf2;
+  --cream-dim: #f3e7d4;
+  --sand: #e3d3b8;
+  --sand-dim: #ddcbb1;
+  --sand-deep: #c9b69a;
+
+  /* semantic — separate from the accent on purpose */
+  --ok: var(--basil);
+  --warn: var(--marigold);
+  --danger: var(--cardinal);
+
+  /* type */
+  --font-display: Bitter, Georgia, serif;
+  --font-body: Archivo, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+
+  /* spacing + shape */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-pill: 999px;
+
+  /* Touch targets. Staff use these with wet or oily hands, often one-handed,
+     so nothing interactive goes below --tap, and anything tapped repeatedly
+     (quantity steppers, item tiles, settle) uses --tap-lg. */
+  --tap: 48px;
+  --tap-lg: 56px;
+
+  --shadow-sm: 0 1px 2px rgba(43, 33, 26, 0.08);
+  --shadow-md: 0 4px 16px -6px rgba(43, 33, 26, 0.22);
+  --shadow-lg: 0 18px 44px -18px rgba(43, 33, 26, 0.45);
+
+  /* defaults = the light world */
+  --bg: var(--cream);
+  --surface: var(--cream-bright);
+  --surface-dim: var(--cream-dim);
+  --border: var(--sand);
+  --text: var(--ink);
+  --text-soft: var(--ink-soft);
+  --text-faint: var(--ink-faint);
+  --accent: var(--cardinal);
+  --accent-press: var(--cardinal-deep);
+  --on-accent: var(--cream);
+}
+
+.theme-kitchen {
+  --bg: #14100d;
+  --surface: #221b15;
+  --surface-dim: #2d241c;
+  --border: #4a3c30;
+  --text: #f7efe3;
+  --text-soft: #c4b5a4;
+  --text-faint: #8a7967;
+  --accent: #e4535f;
+  --accent-press: #c73c48;
+  --on-accent: #14100d;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  /* Stop iOS Safari inflating text in landscape on a mounted tablet. */
+  -webkit-text-size-adjust: 100%;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  line-height: 1.15;
+  text-wrap: balance;
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/* Money and any column of digits must not jitter as values change. */
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

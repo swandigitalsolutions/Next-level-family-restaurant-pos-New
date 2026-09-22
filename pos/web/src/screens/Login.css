@@ -1,0 +1,70 @@
+.login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: var(--cream);
+}
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--cream-bright);
+  border: 1px solid var(--sand);
+  border-radius: var(--r-lg);
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: var(--shadow-md);
+}
+/* the Warli line rule — the venue's recurring decorative device, used once */
+.login-rule {
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: repeating-linear-gradient(
+    90deg,
+    var(--cardinal) 0 14px,
+    transparent 14px 20px,
+    var(--marigold) 20px 30px,
+    transparent 30px 36px
+  );
+}
+.login h1 {
+  font-size: 1.9rem;
+  color: var(--ink);
+  margin-top: 4px;
+}
+.login-sub {
+  margin: -10px 0 4px;
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.02em;
+}
+.login-pw {
+  display: flex;
+  gap: 6px;
+}
+.login-pw button {
+  flex: none;
+  width: var(--tap-lg);
+  border: 1px solid var(--sand);
+  border-radius: var(--r-sm);
+  background: var(--cream);
+  cursor: pointer;
+  font-size: 1.05rem;
+}
+.login-error {
+  margin: 0;
+  background: var(--sunflower);
+  border-left: 4px solid var(--cardinal);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  font-size: 0.87rem;
+  color: var(--ink);
+}
+.login-foot {
+  margin: 0;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+}
