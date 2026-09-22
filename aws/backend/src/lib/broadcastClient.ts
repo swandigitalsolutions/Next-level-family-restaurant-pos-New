@@ -13,6 +13,25 @@
 import { ApiGatewayManagementApiClient, PostToConnectionCommand, GoneException } from "@aws-sdk/client-apigatewaymanagementapi";
 import { getPool } from "./db";
 
+export type BroadcastChannel = "kitchen" | "live_orders" | "website_orders";
+
+/**
+ * Where a broadcast actually goes. Default is the API Gateway path below.
+ * The self-hosted server (src/server/) installs its own sink at boot so the
+ * same write-path handlers push to an in-process WebSocket hub instead —
+ * no API Gateway, no `ws_connections` table round-trip. Nothing else about
+ * the handlers changes, which is why they stay byte-identical between the
+ * two deployment targets.
+ */
+export type BroadcastSink = (channel: BroadcastChannel, payload: unknown) => Promise<void> | void;
+
+let sink: BroadcastSink | null = null;
+
+/** Install (or clear, with null) the process-wide broadcast sink. */
+export function setBroadcastSink(fn: BroadcastSink | null): void {
+  sink = fn;
+}
+
 let client: ApiGatewayManagementApiClient | undefined;
 function getClient(): ApiGatewayManagementApiClient | null {
   const endpoint = process.env.WS_API_ENDPOINT;
@@ -20,7 +39,11 @@ function getClient(): ApiGatewayManagementApiClient | null {
   return (client ??= new ApiGatewayManagementApiClient({ endpoint }));
 }
 
-export async function broadcast(channel: "kitchen" | "live_orders" | "website_orders", payload: unknown): Promise<void> {
+export async function broadcast(channel: BroadcastChannel, payload: unknown): Promise<void> {
+  if (sink) {
+    await sink(channel, payload);
+    return;
+  }
   const cli = getClient();
   if (!cli) return; // never throws in an environment with no WebSocket API deployed yet
   const pool = await getPool();

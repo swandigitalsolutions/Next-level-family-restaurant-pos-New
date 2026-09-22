@@ -75,7 +75,12 @@ export async function getPool(): Promise<Pool> {
     // Real RDS Proxy always requires TLS; a local test Postgres started
     // without SSL configured does not speak it at all.
     ssl: process.env.DATABASE_URL ? false : buildTls(),
-    max: 5, // Lambda: keep small per-container; RDS Proxy multiplexes across containers
+    // Lambda wants a small per-container pool because RDS Proxy multiplexes
+    // across many containers. The self-hosted server is the opposite case —
+    // ONE process serves every terminal in the restaurant, so 5 would cap the
+    // whole till floor at five concurrent queries. Raise it there with
+    // DB_POOL_MAX (20 is comfortable for a Pi; Postgres allows 100 by default).
+    max: Number(process.env.DB_POOL_MAX || 5),
     idleTimeoutMillis: 30_000,
     // Without these, a Lambda whose database has gone away simply sits there
     // until the function's own timeout - burning the full billed duration and

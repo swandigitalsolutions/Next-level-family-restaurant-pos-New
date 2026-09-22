@@ -50,7 +50,38 @@ function randomTempPassword(): string {
 
 export interface NewAuthUser { username: string; displayName?: string }
 
+/**
+ * Where staff identities actually live.
+ *
+ * On AWS that is a Cognito user pool, and the implementations below talk to
+ * it. Self-hosted there is no Cognito at all: `users` + `user_credentials` in
+ * Postgres ARE the identity store, and the server installs its own provider
+ * at boot (see src/server/localIdentity.ts).
+ *
+ * Without this seam every staff operation — create an account, reset a
+ * password, change a role, deactivate someone who left — threw
+ * "COGNITO_USER_POOL_ID env var not set" and surfaced as a 500. The whole
+ * Staff screen was dead on a self-hosted install while every other screen
+ * worked, which is a horrible failure to diagnose from the outside.
+ */
+export interface IdentityProvider {
+  createAuthUser(input: NewAuthUser): Promise<{ uid: string }>;
+  setStaffPassword(username: string, password: string): Promise<void>;
+  setRoleClaim(username: string, role: Role): Promise<void>;
+  setDisabled(username: string, disabled: boolean): Promise<void>;
+  deleteAuthUser(username: string): Promise<void>;
+}
+
+let provider: IdentityProvider | null = null;
+
+/** Install (or clear, with null) the process-wide identity provider. */
+export function setIdentityProvider(p: IdentityProvider | null): void {
+  provider = p;
+}
+
+
 export async function createAuthUser(input: NewAuthUser): Promise<{ uid: string }> {
+  if (provider) return provider.createAuthUser(input);
   const res = await getClient().send(new AdminCreateUserCommand({
     UserPoolId: userPoolId(),
     Username: input.username,
@@ -70,23 +101,27 @@ export async function createAuthUser(input: NewAuthUser): Promise<{ uid: string 
 }
 
 export async function setStaffPassword(username: string, password: string): Promise<void> {
+  if (provider) return provider.setStaffPassword(username, password);
   await getClient().send(new AdminSetUserPasswordCommand({
     UserPoolId: userPoolId(), Username: username, Password: password, Permanent: true,
   }));
 }
 
 export async function setRoleClaim(username: string, role: Role): Promise<void> {
+  if (provider) return provider.setRoleClaim(username, role);
   await getClient().send(new AdminUpdateUserAttributesCommand({
     UserPoolId: userPoolId(), Username: username, UserAttributes: [{ Name: "custom:role", Value: role }],
   }));
 }
 
 export async function setDisabled(username: string, disabled: boolean): Promise<void> {
+  if (provider) return provider.setDisabled(username, disabled);
   const cmd = disabled ? new AdminDisableUserCommand({ UserPoolId: userPoolId(), Username: username }) : new AdminEnableUserCommand({ UserPoolId: userPoolId(), Username: username });
   await getClient().send(cmd);
 }
 
 export async function deleteAuthUser(username: string): Promise<void> {
+  if (provider) return provider.deleteAuthUser(username);
   await getClient().send(new AdminDeleteUserCommand({ UserPoolId: userPoolId(), Username: username })).catch(() => undefined);
 }
 
