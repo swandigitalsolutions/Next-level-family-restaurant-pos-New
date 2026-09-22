@@ -1,0 +1,29 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# builds
+dist/
+dist-ssr/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# secrets — never commit a real value for any of these
+.env
+.env.*
+!.env.example
+
+# local + editor
+*.local
+*.log
+npm-debug.log*
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# python / tooling scratch
+__pycache__/
