@@ -162,7 +162,20 @@ test("Website menu API returns exactly the card: same items, same paise prices, 
 
 test("imageUrl is absolute only when an asset base is configured; POS gets the raw root path", () => {
   assert.equal(websiteImageUrl("/assets/menu/a.webp", undefined), null);
-  assert.equal(websiteImageUrl("/assets/menu/a.webp", "http://insecure.example"), null, "http base rejected");
+  // http:// is now ACCEPTED, changed deliberately. This system is no longer
+  // only a CloudFront deployment: self-hosted on the restaurant's own hardware
+  // the POS serves photos over plain http on the LAN, and there is no
+  // certificate to be had for 192.168.x.x. The old https-only rule meant every
+  // dish rendered blank on any non-CDN install, silently. What the check still
+  // catches — a relative or malformed base — is unchanged, and is the case it
+  // actually existed for.
+  assert.equal(
+    websiteImageUrl("/assets/menu/a.webp", "http://192.168.1.50:8080"),
+    "http://192.168.1.50:8080/assets/menu/a.webp",
+    "a LAN base is usable",
+  );
+  assert.equal(websiteImageUrl("/assets/menu/a.webp", "cdn.example.com"), null, "a base with no scheme is still rejected");
+  assert.equal(websiteImageUrl("/assets/menu/a.webp", "/assets"), null, "a relative base is still rejected");
   assert.equal(websiteImageUrl("/assets/menu/a.webp", "https://d1.cloudfront.net/"), "https://d1.cloudfront.net/assets/menu/a.webp");
   assert.equal(websiteImageUrl("assets/menu/a.webp", "https://d1.cloudfront.net"), "https://d1.cloudfront.net/assets/menu/a.webp");
   assert.equal(websiteImageUrl("https://cdn.example/x.jpg", undefined), "https://cdn.example/x.jpg");
