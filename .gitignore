@@ -27,3 +27,9 @@ npm-debug.log*
 
 # python / tooling scratch
 __pycache__/
+
+# Menu-image correction working files (qa/refetch_bad_images.py).
+# The downloaded candidates and their contact sheets are scratch; the picks,
+# the credits and the replaced originals are not.
+pos/qa/candidates/
+pos/qa/candidate-sheets/
