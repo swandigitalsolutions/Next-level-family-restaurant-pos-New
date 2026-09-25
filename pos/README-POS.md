@@ -18,14 +18,13 @@ pos/
 │   ├── src/handlers/       15 business-logic handlers, shared with the AWS track
 │   ├── src/lib/            money, authz, repo, pricing, werkzeug hashes …
 │   ├── src/server/         the self-hosted server: Fastify, JWT auth, WS hub
-│   └── test/               106 tests against a real PostgreSQL
+│   └── test/               154 tests against a real PostgreSQL
 ├── aws/db/migrations/    the schema (19 tables) + the privileges that make
 │                         bills immutable
 ├── web/                  the React front-end (Vite + TypeScript)
 │   ├── src/alarm/          the order-alarm engine and its settings UI
 │   ├── src/screens/        14 screens
 │   └── src/lib/            api client, realtime client, role matrix
-├── firebase/             Track B — complete, unused, kept for reference
 └── frontend/, backend/   Track A (Flask) — the original, superseded
 ```
 
@@ -147,12 +146,25 @@ For the Pi, see [RUN-ON-PI.md](RUN-ON-PI.md).
 ## Tests
 
 ```bash
-cd aws/backend && npm test      # 106 tests, needs the Postgres above
-cd web && npm run check         # 160 tests + typecheck + build
+cd aws/backend && npm test      # 154 tests, against posdb_test — see the note
+cd web && npm run check         # 162 tests + typecheck + build
 ```
 
-If the Postgres container is on a non-default port, pass it:
-`TEST_DATABASE_URL=postgres://postgres@localhost:55433/posdb npm test`
+> **The backend suite TRUNCATES every table it can reach**, as the superuser —
+> including the `bills` the application itself is forbidden to modify. It runs
+> against a database called **`posdb_test`**, never your working `posdb`, and
+> it does not fall back to it. Create it once:
+>
+> ```bash
+> psql "$DB_ROOT/postgres" -c "CREATE DATABASE posdb_test;"
+> psql "$DB_ROOT/posdb_test" -f ../db/migrations/001_init.sql
+> psql "$DB_ROOT/posdb_test" -f ../db/migrations/002_privileges.sql
+> psql "$DB_ROOT/posdb_test" -f ../db/migrations/003_signout.sql
+> ```
+>
+> Point it somewhere else only on purpose, with
+> `TEST_DATABASE_URL=postgres://postgres@localhost:55433/posdb_test npm test`.
+> Setting `DATABASE_URL` does **not** redirect the tests.
 
 Everything runs against a real PostgreSQL. Nothing is mocked at the database
 boundary, and the end-to-end tests drive a real HTTP listener and real

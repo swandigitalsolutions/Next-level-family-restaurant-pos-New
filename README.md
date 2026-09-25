@@ -1,8 +1,7 @@
 # Next Level Family Restaurant
 
-Everything for one restaurant in one place: the point-of-sale the staff use,
-the public website guests order from, and the design material both were built
-from.
+The point-of-sale the restaurant staff use, and the design material it was
+built from.
 
 It is designed to run **self-hosted on a Raspberry Pi 5 in the restaurant** —
 one Node process and a PostgreSQL on the same box. No cloud account, and
@@ -11,9 +10,15 @@ billing keeps working when the internet drops.
 ```
 .
 ├── pos/        the POS — server, staff front-end, database schema
-├── website/    the public site guests order from (Next.js, separate deploy)
 └── design/     the prompt pack and screen mockups the UI came from
 ```
+
+> **The public website lives in its own repository.** It is a separate Next.js
+> deploy that talks to this POS over HTTP — it reads the menu from
+> `/api/website/menu` and posts orders to `/api/website/*`, authenticated with
+> a key from `WEBSITE_API_KEYS`. Those endpoints, the `website_orders` tables
+> and the Website Orders board are all part of the POS and stay here; only the
+> site's own source moved out.
 
 ---
 
@@ -95,16 +100,15 @@ docker run -d --name nlfr-pg -e POSTGRES_HOST_AUTH_METHOD=trust \
 psql "$DB" -f pos/aws/db/migrations/001_init.sql
 psql "$DB" -c "CREATE ROLE pos_app LOGIN PASSWORD 'change-me';"
 psql "$DB" -f pos/aws/db/migrations/002_privileges.sql
+psql "$DB" -f pos/aws/db/migrations/003_signout.sql
 cd pos/aws/db && npm install && DATABASE_URL="$DB" node scripts/seed-menu.mjs
 
-# the POS server
-cd pos/aws/backend && npm install && npx ts-node src/server/index.ts
+# the POS server — JWT_SECRET must be 32+ characters or it refuses to sign in
+cd pos/aws/backend && npm install && \
+  JWT_SECRET="$(openssl rand -base64 48)" npx ts-node src/server/index.ts
 
-# the staff front-end
+# the staff front-end. Its dev proxy expects the server on :8080 (vite.config.ts)
 cd pos/web && npm install && npm run dev
-
-# the public website
-cd website && npm install && npm run dev
 ```
 
 ---
@@ -112,13 +116,18 @@ cd website && npm install && npm run dev
 ## Tests
 
 ```bash
-cd pos/aws/backend && npm test    # 153 tests, needs the Postgres above
-cd pos/web && npm run check       # 160 tests + typecheck + build
+cd pos/aws/backend && npm test    # 154 tests, against posdb_test — see below
+cd pos/web && npm run check       # 162 tests + typecheck + build
 ```
 
 Everything runs against a real PostgreSQL — nothing is mocked at the database
 boundary — and the end-to-end suites drive a real HTTP listener with real
 WebSocket clients connected.
+
+Because they are real, they **truncate every table between tests**, as the
+superuser, including the immutable `bills`. They therefore run against a
+separate `posdb_test` database and never fall back to your working `posdb` —
+see [pos/README-POS.md](pos/README-POS.md#tests) for the one-time setup.
 
 ---
 
@@ -127,8 +136,10 @@ WebSocket clients connected.
 Listed so nobody has to rediscover them.
 
 - **No coupons or offers.** The only discount is a flat rupee amount a cashier
-  enters at settlement. The website's "offers" section is marketing copy for
-  family combos, not a working discount.
+  enters at settlement.
+- **The printed receipt has never met a real printer.** The layout is built
+  for an 80mm thermal roll and is covered by a test, but it has only ever been
+  rendered to a PDF, not to paper on the counter hardware.
 - **Never run on arm64 hardware.** Everything is portable Node and Postgres,
   but the first `npm ci` on the Pi is where native modules compile.
 - **No live Razorpay keys have been used.** The mock provider covers every
