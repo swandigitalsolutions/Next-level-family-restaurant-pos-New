@@ -13,25 +13,53 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 12px;
-  background: var(--cardinal);
-  color: var(--cream);
+  padding: 9px 14px;
+  padding-top: calc(9px + env(safe-area-inset-top, 0px));
+  background: var(--wash-bar);
+  color: var(--on-bar);
+  box-shadow: var(--shadow-sm);
+  border-bottom: 1px solid var(--bar-border);
+  /* A quiet surface in both themes — see --wash-bar. Contents read from the
+     --*-bar tokens so the bar can be restyled without touching this file. */
 }
 .shell-brand {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   line-height: 1.15;
   min-width: 0;
   flex: 1;
 }
+/* The logo file is a circular badge on white, so it keeps a white disc of its
+   own — on the dark bar that reads as a deliberate coin rather than a cutout. */
+.shell-logo {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fff;
+  padding: 2px;
+  box-shadow: var(--shadow-xs);
+  transition: transform var(--t-base) var(--ease-spring);
+}
+.shell-logo:hover {
+  transform: rotate(-6deg) scale(1.06);
+}
+.shell-brand-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
 .shell-brand strong {
   font-family: var(--font-display);
-  font-size: 0.98rem;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
 }
-.shell-brand span {
+.shell-brand-text > span {
   font-size: 0.76rem;
-  color: var(--sunflower);
-  font-weight: 600;
+  color: var(--bar-dim);
+  font-weight: 650;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -45,21 +73,21 @@
   font-weight: 600;
   padding: 4px 8px;
   border-radius: var(--r-pill);
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--bar-chip);
 }
 .shell-conn i {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   display: block;
-  background: var(--basil);
+  background: var(--ok);
 }
 .shell-conn-connecting i {
-  background: var(--sunflower);
+  background: var(--warn);
   animation: shell-blink 1s infinite;
 }
 .shell-conn-offline i {
-  background: #ff8b8b;
+  background: var(--danger);
 }
 .shell-conn-text {
   display: none;
@@ -79,16 +107,27 @@
   flex: none;
   width: var(--tap);
   height: var(--tap);
-  border: 0;
+  border: 1px solid var(--bar-border);
   border-radius: var(--r-pill);
-  background: rgba(255, 255, 255, 0.14);
-  color: var(--cream);
+  background: var(--bar-chip);
+  color: var(--on-bar);
   font-size: 1.05rem;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--t-fast) var(--ease-out), transform var(--t-fast) var(--ease-out);
+}
+.shell-icon:hover {
+  background: var(--bar-chip-hover);
+}
+.shell-icon:active {
+  transform: scale(0.92);
 }
 .shell-icon.is-muted {
-  background: var(--sunflower);
-  color: var(--ink);
+  background: var(--warn-soft);
+  color: var(--warn);
+  border-color: var(--warn);
 }
 
 .shell-user {
@@ -102,7 +141,7 @@
   border: 0;
   border-radius: var(--r-sm);
   background: transparent;
-  color: var(--cream);
+  color: var(--on-bar);
   cursor: pointer;
   line-height: 1.2;
 }
@@ -118,7 +157,7 @@
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--sunflower);
+  color: var(--bar-dim);
 }
 
 .shell-menu {
@@ -158,12 +197,13 @@
   font-weight: 600;
 }
 .shell-offline {
-  background: var(--cardinal-deep);
-  color: var(--cream);
+  background: var(--danger);
+  color: var(--on-accent);
 }
 .shell-muted {
-  background: var(--sunflower);
-  color: var(--ink);
+  background: var(--warn-soft);
+  color: var(--text);
+  border-bottom: 1px solid var(--warn);
 }
 
 /* body + nav */
@@ -187,24 +227,46 @@
     background: var(--surface);
   }
   .shell-side a {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 11px;
     min-height: var(--tap);
-    padding: 0 12px;
-    border-radius: var(--r-sm);
+    padding: 0 14px;
+    border-radius: var(--r-md);
     text-decoration: none;
     color: var(--text-soft);
-    font-weight: 600;
+    font-weight: 650;
     font-size: 0.88rem;
+    transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out),
+      transform var(--t-fast) var(--ease-out);
+  }
+  /* The active marker is a rail on the left edge that grows in, rather than a
+     solid block — it survives both themes without re-tinting the label. */
+  .shell-side a::before {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 50%;
+    width: 3px;
+    height: 0;
+    border-radius: var(--r-pill);
+    background: var(--on-accent);
+    transform: translateY(-50%);
+    transition: height var(--t-base) var(--ease-out);
   }
   .shell-side a:hover {
     background: var(--surface-dim);
     color: var(--text);
+    transform: translateX(2px);
   }
   .shell-side a.is-active {
-    background: var(--cardinal);
-    color: var(--cream);
+    background: var(--wash-accent);
+    color: var(--on-accent);
+    box-shadow: var(--shadow-sm);
+  }
+  .shell-side a.is-active::before {
+    height: 20px;
   }
 }
 
@@ -228,15 +290,27 @@
   z-index: 40;
   display: flex;
   overflow-x: auto;
-  background: var(--surface);
+  /* Translucent so a long list visibly runs underneath rather than stopping
+     dead at the bar. Falls back to the solid colour where blur is unsupported. */
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
   border-top: 1px solid var(--border);
+  box-shadow: 0 -8px 26px -18px rgba(0, 0, 0, 0.5);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+@supports not (backdrop-filter: blur(4px)) {
+  .shell-tabs {
+    background: var(--surface);
+  }
 }
 .shell-tabs::-webkit-scrollbar {
   display: none;
 }
 .shell-tabs a {
+  position: relative;
   flex: 1 0 auto;
   min-width: 68px;
   min-height: 62px;
@@ -248,18 +322,57 @@
   text-decoration: none;
   color: var(--text-faint);
   font-size: 0.68rem;
-  font-weight: 600;
+  font-weight: 650;
+  scroll-snap-align: center;
+  transition: color var(--t-fast) var(--ease-out);
 }
-.shell-tabs a span {
-  font-size: 1.15rem;
-  line-height: 1;
+.shell-tabs a svg {
+  transition: transform var(--t-base) var(--ease-spring);
+}
+/* The icon lifts and the pill fades in behind it. Both are decoration on top
+   of the colour change, which is the actual state signal. */
+.shell-tabs a.is-active svg {
+  transform: translateY(-2px) scale(1.12);
+}
+.shell-tabs a:active svg {
+  transform: scale(0.9);
 }
 .shell-tabs a.is-active {
-  color: var(--cardinal);
-  box-shadow: inset 0 3px 0 var(--cardinal);
+  color: var(--accent);
+}
+.shell-tabs a.is-active::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 26px;
+  height: 3px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  animation: m-fade var(--t-base) var(--ease-out);
 }
 @media (min-width: 1024px) {
   .shell-tabs {
     display: none;
   }
+}
+
+/* The theme control is one disc whose fill shows the state: half for "follows
+   the device", empty for light, full for dark. */
+.shell-icon svg {
+  display: block;
+}
+.shell-theme-light circle {
+  fill: none;
+}
+.shell-theme-light path {
+  opacity: 0;
+}
+.shell-theme-dark path {
+  d: path("M12 3.5a8.5 8.5 0 0 1 0 17a8.5 8.5 0 0 1 0-17z");
+}
+.shell-side a svg,
+.shell-tabs a svg {
+  flex: none;
 }
