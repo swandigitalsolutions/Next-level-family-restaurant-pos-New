@@ -27,7 +27,8 @@ export type IconName =
   | "audit"
   | "bell"
   | "bell-off"
-  | "theme";
+  | "sun"
+  | "moon";
 
 /* Paths only — every shared attribute lives on the <svg> below. */
 const PATHS: Record<IconName, ReactElement> = {
@@ -132,14 +133,15 @@ const PATHS: Record<IconName, ReactElement> = {
       <path d="M3 3l18 18" />
     </>
   ),
-  /* Half-filled disc: the "follows the device" state, and the control that
-     cycles auto -> light -> dark. */
-  theme: (
+  sun: (
     <>
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="4.2" />
+      <path d="M12 2v2.2M12 19.8V22M4.2 12H2M22 12h-2.2M5.6 5.6 4 4M20 20l-1.6-1.6M18.4 5.6 20 4M4 20l1.6-1.6" />
     </>
   ),
+  /* Drawn as a filled crescent rather than an outline: at 18px an outlined
+     moon reads as a smudge. */
+  moon: <path d="M20 14.2A8.4 8.4 0 0 1 9.8 4a8.6 8.6 0 1 0 10.2 10.2z" fill="currentColor" />,
 };
 
 export function Icon({

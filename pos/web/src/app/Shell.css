@@ -358,19 +358,8 @@
   }
 }
 
-/* The theme control is one disc whose fill shows the state: half for "follows
-   the device", empty for light, full for dark. */
 .shell-icon svg {
   display: block;
-}
-.shell-theme-light circle {
-  fill: none;
-}
-.shell-theme-light path {
-  opacity: 0;
-}
-.shell-theme-dark path {
-  d: path("M12 3.5a8.5 8.5 0 0 1 0 17a8.5 8.5 0 0 1 0-17z");
 }
 .shell-side a svg,
 .shell-tabs a svg {

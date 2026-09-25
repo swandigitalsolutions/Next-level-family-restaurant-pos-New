@@ -13,8 +13,8 @@ import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useSession } from "../lib/session";
 import { navFor } from "../lib/nav";
-import { useTheme } from "../lib/theme";
 import { Icon } from "../components/Icon";
+import { ThemeToggle } from "../components/ThemeToggle";
 import { SoundManager, AlarmBar } from "../alarm/SoundManager";
 import { useAlarm, useAudioUnlockOnFirstGesture } from "../alarm/useAlarm";
 import "./Shell.css";
@@ -25,18 +25,9 @@ const CONNECTION_LABEL = {
   offline: "Offline",
 } as const;
 
-/** What the theme button says it is doing. The icon itself is one shape whose
-    fill rotates per state — see .shell-theme-* in Shell.css. */
-const THEME_LABEL = {
-  auto: "Theme: follows this device",
-  light: "Theme: light",
-  dark: "Theme: dark",
-} as const;
-
 export function Shell() {
   const { user, role, connection, signOut } = useSession();
   const alarm = useAlarm();
-  const theme = useTheme();
   const [soundOpen, setSoundOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
@@ -68,15 +59,7 @@ export function Shell() {
           <span className="shell-conn-text">{CONNECTION_LABEL[connection]}</span>
         </span>
 
-        <button
-          type="button"
-          className="shell-icon"
-          onClick={theme.cycle}
-          aria-label={`${THEME_LABEL[theme.choice]}. Tap to change.`}
-          title={THEME_LABEL[theme.choice]}
-        >
-          <Icon name="theme" className={`shell-theme-${theme.choice}`} />
-        </button>
+        <ThemeToggle />
 
         <button
           type="button"

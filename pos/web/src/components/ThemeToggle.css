@@ -1,0 +1,142 @@
+/*
+ * The light/dark switch.
+ *
+ * The knob slides, the two icons cross-fade behind it, and the track changes
+ * colour — three cues for one state change, so it reads at a glance on a till
+ * screen someone is only half looking at.
+ *
+ * The button keeps a full --tap hit area while the track itself is small: the
+ * switch has to be thumbable with wet hands, but a 48px-tall switch in a
+ * toolbar would dominate the bar.
+ */
+
+.tt {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap);
+  height: var(--tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tt-track {
+  position: relative;
+  display: block;
+  width: 46px;
+  height: 26px;
+  border-radius: var(--r-pill);
+  background: var(--bar-chip);
+  border: 1px solid var(--bar-border);
+  transition: background var(--t-base) var(--ease-out), border-color var(--t-base) var(--ease-out),
+    box-shadow var(--t-base) var(--ease-out);
+}
+.tt.is-on .tt-track {
+  background: var(--accent);
+  border-color: transparent;
+  box-shadow: var(--glow-accent);
+}
+
+.tt-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  /* The overshoot is what makes it feel like a switch rather than a fade. */
+  transition: transform 340ms var(--ease-spring), width 180ms var(--ease-out);
+  will-change: transform;
+}
+.tt.is-on .tt-knob {
+  transform: translateX(20px);
+}
+/* Squash on press, like a physical switch being pushed. */
+.tt:active .tt-knob {
+  width: 25px;
+}
+.tt.is-on:active .tt-knob {
+  transform: translateX(15px);
+}
+
+/* Both icons sit in the track; the one the knob is NOT covering is lit. */
+.tt-ico {
+  position: absolute;
+  top: 50%;
+  display: flex;
+  transform: translateY(-50%);
+  transition: opacity var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out);
+}
+.tt-ico-sun {
+  left: 5px;
+  color: var(--warn);
+}
+.tt-ico-moon {
+  right: 5px;
+  color: #fff;
+}
+/* Light: the sun is hidden under the knob, so show the moon as the
+   destination. Dark: the reverse. */
+.tt .tt-ico-sun {
+  opacity: 0;
+  transform: translateY(-50%) scale(0.6) rotate(-90deg);
+}
+.tt .tt-ico-moon {
+  opacity: 0.75;
+  transform: translateY(-50%) scale(1);
+}
+.tt.is-on .tt-ico-sun {
+  opacity: 0.85;
+  transform: translateY(-50%) scale(1) rotate(0deg);
+}
+.tt.is-on .tt-ico-moon {
+  opacity: 0;
+  transform: translateY(-50%) scale(0.6);
+}
+
+/* Following the device rather than an explicit choice: a small neutral ring on
+   the knob, so "auto" is visible without a third position on the switch.
+   Deliberately not the accent colour — a filled red dot on a switch reads as a
+   recording light or an alert, which this is neither. */
+.tt.is-auto .tt-knob::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(15, 21, 29, 0.35);
+}
+
+.tt:focus-visible {
+  outline: none;
+}
+.tt:focus-visible .tt-track {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tt:hover .tt-track {
+    border-color: var(--text-faint);
+  }
+  .tt.is-on:hover .tt-track {
+    border-color: transparent;
+    filter: brightness(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tt-knob,
+  .tt-ico,
+  .tt-track {
+    transition-duration: 0.01ms;
+  }
+}
