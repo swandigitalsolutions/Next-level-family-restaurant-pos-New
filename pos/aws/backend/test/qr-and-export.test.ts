@@ -184,6 +184,58 @@ function exportEvent(qs: Record<string, string>, auth = "Bearer faketoken"): any
   };
 }
 
+/*
+ * The self-hosted server (server/index.ts) authenticates the request itself and
+ * puts the caller into the synthesised authorizer claims — there is no Cognito
+ * anywhere. This route used to verify ONLY against Cognito, so on the Pi it
+ * answered 401 to a perfectly valid admin session and CSV export was dead.
+ *
+ * Every other export test stubs the verifier, which is exactly why that was
+ * never caught. This one deliberately does not: the verifier is left broken, so
+ * the test fails if the handler ever reaches for Cognito again.
+ */
+test("CSV export: accepts the self-hosted caller, with no Cognito in the picture", async () => {
+  await resetDb();
+
+  const mod = require("aws-jwt-verify");
+  const original = mod.CognitoJwtVerifier.create;
+  mod.CognitoJwtVerifier.create = () => ({
+    verify: async () => {
+      throw new Error("Cognito must not be consulted when the server already authenticated the caller");
+    },
+  });
+
+  try {
+    const exportReport = loadExportHandler();
+    const event = {
+      ...exportEvent({ type: "all" }),
+      // No Authorization header at all — the self-hosted server does not pass
+      // the raw token down to the handler, only the verified caller.
+      headers: {},
+      requestContext: {
+        http: { method: "GET", sourceIp: "127.0.0.1" },
+        authorizer: { jwt: { claims: { sub: "u1", "custom:pos_uid": "u1", "custom:role": "admin", "cognito:username": "admin" } } },
+      },
+    };
+    const res = await exportReport(event);
+    assert.equal(res.statusCode, 200, "an admin the server already verified must get their report");
+    assert.match(String(res.headers["Content-Type"]), /text\/csv/);
+    assert.match(String(res.body), /Type,Bill No,Date,Customer/);
+
+    // The role check must still bite on this path.
+    const cashier = {
+      ...event,
+      requestContext: {
+        http: { method: "GET", sourceIp: "127.0.0.1" },
+        authorizer: { jwt: { claims: { sub: "u2", "custom:pos_uid": "u2", "custom:role": "billing", "cognito:username": "cashier" } } },
+      },
+    };
+    assert.equal((await exportReport(cashier)).statusCode, 403, "a cashier still must not export the sales book");
+  } finally {
+    mod.CognitoJwtVerifier.create = original;
+  }
+});
+
 test("CSV export: refuses anonymous callers and non-manager roles", async () => {
   await resetDb();
   await withFakeVerifier({ "custom:role": "admin", sub: "u1" }, async (exportReport) => {

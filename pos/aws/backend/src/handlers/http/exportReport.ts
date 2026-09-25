@@ -38,16 +38,33 @@ function getVerifier() {
 }
 
 export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
-  const m = String(event.headers?.authorization || "").match(/^Bearer (.+)$/i);
   const json = (status: number, body: unknown) => ({ statusCode: status, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  if (!m) return json(401, { success: false, error: "Unauthorized. Please log in." });
 
-  let claims: any;
-  try {
-    claims = await getVerifier().verify(m[1]);
-  } catch {
-    return json(401, { success: false, error: "Unauthorized. Please log in." });
+  /* Two deployments, two ways the caller arrives.
+   *
+   * Self-hosted: server/index.ts has already authenticated the request and put
+   * the caller into the synthesised authorizer claims, exactly as every other
+   * handler reads them. Use those.
+   *
+   * AWS: this one route sits OUTSIDE the API Gateway Cognito authorizer (so it
+   * can return a CSV-shaped error rather than the authorizer's generic 401),
+   * so there are no claims on the event and the token is verified inline here.
+   *
+   * Only checking Cognito is what broke CSV export on the self-hosted server:
+   * a local JWT can never satisfy a Cognito verifier, so the route answered 401
+   * to a perfectly valid admin session. */
+  let claims: any = (event as any).requestContext?.authorizer?.jwt?.claims;
+
+  if (!claims) {
+    const m = String(event.headers?.authorization || "").match(/^Bearer (.+)$/i);
+    if (!m) return json(401, { success: false, error: "Unauthorized. Please log in." });
+    try {
+      claims = await getVerifier().verify(m[1]);
+    } catch {
+      return json(401, { success: false, error: "Unauthorized. Please log in." });
+    }
   }
+
   const role = normalizeRole(claims["custom:role"]);
   if (!["admin", "manager"].includes(role)) return json(403, { success: false, error: "You do not have permission to perform this action." });
 
