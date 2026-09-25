@@ -31,7 +31,7 @@ import { login, authenticate } from "./auth";
 import { buildEvent, normaliseResult, type CallerIdentity } from "./event";
 import { RealtimeHub } from "./wsHub";
 import { verifySession } from "./jwt";
-import { getUserByUid } from "../lib/repo";
+import { getUserByUid, revokeSessions } from "../lib/repo";
 import { VALID_ROLES, normalizeRole, type Role } from "../lib/config";
 
 /* ── handlers, reused byte-for-byte ────────────────────────────────────── */
@@ -147,6 +147,22 @@ export function buildServer(opts: ServerOptions = {}): { app: FastifyInstance; h
     const auth = await authenticate(req.headers.authorization);
     if (!auth.ok) return reply.code(auth.status).send({ error: { code: auth.code, message: auth.message } });
     return reply.send({ user: auth.caller });
+  });
+
+  /* Sign out, server-side — the Flask `POST /api/logout` (session.clear()).
+   *
+   * Dropping the token in the browser is not enough on shared till hardware:
+   * the token stays valid for the rest of its 12 hours, so anyone who copied
+   * it off the tablet keeps the signed-out cashier's access. This moves the
+   * user's cutoff forward, which refuses every token issued before now.
+   *
+   * Always answers 200. A caller whose token has already expired is, as far as
+   * they are concerned, signed out — returning 401 would only strand the
+   * client on a screen it is trying to leave. */
+  app.post("/api/auth/logout", async (req, reply) => {
+    const auth = await authenticate(req.headers.authorization);
+    if (auth.ok) await revokeSessions(auth.caller.uid);
+    return reply.code(200).send({ message: "Logged out" });
   });
 
   /* ── callable modules (authenticated) ────────────────────────────────── */

@@ -120,6 +120,26 @@ export async function me(): Promise<SessionUser> {
   return out.user;
 }
 
+/**
+ * Sign out on the server as well as in this browser.
+ *
+ * The local token is cleared FIRST and unconditionally, so pressing "Sign out"
+ * always signs you out of this device even with the server unreachable — a
+ * cashier handing over a tablet must never be left logged in because the wifi
+ * dropped. The server call then ends the session everywhere else; it is
+ * deliberately not awaited by the caller and never throws.
+ */
 export function logout(): void {
+  const token = getToken();
   setToken(null);
+  if (!token) return;
+  void fetch("/api/auth/logout", {
+    method: "POST",
+    headers: { authorization: `Bearer ${token}` },
+    // Survives the navigation that usually follows a sign-out.
+    keepalive: true,
+  }).catch(() => {
+    /* Offline, or the server is down. The device is signed out regardless;
+       the token expires on its own within the shift. */
+  });
 }

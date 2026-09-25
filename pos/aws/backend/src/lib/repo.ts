@@ -22,6 +22,8 @@ export interface UserProfile {
   status: "active" | "inactive";
   cognitoSub?: string | null;
   createdAt?: Date;
+  /** Sessions issued before this are refused. Null = no cutoff set. */
+  tokensValidFrom?: Date | null;
 }
 
 export interface Credential {
@@ -44,6 +46,11 @@ function toProfile(row: any): UserProfile {
     status: (row.status ?? "active") as "active" | "inactive",
     cognitoSub: row.cognito_sub ?? null,
     createdAt: row.created_at,
+    // Sessions minted before this instant are refused (migration 003). Null on
+    // a database that has not run 003 yet, which simply means "never signed
+    // out" — the check treats that as no cutoff rather than failing closed,
+    // so an un-migrated database keeps working instead of locking everyone out.
+    tokensValidFrom: row.tokens_valid_from ?? null,
   };
 }
 
@@ -101,6 +108,18 @@ export async function updateUserProfile(uid: string, patch: Partial<Omit<UserPro
     `UPDATE users SET username=$2, username_lower=$3, full_name=$4, phone=$5, role=$6, status=$7, cognito_sub=$8, updated_at=now() WHERE uid=$1`,
     [uid, merged.username, merged.usernameLower, merged.fullName, merged.phone, merged.role, merged.status, merged.cognitoSub ?? null],
   );
+}
+
+/**
+ * End every session this user has open, on every device.
+ *
+ * Called on sign-out, and on any password change — a password reset that left
+ * the old sessions alive would be worthless after a device was lost. Idempotent
+ * and safe to call for a uid that no longer exists.
+ */
+export async function revokeSessions(uid: string): Promise<void> {
+  const pool = await getPool();
+  await pool.query("UPDATE users SET tokens_valid_from = now(), updated_at = now() WHERE uid = $1", [uid]);
 }
 
 // --------------------------------------------------------------- credentials

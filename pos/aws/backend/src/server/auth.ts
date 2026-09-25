@@ -143,6 +143,20 @@ export async function authenticate(authorizationHeader: unknown): Promise<AuthSu
     };
   }
 
+  /* Signed out, or password changed, since this token was minted.
+   *
+   * `iat` is whole seconds while the column is microsecond-precise, so a token
+   * minted in the same second as the cutoff would round down and be refused.
+   * One second of slack costs nothing — the window it reopens is the second
+   * the sign-out happened in — and it stops a sign-in immediately following a
+   * sign-out from being rejected. */
+  if (profile.tokensValidFrom && typeof claims.iat === "number") {
+    const cutoff = Math.floor(new Date(profile.tokensValidFrom).getTime() / 1000);
+    if (claims.iat + 1 < cutoff) {
+      return { ok: false, status: 401, code: "unauthenticated", message: "You have been signed out. Please log in again." };
+    }
+  }
+
   const role = asRole(profile.role);
   if (!role) {
     return { ok: false, status: 403, code: "permission-denied", message: "Your account has no role assigned." };

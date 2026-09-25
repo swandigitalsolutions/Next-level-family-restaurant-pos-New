@@ -16,7 +16,7 @@ import { VALID_ROLES, Role, normalizeRole } from "../../lib/config";
 import { generatePasswordHash } from "../../lib/werkzeugHash";
 import {
   getUserByUid, usernameTaken, countActiveAdmins, createUserProfile, updateUserProfile,
-  listUserProfiles, writeCredential, updateCredential, writeAudit, UserProfile,
+  listUserProfiles, writeCredential, updateCredential, revokeSessions, writeAudit, UserProfile,
 } from "../../lib/repo";
 import { createAuthUser, setStaffPassword, setRoleClaim, setDisabled } from "../../lib/cognitoAuth";
 
@@ -91,6 +91,11 @@ export const handler = dispatch({
     if (wantsPasswordReset) {
       await updateCredential(uid, { passwordHash: generatePasswordHash(password as string) });
       await setStaffPassword(existing.username, password as string);
+      // A reset exists to lock someone out — usually because a device walked
+      // off. Leaving their existing 12-hour tokens alive would defeat it.
+      // (Deactivation needs no equivalent: authenticate() re-reads `status`
+      // on every request, so it already bites immediately.)
+      await revokeSessions(uid);
     }
     await setRoleClaim(existing.username, role as Role);
     await setDisabled(existing.username, status !== "active");
