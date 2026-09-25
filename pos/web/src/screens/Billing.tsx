@@ -20,6 +20,7 @@ import { money } from "../lib/format";
 import {
   Button, Card, EmptyState, ErrorNote, Field, Input, NumberStepper, Segmented, Select, Sheet, Spinner, Toast,
 } from "../components/ui";
+import { PrintArea, type ReceiptData } from "../components/Receipt";
 import type { CatalogItem, Category, Kind, TableRow, TableSession } from "../lib/types";
 import "./Billing.css";
 
@@ -50,6 +51,9 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
   const [discount, setDiscount] = useState("0");
   const [method, setMethod] = useState("Cash");
   const [toast, setToast] = useState<string | null>(null);
+  // What the printer is about to be handed. Held in state because the receipt
+  // has to be in the DOM before window.print() is called.
+  const [toPrint, setToPrint] = useState<ReceiptData[]>([]);
   const action = useAction();
 
   const categories = useQuery<Category[]>("queries", "listCategories", { kind });
@@ -166,7 +170,40 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
     tables.reload();
   }
 
-  async function settle() {
+  /**
+   * Turn what was just settled into printable receipts.
+   *
+   * Built from the lines and the split preview that were on screen, not from a
+   * re-fetch: bills are immutable, so what was settled is exactly what was
+   * shown, and a customer waiting at the counter should not wait on a round
+   * trip. `billNos` arrives in the same order as `split`.
+   */
+  function buildReceipts(billNos: string[]): ReceiptData[] {
+    const when = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+    return split.map((g, i) => ({
+      bill_no: billNos[i] ?? billNos[0] ?? "—",
+      created_at: when,
+      type: g.type,
+      customer_name: customerName,
+      customer_phone: customerPhone,
+      payment_method: method,
+      items: lines
+        .filter((l) => (g.type === "ALCOHOL" ? l.item_kind === "alcohol" : l.item_kind !== "alcohol"))
+        .map((l) => ({ item_name: l.item_name, qty: l.qty, line_total: lineTotal(l) })),
+      subtotal: g.subtotal,
+      tax: g.tax,
+      discount: g.discount,
+      grand_total: g.total,
+    }));
+  }
+
+  /** Mount the receipts, then print once the browser has laid them out. */
+  function printReceipts(receipts: ReceiptData[]) {
+    setToPrint(receipts);
+    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+  }
+
+  async function settle(doPrint: boolean) {
     if (lines.length === 0) return;
 
     if (mode === "table" && sessionId) {
@@ -178,7 +215,11 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
         }),
       );
       if (out) {
-        flash(`Settled — ${out.bills.map((b) => b.bill_no).join(" and ")}`);
+        const nos = out.bills.map((b) => b.bill_no);
+        // Built before the lines are cleared — the receipt is made from what
+        // was just settled, not from the emptied screen.
+        if (doPrint) printReceipts(buildReceipts(nos));
+        flash(`Settled — ${nos.join(" and ")}`);
         setLines([]);
         setSessionId(null);
         setDiscount("0");
@@ -212,6 +253,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
         }),
       );
       if (out) {
+        if (doPrint) printReceipts(buildReceipts([out.bill_no]));
         flash(`Bill ${out.bill_no} created`);
         setLines([]);
         setDiscount("0");
@@ -334,6 +376,16 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
                 onClick={() => !soldOut && addItem(item)}
                 disabled={soldOut}
               >
+                {/* The catalog carries a photo for every dish. A cook or a new
+                    server recognises "Hyderabadi Tandoori (Half)" by sight far
+                    faster than by reading it off a wall of near-identical
+                    names. Decorative, so alt is empty; lazy so opening the bar
+                    does not fetch 200 images at once. */}
+                {item.image_url && (
+                  <span className="till-item-photo">
+                    <img src={item.image_url} alt="" loading="lazy" decoding="async" />
+                  </span>
+                )}
                 <span className="till-item-name">{item.name}</span>
                 {(item.brand || item.bottle_size) && (
                   <span className="till-item-sub">{[item.brand, item.bottle_size].filter(Boolean).join(" · ")}</span>
@@ -425,10 +477,15 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
         title="Settle"
         subtitle={split.length > 1 ? "This creates two separate bills — only alcohol is taxed." : "Bills can never be edited afterwards."}
         footer={
+          /* Two ways out, as the Flask till had: most customers want the
+             printed bill, but a staff meal or a re-settle does not need paper
+             and the roll is not free. */
           <>
-            <Button onClick={() => setSettleOpen(false)}>Back</Button>
-            <Button variant="primary" onClick={settle} disabled={action.busy}>
-              {action.busy ? "Settling…" : `Take ${money(grandTotal)}`}
+            <Button onClick={() => settle(false)} disabled={action.busy}>
+              {action.busy ? "Saving…" : "Save only"}
+            </Button>
+            <Button variant="primary" onClick={() => settle(true)} disabled={action.busy}>
+              {action.busy ? "Settling…" : `Save & print ${money(grandTotal)}`}
             </Button>
           </>
         }
@@ -463,6 +520,9 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
       </Sheet>
 
       {toast && <Toast message={toast} />}
+
+      {/* Off-screen; exists only so the printer has something to render. */}
+      <PrintArea receipts={toPrint} gstin={import.meta.env.VITE_RESTAURANT_GSTIN} />
     </div>
   );
 }

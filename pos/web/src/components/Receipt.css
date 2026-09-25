@@ -1,0 +1,138 @@
+/*
+ * The printed bill.
+ *
+ * Deliberately theme-independent: black on white, always. Thermal paper has no
+ * dark mode, and a receipt rendered in dark-theme colours prints as a solid
+ * black rectangle that empties the printer.
+ *
+ * The receipt is hidden on screen and only exists on paper — the on-screen
+ * bill sheet is a separate, themed thing.
+ */
+
+.print-area {
+  display: none;
+}
+
+.receipt {
+  /* 80mm roll minus the printer's own margins. */
+  width: 72mm;
+  margin: 0 auto;
+  padding: 2mm 0 6mm;
+  color: #000;
+  background: #fff;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.45;
+  break-inside: avoid;
+}
+/* Each bill starts a new page — a settled mixed table prints FOOD and ALC as
+   two separate receipts, not one continuous strip. */
+.receipt + .receipt {
+  break-before: page;
+}
+
+.receipt-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed #000;
+}
+.receipt-name {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.receipt-gstin {
+  font-size: 9px;
+}
+.receipt-kind {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.receipt-no {
+  font-size: 12px;
+  font-weight: 700;
+}
+.receipt-when {
+  font-size: 10px;
+}
+
+.receipt-meta {
+  padding: 6px 0;
+  font-size: 10.5px;
+  border-bottom: 1px dashed #000;
+}
+
+.receipt-items {
+  padding: 6px 0;
+}
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.receipt-item {
+  /* The dish name wraps; the amount never does. */
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+.receipt-qty {
+  white-space: nowrap;
+}
+
+.receipt-totals {
+  padding-top: 6px;
+  border-top: 1px dashed #000;
+}
+.receipt-grand {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid #000;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.receipt-foot {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 10px;
+}
+
+/*
+ * Printing.
+ *
+ * Everything in the app is hidden and the receipt alone is shown. Without
+ * this, window.print() prints a screenshot of the till — navigation, buttons
+ * and all — which is what the React rewrite was doing before.
+ */
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 3mm;
+  }
+
+  /* Hide the app without unmounting it: display:none on #root would tear down
+     React state mid-print on some browsers. */
+  body > *:not(.print-area) {
+    display: none !important;
+  }
+
+  .print-area {
+    display: block !important;
+    position: static;
+  }
+
+  body {
+    background: #fff !important;
+    /* Colour management off — a thermal printer is monochrome and dithering a
+       tinted background wastes the roll. */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

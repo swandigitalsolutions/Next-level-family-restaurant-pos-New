@@ -89,7 +89,9 @@ describe("food till", () => {
     await userEvent.click(await screen.findByText("Masala Dosa"));
     await userEvent.click(await screen.findByRole("button", { name: /view bill/i }));
     await userEvent.click(await screen.findByRole("button", { name: /^settle/i }));
-    await userEvent.click(await screen.findByRole("button", { name: /^take /i }));
+    // "Save only" rather than "Save & print": this test is about the bill the
+    // server is sent, and jsdom has no window.print().
+    await userEvent.click(await screen.findByRole("button", { name: /^save only/i }));
 
     await waitFor(() => {
       const call = spy.mock.calls.find((c) => c[1] === "createBill");
@@ -107,6 +109,40 @@ describe("food till", () => {
       expect(typeof body.client_ref).toBe("string");
       expect(body.client_ref.length).toBeGreaterThan(8);
     });
+  });
+
+  /* The React rewrite shipped without a receipt: settling printed nothing, and
+     the one "Print receipt" button called a bare window.print() with no print
+     stylesheet, so it printed a screenshot of the till. This pins the ported
+     behaviour down. */
+  test("Save & print settles the bill AND renders a real receipt", async () => {
+    const spy = makeCallable({ ...baseMap, "billing.createBill": { id: "b1", bill_no: "FOOD-000042", type: "FOOD" } });
+    callable.fn = spy;
+    const print = vi.spyOn(window, "print").mockImplementation(() => {});
+
+    renderScreen(<BillingScreen kind="food" />);
+    await userEvent.click(screen.getByRole("tab", { name: /direct sale/i }));
+    await userEvent.click(await screen.findByText("Masala Dosa"));
+    await userEvent.click(await screen.findByRole("button", { name: /view bill/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /^settle/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /save & print/i }));
+
+    await waitFor(() => {
+      expect(spy.mock.calls.find((c) => c[1] === "createBill")).toBeTruthy();
+    });
+
+    // The receipt is portalled to <body>, so query the document, not the
+    // render container.
+    await waitFor(() => {
+      const area = document.querySelector(".print-area");
+      expect(area).toBeTruthy();
+      expect(area!.textContent).toContain("FOOD-000042");
+      expect(area!.textContent).toContain("Masala Dosa");
+      expect(area!.textContent).toContain("GRAND TOTAL");
+    });
+
+    await waitFor(() => expect(print).toHaveBeenCalled());
+    print.mockRestore();
   });
 });
 
