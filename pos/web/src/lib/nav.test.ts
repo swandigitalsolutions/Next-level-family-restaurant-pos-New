@@ -1,5 +1,6 @@
 import { describe, test, expect } from "vitest";
-import { navFor, canAccess, HOME, normalizeRole, isReadOnly, NAV } from "./nav";
+import { navFor, canAccess, HOME, normalizeRole, isReadOnly, isDisabled, NAV } from "./nav";
+import { FEATURES } from "./features";
 import type { Role } from "./types";
 
 const ROLES: Role[] = ["admin", "manager", "owner", "billing", "kitchen", "cafe_billing"];
@@ -46,9 +47,23 @@ describe("the role matrix", () => {
 
   test("billing gets the tills and boards, but not the menu, tables, kitchen or cafe", () => {
     const paths = navFor("billing").map((n) => n.path);
-    expect(paths).toEqual(expect.arrayContaining(["/billing", "/alcohol", "/qr-orders", "/website-orders", "/orders"]));
+    expect(paths).toEqual(expect.arrayContaining(["/billing", "/alcohol", "/qr-orders", "/orders"]));
     for (const denied of ["/menu", "/tables", "/staff", "/audit", "/kitchen", "/cafe"]) {
       expect(paths).not.toContain(denied);
+    }
+  });
+
+  /* Website pre-ordering is phase 2 (lib/features.ts). The board, its route and
+     its server routes all still exist — only the way in is closed — so this
+     pins the closure shut rather than trusting that nobody links to it. */
+  test("website orders is switched off: no nav entry, and no role can reach it", () => {
+    expect(FEATURES.websiteOrders).toBe(false);
+    expect(isDisabled("/website-orders")).toBe(true);
+    for (const r of ROLES) {
+      expect(navFor(r).map((n) => n.path)).not.toContain("/website-orders");
+      // Not even an admin, and not via a stale bookmark with a sub-path.
+      expect(canAccess(r, "/website-orders")).toBe(false);
+      expect(canAccess(r, "/website-orders/123")).toBe(false);
     }
   });
 

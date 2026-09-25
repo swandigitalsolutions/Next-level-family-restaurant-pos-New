@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { SessionProvider, useSession } from "./lib/session";
+import { ThemeProvider } from "./lib/theme";
 import { canAccess, HOME } from "./lib/nav";
+import { FEATURES } from "./lib/features";
 import { Shell } from "./app/Shell";
 import { Spinner } from "./components/ui";
 
@@ -18,7 +20,9 @@ import { StaffScreen } from "./screens/Staff";
 import { AuditScreen } from "./screens/Audit";
 import { GuestMenuScreen } from "./screens/GuestMenu";
 
+import "./styles/fonts.css";
 import "./styles/tokens.css";
+import "./styles/motion.css";
 
 /**
  * Gate a screen on the signed-in role.
@@ -56,8 +60,9 @@ function RootRedirect() {
 export default function App() {
   return (
     <BrowserRouter>
-      <SessionProvider>
-        <Routes>
+      <ThemeProvider>
+        <SessionProvider>
+          <Routes>
           {/* public */}
           <Route path="/login" element={<LoginRoute />} />
           <Route path="/menu/:token" element={<GuestMenuScreen />} />
@@ -85,7 +90,10 @@ export default function App() {
             <Route path="/alcohol" element={<BillingScreen kind="alcohol" />} />
             <Route path="/cafe" element={<CafeScreen />} />
             <Route path="/qr-orders" element={<QrOrdersScreen />} />
-            <Route path="/website-orders" element={<WebsiteOrdersScreen />} />
+            {/* Phase 2 — see lib/features.ts. Without the route, a stale
+                bookmark falls through to the catch-all and lands the user on
+                their own home screen rather than a dead end. */}
+            {FEATURES.websiteOrders && <Route path="/website-orders" element={<WebsiteOrdersScreen />} />}
             <Route path="/orders" element={<OrdersScreen />} />
             <Route path="/menu" element={<CatalogScreen />} />
             <Route path="/tables" element={<TablesScreen />} />
@@ -93,10 +101,11 @@ export default function App() {
             <Route path="/audit" element={<AuditScreen />} />
           </Route>
 
-          <Route path="/" element={<RootRedirect />} />
-          <Route path="*" element={<RootRedirect />} />
-        </Routes>
-      </SessionProvider>
+            <Route path="/" element={<RootRedirect />} />
+            <Route path="*" element={<RootRedirect />} />
+          </Routes>
+        </SessionProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }
