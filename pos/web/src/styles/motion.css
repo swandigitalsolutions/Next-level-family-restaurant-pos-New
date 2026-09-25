@@ -1,0 +1,175 @@
+/*
+ * Motion primitives.
+ *
+ * Rules this file follows, because this is a POS and not a landing page:
+ *
+ *  1. Motion never gates information. Every revealed element is fully legible
+ *     and interactive before its animation finishes, and if the observer never
+ *     fires (older webview, JS error) the `.reveal` base state is still
+ *     visible — the animation only adds polish on top.
+ *  2. Nothing moves for longer than ~420ms. A cashier mid-rush must not wait
+ *     on an easing curve.
+ *  3. Anything the finger touched answers within 120ms.
+ */
+
+/* ── scroll reveal ──────────────────────────────────────────────────────── */
+/* Base state is VISIBLE on purpose — see rule 1. The observer adds
+   .reveal-armed only once it is known to be working, which is what actually
+   hides the element and lets it animate in. */
+.reveal {
+  opacity: 1;
+}
+
+.reveal-armed {
+  opacity: 0;
+  transform: translateY(14px);
+  will-change: opacity, transform;
+}
+
+.reveal-armed.is-in {
+  opacity: 1;
+  transform: none;
+  transition: opacity var(--t-slow) var(--ease-out), transform var(--t-slow) var(--ease-out);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+/* Staggered children — a list that arrives one row at a time rather than as a
+   single slab. Capped at 10 so a 200-row bill history does not take 4 seconds
+   to finish arriving. */
+.stagger > * {
+  animation: m-rise var(--t-slow) var(--ease-out) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 20ms; }
+.stagger > *:nth-child(2) { animation-delay: 45ms; }
+.stagger > *:nth-child(3) { animation-delay: 70ms; }
+.stagger > *:nth-child(4) { animation-delay: 95ms; }
+.stagger > *:nth-child(5) { animation-delay: 120ms; }
+.stagger > *:nth-child(6) { animation-delay: 145ms; }
+.stagger > *:nth-child(7) { animation-delay: 170ms; }
+.stagger > *:nth-child(8) { animation-delay: 195ms; }
+.stagger > *:nth-child(9) { animation-delay: 220ms; }
+.stagger > *:nth-child(n + 10) { animation-delay: 240ms; }
+
+@keyframes m-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes m-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes m-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  60% {
+    transform: scale(1.015);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* A value that just changed — a running total, an order count. Draws the eye
+   without moving the layout. */
+@keyframes m-bump {
+  50% {
+    transform: scale(1.09);
+  }
+}
+.m-bump {
+  animation: m-bump 260ms var(--ease-spring);
+}
+
+/* Something needs attention and has not been acknowledged: a new order on the
+   reception board. Slower and softer than the alarm, which is the real signal. */
+@keyframes m-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--accent-soft);
+  }
+  50% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+.m-pulse {
+  animation: m-pulse 2.2s var(--ease-out) infinite;
+}
+
+@keyframes m-shimmer {
+  to {
+    background-position-x: -200%;
+  }
+}
+
+/* Skeleton placeholder while a query is in flight. */
+.m-skeleton {
+  background: linear-gradient(90deg, var(--surface-dim) 8%, var(--border-soft) 18%, var(--surface-dim) 33%);
+  background-size: 200% 100%;
+  animation: m-shimmer 1.4s linear infinite;
+  border-radius: var(--r-sm);
+}
+
+/* ── interaction ────────────────────────────────────────────────────────── */
+/* Press feedback for anything tile-like. Scale only — no colour change — so it
+   reads the same in both themes. */
+.m-press {
+  transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out);
+}
+.m-press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Cards that lift toward a pointer. Guarded so it never fires on touch, where
+   :hover sticks after a tap and leaves a row looking permanently selected. */
+@media (hover: hover) and (pointer: fine) {
+  .m-lift {
+    transition: transform var(--t-base) var(--ease-out), box-shadow var(--t-base) var(--ease-out),
+      border-color var(--t-base) var(--ease-out);
+  }
+  .m-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+}
+
+/* Route transition — the new screen arrives rather than blinking into place. */
+.m-route {
+  animation: m-rise 300ms var(--ease-out) both;
+}
+
+/* Momentum scrolling + no scroll chaining, so flicking a long menu list does
+   not start dragging the page underneath it. */
+.m-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+}
+
+/* Horizontal rails (category chips) snap so a flick never leaves a chip cut in
+   half at the edge. */
+.m-snap-x {
+  scroll-snap-type: x proximity;
+}
+.m-snap-x > * {
+  scroll-snap-align: start;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-armed {
+    opacity: 1;
+    transform: none;
+  }
+  .m-pulse,
+  .m-skeleton,
+  .m-bump {
+    animation: none;
+  }
+}

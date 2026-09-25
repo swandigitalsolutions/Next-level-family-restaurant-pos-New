@@ -19,17 +19,17 @@
   padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--r-md);
   background: var(--surface); color: var(--text); cursor: pointer; text-align: left;
 }
-.cat-item:hover { border-color: var(--cardinal); }
+.cat-item:hover { border-color: var(--accent); }
 .cat-item-name { font-weight: 600; font-size: .92rem; }
 .cat-item-sub { font-size: .76rem; color: var(--text-faint); }
-.cat-item-price { margin-left: auto; font-weight: 700; color: var(--cardinal); }
+.cat-item-price { margin-left: auto; font-weight: 700; color: var(--accent); }
 
 .cat-toggle {
   flex: none; width: 58px; border: 1px solid var(--border); border-radius: var(--r-md);
   background: var(--surface-dim); color: var(--text-faint); font-weight: 700; font-size: .8rem; cursor: pointer;
 }
-.cat-toggle.is-on { background: var(--basil); border-color: var(--basil); color: #fff; }
+.cat-toggle.is-on { background: var(--ok); border-color: var(--ok); color: #fff; }
 
 .cat-price-change { margin: 0; display: flex; flex-direction: column; gap: 6px; font-size: 1rem; }
 .cat-price-change span { font-size: 1.15rem; font-family: var(--font-display); }
-.cat-price-change b { color: var(--cardinal); }
+.cat-price-change b { color: var(--accent); }

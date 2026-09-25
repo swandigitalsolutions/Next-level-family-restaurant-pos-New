@@ -1,70 +1,173 @@
+/*
+ * Sign-in.
+ *
+ * Every colour here comes from a semantic token, never from --cream/--ink
+ * directly, so the screen follows the light/dark choice instead of staying
+ * stubbornly cream on a dark device.
+ */
+
 .login {
+  position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 20px;
-  background: var(--cream);
+  padding: 24px;
+  background: var(--bg);
+  background-image: var(--wash-app);
+  overflow: hidden;
 }
+
+/* Two slow-drifting brand blooms behind the card. Purely atmospheric — it is
+   the only screen in the app with nothing else on it. */
+.login::before,
+.login::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.login::before {
+  width: 420px;
+  height: 420px;
+  top: -140px;
+  left: -120px;
+  background: var(--accent);
+  animation: login-drift 18s var(--ease-out) infinite alternate;
+}
+.login::after {
+  width: 360px;
+  height: 360px;
+  bottom: -130px;
+  right: -110px;
+  background: var(--warn);
+  animation: login-drift 22s var(--ease-out) infinite alternate-reverse;
+}
+@keyframes login-drift {
+  to {
+    transform: translate3d(40px, 30px, 0) scale(1.12);
+  }
+}
+
 .login-card {
+  position: relative;
+  z-index: 1;
   width: 100%;
-  max-width: 400px;
-  background: var(--cream-bright);
-  border: 1px solid var(--sand);
-  border-radius: var(--r-lg);
-  padding: 24px 20px;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 30px 26px 26px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  box-shadow: var(--shadow-md);
+  gap: 15px;
+  box-shadow: var(--shadow-xl);
+  animation: login-in 520ms var(--ease-out) both;
 }
+@keyframes login-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+}
+
+/* The logo is a circular badge on white, so it gets its own white disc and a
+   warm ring — on a dark card a bare white circle would look like a hole. */
+.login-logo {
+  align-self: center;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fff;
+  padding: 4px;
+  box-shadow: 0 0 0 1px var(--border), var(--shadow-lg);
+  animation: login-badge 700ms var(--ease-spring) both;
+  animation-delay: 90ms;
+}
+@keyframes login-badge {
+  from {
+    opacity: 0;
+    transform: scale(0.82) translateY(8px);
+  }
+}
+
+.login h1 {
+  align-self: center;
+  font-size: 2rem;
+  color: var(--text);
+  margin: 2px 0 0;
+}
+.login-sub {
+  align-self: center;
+  margin: -12px 0 2px;
+  font-size: 0.86rem;
+  color: var(--text-soft);
+  letter-spacing: 0.02em;
+}
+
 /* the Warli line rule — the venue's recurring decorative device, used once */
 .login-rule {
   height: 6px;
   border-radius: var(--r-pill);
   background: repeating-linear-gradient(
     90deg,
-    var(--cardinal) 0 14px,
+    var(--accent) 0 14px,
     transparent 14px 20px,
-    var(--marigold) 20px 30px,
+    var(--warn) 20px 30px,
     transparent 30px 36px
   );
+  margin-bottom: 4px;
 }
-.login h1 {
-  font-size: 1.9rem;
-  color: var(--ink);
-  margin-top: 4px;
-}
-.login-sub {
-  margin: -10px 0 4px;
-  font-size: 0.86rem;
-  color: var(--ink-soft);
-  letter-spacing: 0.02em;
-}
+
 .login-pw {
   display: flex;
-  gap: 6px;
+  gap: 8px;
 }
 .login-pw button {
   flex: none;
   width: var(--tap-lg);
-  border: 1px solid var(--sand);
-  border-radius: var(--r-sm);
-  background: var(--cream);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-dim);
+  color: var(--text-soft);
   cursor: pointer;
   font-size: 1.05rem;
+  transition: background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out),
+    transform var(--t-fast) var(--ease-out);
 }
+.login-pw button:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.login-pw button:active {
+  transform: scale(0.94);
+}
+
 .login-error {
   margin: 0;
-  background: var(--sunflower);
-  border-left: 4px solid var(--cardinal);
-  border-radius: var(--r-sm);
-  padding: 10px 12px;
+  background: var(--danger-soft);
+  border: 1px solid var(--danger);
+  border-left-width: 4px;
+  border-radius: var(--r-md);
+  padding: 11px 13px;
   font-size: 0.87rem;
-  color: var(--ink);
+  color: var(--text);
+  animation: m-rise var(--t-base) var(--ease-out);
 }
+
 .login-foot {
   margin: 0;
   text-align: center;
   font-size: 0.78rem;
-  color: var(--ink-faint);
+  color: var(--text-faint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login::before,
+  .login::after {
+    animation: none;
+  }
 }

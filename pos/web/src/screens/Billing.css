@@ -1,5 +1,5 @@
 .till { display: flex; flex-direction: column; gap: 11px; padding-bottom: 72px; }
-.till.is-bar { --accent: var(--cardinal-deep); }
+.till.is-bar { --accent: var(--accent-press); }
 .till-head h1 { font-size: 1.35rem; }
 .till-taxnote { margin: 3px 0 0; font-size: .82rem; color: var(--text-soft); }
 
@@ -15,37 +15,66 @@
 .till-table strong { font-family: var(--font-display); font-size: 1.05rem; }
 .till-table span { font-size: .8rem; color: var(--text-soft); }
 .till-table em { font-style: normal; font-size: .72rem; color: var(--text-faint); }
-.till-table.is-open { border-color: var(--marigold); background: var(--surface-dim); }
-.till-table.is-active { border-color: var(--cardinal); box-shadow: inset 0 0 0 1px var(--cardinal); }
+.till-table.is-open { border-color: var(--warn); background: var(--surface-dim); }
+.till-table.is-active { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 
 .till-session-note { margin: 0; font-size: .85rem; color: var(--text-soft); }
-.till-link { border: 0; background: none; color: var(--cardinal); font: inherit; font-weight: 700;
+.till-link { border: 0; background: none; color: var(--accent); font: inherit; font-weight: 700;
   text-decoration: underline; cursor: pointer; padding: 4px; }
 
 .till-search { display: flex; }
 
 /* catalog grid */
-.till-grid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.till-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(156px, 1fr)); }
 .till-item {
-  min-height: 84px; padding: 10px; display: flex; flex-direction: column; gap: 3px; text-align: left;
-  border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface);
+  position: relative; overflow: hidden;
+  min-height: 84px; padding: 0 0 10px; display: flex; flex-direction: column; gap: 3px; text-align: left;
+  border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface);
   color: var(--text); cursor: pointer;
+  box-shadow: var(--shadow-xs);
+  transition: border-color var(--t-fast) var(--ease-out), box-shadow var(--t-base) var(--ease-out),
+    transform var(--t-fast) var(--ease-out);
 }
-.till-item:not(:disabled):hover { border-color: var(--cardinal); }
+/* The photo is the top third of the tile, bled to the edges. */
+.till-item-photo {
+  display: block; width: 100%; aspect-ratio: 16 / 10; overflow: hidden;
+  margin-bottom: 7px;
+  /* A neutral wash under the photo. Images are lazy-loaded, so this is
+     what a tile below the fold shows until it is scrolled to — without it the
+     slot reads as a broken image rather than one still arriving. */
+  background: linear-gradient(135deg, var(--surface-dim), var(--border-soft));
+}
+.till-item-photo img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform var(--t-slow) var(--ease-out);
+}
+.till-item-name, .till-item-sub, .till-item-price, .till-item-stock { padding: 0 11px; }
+/* Tiles without a photo still need the top padding the photo was providing. */
+.till-item > .till-item-name:first-child { padding-top: 11px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .till-item:not(:disabled):hover {
+    border-color: var(--accent); box-shadow: var(--shadow-md); transform: translateY(-2px);
+  }
+  .till-item:not(:disabled):hover .till-item-photo img { transform: scale(1.06); }
+}
 .till-item:not(:disabled):active { transform: scale(.98); }
 .till-item.is-out { opacity: .45; cursor: not-allowed; }
-.till-item-name { font-weight: 600; font-size: .9rem; line-height: 1.25; }
+.till-item.is-out .till-item-photo img { filter: grayscale(1); }
+.till-item-name { font-weight: 650; font-size: .9rem; line-height: 1.25; }
 .till-item-sub { font-size: .74rem; color: var(--text-faint); }
-.till-item-price { margin-top: auto; font-weight: 700; font-size: .95rem; color: var(--cardinal); }
-.till-item-stock { font-size: .7rem; color: var(--basil); font-weight: 600; }
-.till-item-stock.is-out { color: var(--cardinal); }
+/* --text, not the accent: a red price on a dark surface is the lowest-contrast
+   thing on screen, and the price is the one number that must always read. */
+.till-item-price { margin-top: auto; padding-top: 4px; font-weight: 800; font-size: 1.02rem; color: var(--text); }
+.till-item-stock { font-size: .7rem; color: var(--ok); font-weight: 650; }
+.till-item-stock.is-out { color: var(--danger); }
 
 /* running total bar */
 .till-bar {
   position: fixed; left: 8px; right: 8px; bottom: calc(70px + env(safe-area-inset-bottom, 0px));
   z-index: 35; min-height: var(--tap-lg); display: flex; align-items: center; gap: 11px;
   padding: 0 16px; border: 0; border-radius: var(--r-md); cursor: pointer;
-  background: var(--cardinal); color: var(--cream); font-weight: 700; font-size: 1rem;
+  background: var(--accent); color: var(--on-accent); font-weight: 700; font-size: 1rem;
   box-shadow: var(--shadow-md);
 }
 .till-bar-count { background: rgba(255,255,255,.22); border-radius: var(--r-pill); padding: 2px 10px; font-size: .88rem; }
@@ -67,7 +96,7 @@
   padding-top: 6px; border-top: 1px solid var(--border); color: var(--text); }
 
 .till-split { display: flex; flex-direction: column; gap: 7px; }
-.till-split > strong { font-family: var(--font-display); font-size: 1rem; color: var(--cardinal); }
+.till-split > strong { font-family: var(--font-display); font-size: 1rem; color: var(--accent); }
 
 /* cafe-specific */
 .cafe-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

@@ -56,9 +56,10 @@ export function LoginScreen() {
   return (
     <div className="login">
       <form className="login-card" onSubmit={onSubmit}>
-        <div className="login-rule" aria-hidden="true" />
+        <img className="login-logo" src="/brand/logo.jpg" alt="Next Level Family Restaurant" width={132} height={132} />
         <h1>Next Level</h1>
         <p className="login-sub">Family Restaurant &amp; Dhaba</p>
+        <div className="login-rule" aria-hidden="true" />
 
         <Field label="Username">
           <Input

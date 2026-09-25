@@ -1,27 +1,35 @@
 /*
  * Design tokens for the POS front-end.
  *
- * Taken from the approved mockups in /ui-generated, which in turn come from
- * the venue's own website palette — cardinal walls, marigold boards, cream
- * plaster, warm ink. Read every colour, font and radius from here so a change
- * lands everywhere at once.
+ * Brand comes from the venue itself — cardinal walls, marigold boards, cream
+ * plaster, warm ink. Read every colour, font, radius and shadow from here so a
+ * change lands everywhere at once.
  *
- * Two visual worlds, not one theme with a switch:
- *   .theme-light  — every till, board and admin screen (cream ground)
- *   .theme-kitchen — the wall-mounted kitchen display: near-black, oversized,
- *                    tuned to be read from two metres across a hot kitchen.
+ * THREE surfaces, one token contract:
+ *   :root                 — light: every till, board and admin screen
+ *   [data-theme="dark"]   — dark: the same screens at night, or by preference
+ *   .theme-kitchen        — the wall-mounted kitchen display. Always dark,
+ *                           oversized, tuned to be read from two metres across
+ *                           a hot kitchen. It ignores the light/dark choice
+ *                           because the wall does not care what the cashier set.
+ *
+ * Light/dark follows the device by default and can be overridden by the toggle
+ * in the shell, which writes data-theme onto <html>.
  */
 
-@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Bitter:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+/* The web fonts are linked from index.html — see the note there. */
 
 :root {
-  /* brand */
+  /* ── brand constants (identical in both themes) ───────────────────────── */
   --cardinal: #a31621;
   --cardinal-deep: #7c0f19;
+  --cardinal-bright: #c9202e;
   --marigold: #e3a522;
   --sunflower: #f6c445;
   --basil: #4b6b3d;
+  --basil-bright: #5f8a4d;
   --india-green: #138808;
+  --saffron: #ff9933;
 
   /* ink */
   --ink: #2b211a;
@@ -36,20 +44,21 @@
   --sand-dim: #ddcbb1;
   --sand-deep: #c9b69a;
 
-  /* semantic — separate from the accent on purpose */
-  --ok: var(--basil);
-  --warn: var(--marigold);
-  --danger: var(--cardinal);
+  /* ── type ─────────────────────────────────────────────────────────────── */
+  /* A serif display face reads as restaurant *marketing*. This is software
+     staff stare at for eight hours, so both faces are geometric sans: Jakarta
+     for headings and money (slightly wider, more character), Inter for UI text
+     (the most legible screen face there is at small sizes). */
+  --font-display: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
 
-  /* type */
-  --font-display: Bitter, Georgia, serif;
-  --font-body: Archivo, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
-
-  /* spacing + shape */
-  --r-sm: 8px;
+  /* ── shape ────────────────────────────────────────────────────────────── */
+  --r-xs: 6px;
+  --r-sm: 10px;
   --r-md: 14px;
-  --r-lg: 18px;
+  --r-lg: 20px;
+  --r-xl: 28px;
   --r-pill: 999px;
 
   /* Touch targets. Staff use these with wet or oily hands, often one-handed,
@@ -58,36 +67,192 @@
   --tap: 48px;
   --tap-lg: 56px;
 
-  --shadow-sm: 0 1px 2px rgba(43, 33, 26, 0.08);
-  --shadow-md: 0 4px 16px -6px rgba(43, 33, 26, 0.22);
-  --shadow-lg: 0 18px 44px -18px rgba(43, 33, 26, 0.45);
+  /* ── motion ───────────────────────────────────────────────────────────── */
+  /* One easing vocabulary. --ease-out for things arriving, --ease-spring for
+     anything the finger just did, so a tap feels answered rather than played. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --t-fast: 120ms;
+  --t-base: 220ms;
+  --t-slow: 420ms;
 
-  /* defaults = the light world */
-  --bg: var(--cream);
-  --surface: var(--cream-bright);
-  --surface-dim: var(--cream-dim);
-  --border: var(--sand);
-  --text: var(--ink);
-  --text-soft: var(--ink-soft);
-  --text-faint: var(--ink-faint);
-  --accent: var(--cardinal);
-  --accent-press: var(--cardinal-deep);
-  --on-accent: var(--cream);
+  /* ── LIGHT THEME (default) ────────────────────────────────────────────── */
+  /* Cool neutral greys, not cream. The warm palette belongs on the venue's
+     marketing site; a tool used for eight-hour shifts wants a quiet, neutral
+     ground so the only saturated things on screen are the ones that mean
+     something — the accent, a warning, a dish photo. */
+  --bg: #f4f6f8;
+  --bg-deep: #eceff3;
+  --surface: #ffffff;
+  --surface-dim: #f2f4f7;
+  --surface-raised: #ffffff;
+  --border: #e2e6ec;
+  --border-soft: #eef1f5;
+  --text: #0f151d;
+  --text-soft: #56606f;
+  --text-faint: #8a94a3;
+  --accent: #c8102e;
+  --accent-press: #a30d26;
+  --accent-soft: rgba(200, 16, 46, 0.08);
+  --on-accent: #ffffff;
+
+  --ok: #157f4a;
+  --ok-soft: rgba(21, 127, 74, 0.1);
+  --warn: #b8730a;
+  --warn-soft: rgba(184, 115, 10, 0.12);
+  --danger: #c8102e;
+  --danger-soft: rgba(200, 16, 46, 0.09);
+
+  /* Elevation. Cool and tight — the diffuse warm shadows read as smudges. */
+  --shadow-xs: 0 1px 2px rgba(15, 21, 29, 0.05);
+  --shadow-sm: 0 1px 3px rgba(15, 21, 29, 0.08), 0 1px 2px -1px rgba(15, 21, 29, 0.06);
+  --shadow-md: 0 4px 14px -4px rgba(15, 21, 29, 0.14), 0 2px 5px -2px rgba(15, 21, 29, 0.08);
+  --shadow-lg: 0 12px 32px -10px rgba(15, 21, 29, 0.2);
+  --shadow-xl: 0 24px 56px -20px rgba(15, 21, 29, 0.26);
+  --glow-accent: 0 6px 18px -6px rgba(200, 16, 46, 0.45);
+
+  /* No decorative wash on the app body — a flat neutral ground is the single
+     biggest thing that makes software read as software. */
+  --wash-app: none;
+  --wash-accent: linear-gradient(135deg, #d81b34 0%, #c8102e 100%);
+  --wash-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0));
+  --hairline: rgba(255, 255, 255, 0.8);
+
+  /* The top bar gets its own tokens because it is the element that most decides
+     whether the app reads as software or as a brochure. A saturated red band
+     across every screen is the brochure answer; a quiet surface that lets the
+     logo carry the brand is the software one. */
+  --wash-bar: #ffffff;
+  --on-bar: #0f151d;
+  --bar-dim: #56606f;
+  --bar-chip: #f2f4f7;
+  --bar-chip-hover: #e7ebf0;
+  --bar-border: #e2e6ec;
+
+  color-scheme: light;
 }
 
+/* ── DARK THEME ─────────────────────────────────────────────────────────── */
+/* Applied when the device asks for it, unless the toggle has forced light. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1117;
+    --bg-deep: #090d12;
+    --surface: #161b22;
+    --surface-dim: #11161d;
+    --surface-raised: #1c232c;
+    --border: #262d38;
+    --border-soft: #1d242d;
+    --text: #e8edf4;
+    --text-soft: #9aa5b4;
+    --text-faint: #6e7986;
+    --accent: #ff4d5e;
+    --accent-press: #e63950;
+    --accent-soft: rgba(255, 77, 94, 0.13);
+    --on-accent: #ffffff;
+
+    --ok: #3fb968;
+    --ok-soft: rgba(63, 185, 104, 0.14);
+    --warn: #e0a02a;
+    --warn-soft: rgba(224, 160, 42, 0.14);
+    --danger: #ff4d5e;
+    --danger-soft: rgba(255, 77, 94, 0.15);
+
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.55);
+    --shadow-md: 0 6px 18px -6px rgba(0, 0, 0, 0.7);
+    --shadow-lg: 0 16px 38px -12px rgba(0, 0, 0, 0.8);
+    --shadow-xl: 0 28px 62px -22px rgba(0, 0, 0, 0.85);
+    --glow-accent: 0 6px 20px -6px rgba(255, 77, 94, 0.5);
+
+    --wash-app: none;
+    --wash-accent: linear-gradient(135deg, #ff5a6a 0%, #e63950 100%);
+    --wash-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
+    --hairline: rgba(255, 255, 255, 0.06);
+
+    --wash-bar: linear-gradient(180deg, #161b22 0%, #12171e 100%);
+    --on-bar: #e8edf4;
+    --bar-dim: rgba(232, 237, 244, 0.62);
+    --bar-chip: rgba(255, 255, 255, 0.06);
+    --bar-chip-hover: rgba(255, 255, 255, 0.12);
+    --bar-border: rgba(255, 255, 255, 0.08);
+
+    color-scheme: dark;
+  }
+}
+
+/* The toggle forcing dark, regardless of the device setting. Kept identical to
+   the block above — duplicated rather than shared because a media query cannot
+   be re-entered from an attribute selector. */
+:root[data-theme="dark"] {
+  --bg: #0d1117;
+  --bg-deep: #090d12;
+  --surface: #161b22;
+  --surface-dim: #11161d;
+  --surface-raised: #1c232c;
+  --border: #262d38;
+  --border-soft: #1d242d;
+  --text: #e8edf4;
+  --text-soft: #9aa5b4;
+  --text-faint: #6e7986;
+  --accent: #ff4d5e;
+  --accent-press: #e63950;
+  --accent-soft: rgba(255, 77, 94, 0.13);
+  --on-accent: #ffffff;
+
+  --ok: #3fb968;
+  --ok-soft: rgba(63, 185, 104, 0.14);
+  --warn: #e0a02a;
+  --warn-soft: rgba(224, 160, 42, 0.14);
+  --danger: #ff4d5e;
+  --danger-soft: rgba(255, 77, 94, 0.15);
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.55);
+  --shadow-md: 0 6px 18px -6px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 16px 38px -12px rgba(0, 0, 0, 0.8);
+  --shadow-xl: 0 28px 62px -22px rgba(0, 0, 0, 0.85);
+  --glow-accent: 0 6px 20px -6px rgba(255, 77, 94, 0.5);
+
+  --wash-app: none;
+  --wash-accent: linear-gradient(135deg, #ff5a6a 0%, #e63950 100%);
+  --wash-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
+  --hairline: rgba(255, 255, 255, 0.06);
+
+  --wash-bar: linear-gradient(180deg, #161b22 0%, #12171e 100%);
+  --on-bar: #e8edf4;
+  --bar-dim: rgba(232, 237, 244, 0.62);
+  --bar-chip: rgba(255, 255, 255, 0.06);
+  --bar-chip-hover: rgba(255, 255, 255, 0.12);
+  --bar-border: rgba(255, 255, 255, 0.08);
+
+  color-scheme: dark;
+}
+
+/* ── the kitchen wall display ───────────────────────────────────────────── */
+/* Deliberately not theme-aware: it is bolted to a wall in a dark, steamy room
+   and must look the same on every shift. */
 .theme-kitchen {
-  --bg: #14100d;
-  --surface: #221b15;
-  --surface-dim: #2d241c;
+  --bg: #0f0c0a;
+  --bg-deep: #080605;
+  --surface: #1b1510;
+  --surface-dim: #151009;
+  --surface-raised: #241c15;
   --border: #4a3c30;
-  --text: #f7efe3;
-  --text-soft: #c4b5a4;
-  --text-faint: #8a7967;
-  --accent: #e4535f;
-  --accent-press: #c73c48;
-  --on-accent: #14100d;
+  --border-soft: #33291f;
+  --text: #fdf7ec;
+  --text-soft: #cdbda9;
+  --text-faint: #91806d;
+  --accent: #ff5f6d;
+  --accent-press: #e0424f;
+  --accent-soft: rgba(255, 95, 109, 0.16);
+  --on-accent: #0f0c0a;
+  --wash-app: none;
+  --hairline: rgba(255, 255, 255, 0.08);
+  color-scheme: dark;
 }
 
+/* ── base ───────────────────────────────────────────────────────────────── */
 *,
 *::before,
 *::after {
@@ -100,15 +265,25 @@ body,
   height: 100%;
 }
 
+html {
+  /* Anchor jumps and any scrollIntoView glide instead of teleporting. */
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   background: var(--bg);
+  background-image: var(--wash-app);
+  background-attachment: fixed;
   color: var(--text);
   font-family: var(--font-body);
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   /* Stop iOS Safari inflating text in landscape on a mounted tablet. */
   -webkit-text-size-adjust: 100%;
+  /* Colours cross-fade when the theme flips rather than snapping. */
+  transition: background-color var(--t-base) var(--ease-out), color var(--t-base) var(--ease-out);
 }
 
 h1,
@@ -116,6 +291,7 @@ h2,
 h3 {
   font-family: var(--font-display);
   line-height: 1.15;
+  letter-spacing: -0.01em;
   text-wrap: balance;
   margin: 0;
 }
@@ -128,6 +304,7 @@ button {
 /* Money and any column of digits must not jitter as values change. */
 .num {
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 :focus-visible {
@@ -136,12 +313,47 @@ button {
   border-radius: var(--r-sm);
 }
 
+/* Scrollbars, themed. An OS-default light scrollbar on a dark screen is the
+   single most obvious tell that a page was only designed for one theme. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: var(--r-pill);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+  background-clip: content-box;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* Motion is decoration everywhere in this app — never the only signal that
+   something happened — so it can be switched off wholesale. */
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

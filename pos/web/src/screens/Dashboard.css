@@ -1,9 +1,21 @@
 .dash { display: flex; flex-direction: column; gap: 12px; max-width: 900px; }
 .dash-h { font-size: .95rem; margin-bottom: 10px; color: var(--text); }
 
-.dash-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dash-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .dash-tile { display: flex; flex-direction: column; gap: 4px; }
-.dash-tile.is-lead { grid-column: 1 / -1; background: var(--cardinal); border-color: var(--cardinal); color: var(--cream); }
+@media (hover: hover) and (pointer: fine) {
+  .dash-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+}
+/* The headline figure — takes the accent gradient rather than flat cardinal so
+   it reads as the one raised thing on the screen in both themes. */
+.dash-tile.is-lead {
+  grid-column: 1 / -1;
+  background: var(--wash-accent);
+  border-color: transparent;
+  color: var(--on-accent);
+  box-shadow: var(--glow-accent);
+}
+.dash-tile.is-lead::before { background: rgba(255, 255, 255, 0.22); }
 .dash-tile-label { font-size: .76rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; opacity: .8; }
 .dash-tile strong { font-family: var(--font-display); font-size: 1.5rem; }
 .dash-tile.is-lead strong { font-size: 2.1rem; }
@@ -19,13 +31,13 @@
 .dash-bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
 .dash-bars li { display: grid; grid-template-columns: 74px 1fr auto; align-items: center; gap: 9px; font-size: .86rem; }
 .dash-bar-track { height: 12px; border-radius: var(--r-pill); background: var(--surface-dim); overflow: hidden; }
-.dash-bar-fill { display: block; height: 100%; background: var(--cardinal); border-radius: var(--r-pill); }
+.dash-bar-fill { display: block; height: 100%; background: var(--accent); border-radius: var(--r-pill); }
 
 .dash-chart { display: flex; align-items: flex-end; gap: 6px; height: 128px; overflow-x: auto; }
 .dash-chart.is-hours { gap: 3px; }
 .dash-chart-col { flex: 1 0 22px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 5px; }
-.dash-chart-bar { width: 100%; max-width: 34px; background: var(--cardinal); border-radius: 3px 3px 0 0; min-height: 3px; }
-.dash-chart-bar.is-hour { background: var(--marigold); }
+.dash-chart-bar { width: 100%; max-width: 34px; background: var(--accent); border-radius: 3px 3px 0 0; min-height: 3px; }
+.dash-chart-bar.is-hour { background: var(--warn); }
 .dash-chart-col em { font-style: normal; font-size: .66rem; color: var(--text-faint); font-variant-numeric: tabular-nums; }
 
 .dash-top { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; counter-reset: n; }

@@ -17,7 +17,7 @@
 .kds-count { font-size: 1rem; font-weight: 600; color: var(--text-soft); display: inline-flex; align-items: baseline; gap: 6px; }
 .kds-count em { font-style: normal; font-size: 1.7rem; font-weight: 700; font-family: var(--font-display); }
 .kds-count.is-queued em { color: var(--accent); }
-.kds-count.is-prep em { color: var(--marigold); }
+.kds-count.is-prep em { color: var(--warn); }
 .kds-count.is-ready em { color: #8fd07a; }
 
 .kds-clock { font-size: 1.5rem; font-weight: 700; font-family: var(--font-display); }
@@ -28,10 +28,10 @@
   border: 2px solid var(--border); background: var(--surface); color: var(--text);
   font-weight: 700; font-size: 1rem; cursor: pointer;
 }
-.kds-sound.is-muted { background: var(--marigold); color: #14100d; border-color: var(--marigold); }
+.kds-sound.is-muted { background: var(--warn); color: #14100d; border-color: var(--warn); }
 
 .kds-muted-warning {
-  margin: 0; background: var(--marigold); color: #14100d;
+  margin: 0; background: var(--warn); color: #14100d;
   padding: 12px 16px; border-radius: var(--r-md); font-weight: 700; font-size: 1.05rem;
 }
 
@@ -48,7 +48,7 @@
 .kds-ticket:disabled { opacity: .5; cursor: default; }
 /* age, not status, drives the colour — urgency is about waiting time */
 .kds-ticket.is-fresh { border-color: #4b8a3d; }
-.kds-ticket.is-ageing { border-color: var(--marigold); }
+.kds-ticket.is-ageing { border-color: var(--warn); }
 .kds-ticket.is-late { border-color: var(--accent); animation: kds-pulse 1.5s ease-in-out infinite; }
 @keyframes kds-pulse { 50% { border-color: #ff8a93; } }
 
@@ -65,8 +65,8 @@
   font-family: var(--font-display); color: var(--accent);
 }
 .kds-name { font-size: 1.5rem; font-weight: 600; line-height: 1.2; }
-.kds-note { font-size: 1rem; color: var(--marigold); font-weight: 600; }
-.kds-ticket-note { background: var(--surface-dim); border-radius: var(--r-sm); padding: 8px 10px; font-size: 1.05rem; color: var(--marigold); }
+.kds-note { font-size: 1rem; color: var(--warn); font-weight: 600; }
+.kds-ticket-note { background: var(--surface-dim); border-radius: var(--r-sm); padding: 8px 10px; font-size: 1.05rem; color: var(--warn); }
 
 .kds-ticket-action {
   margin-top: auto; text-align: center; background: var(--accent); color: #fff;

@@ -15,9 +15,9 @@
   border: 2px solid var(--border); border-radius: var(--r-md);
   background: var(--surface); padding: 11px 13px;
 }
-.stf-role:hover { border-color: var(--sand-deep); }
-.stf-role.is-selected { border-color: var(--cardinal); background: var(--cream-bright); }
+.stf-role:hover { border-color: var(--text-faint); }
+.stf-role.is-selected { border-color: var(--accent); background: var(--accent-soft); }
 .stf-role input { position: absolute; opacity: 0; pointer-events: none; }
 .stf-role strong { font-family: var(--font-display); font-size: 1rem; }
 .stf-can { font-size: .83rem; color: var(--text-soft); }
-.stf-cannot { font-size: .8rem; color: var(--cardinal); }
+.stf-cannot { font-size: .8rem; color: var(--accent); }

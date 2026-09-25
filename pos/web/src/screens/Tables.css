@@ -11,7 +11,7 @@
 /* the physical card that goes on the table */
 .tbl-print {
   display: flex; flex-direction: column; align-items: center; gap: 10px;
-  background: #fff; color: #2b211a; border: 1px solid var(--sand);
+  background: #fff; color: #2b211a; border: 1px solid var(--border);
   border-radius: var(--r-md); padding: 18px 16px; break-inside: avoid;
 }
 .tbl-print-rule {

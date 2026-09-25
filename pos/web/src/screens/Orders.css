@@ -14,8 +14,16 @@
   grid-template-columns: 1fr auto; grid-template-areas: "no amt" "mid amt" "when amt";
   padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--r-md);
   background: var(--surface); color: var(--text); cursor: pointer; text-align: left;
+  box-shadow: var(--shadow-xs);
+  transition: border-color var(--t-fast) var(--ease-out), box-shadow var(--t-base) var(--ease-out),
+    transform var(--t-fast) var(--ease-out);
 }
-.orders-list button:hover { border-color: var(--cardinal); }
+/* Hover lift only on a real pointer: on a touch screen :hover sticks after a
+   tap and leaves the last-opened bill looking permanently selected. */
+@media (hover: hover) and (pointer: fine) {
+  .orders-list button:hover { border-color: var(--accent); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+}
+.orders-list button:active { transform: scale(.995); }
 .orders-no { grid-area: no; font-family: var(--font-mono); font-size: .85rem; font-weight: 600; }
 .orders-mid { grid-area: mid; display: flex; align-items: center; gap: 7px; }
 .orders-mid em { font-style: normal; font-size: .82rem; color: var(--text-soft); }
@@ -31,6 +39,6 @@
 .orders-lines { list-style: none; margin: 0; padding: 9px 0; border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
 .orders-lines li { display: flex; gap: 10px; align-items: baseline; font-size: .88rem; }
-.orders-lines li > span:first-child { min-width: 2.6ch; font-weight: 700; color: var(--cardinal); }
+.orders-lines li > span:first-child { min-width: 2.6ch; font-weight: 700; color: var(--accent); }
 .orders-lines li > span:nth-child(2) { flex: 1; }
 .orders-meta { margin: 0; font-size: .78rem; color: var(--text-faint); }

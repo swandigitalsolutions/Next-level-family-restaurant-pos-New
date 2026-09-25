@@ -14,10 +14,12 @@ import { Card, ErrorNote, Spinner, EmptyState } from "../components/ui";
 import type { DashboardStats } from "../lib/types";
 import "./Dashboard.css";
 
+/* Three tills, three hues that stay distinguishable in both themes. --ink was
+   near-black, which vanished against a dark background. */
 const TILL_COLORS: Record<string, string> = {
-  Food: "var(--cardinal)",
-  Bar: "var(--ink)",
-  Cafe: "var(--marigold)",
+  Food: "var(--accent)",
+  Bar: "var(--text-soft)",
+  Cafe: "var(--warn)",
 };
 
 export function DashboardScreen() {
@@ -54,7 +56,7 @@ export function DashboardScreen() {
 
   return (
     <div className="dash">
-      <section className="dash-tiles">
+      <section className="dash-tiles stagger">
         <Card className="dash-tile is-lead">
           <span className="dash-tile-label">Sales today</span>
           <strong className="num">{money(data.total_sales_today)}</strong>

@@ -2,18 +2,27 @@
 
 /* buttons */
 .ui-btn {
+  position: relative;
   min-height: var(--tap);
-  padding: 0 16px;
+  padding: 0 18px;
   border-radius: var(--r-md);
-  border: 2px solid transparent;
-  font-weight: 600;
+  border: 1px solid transparent;
+  font-weight: 650;
   font-size: 0.93rem;
+  letter-spacing: 0.01em;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  isolation: isolate;
+  transition: background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out),
+    color var(--t-fast) var(--ease-out), box-shadow var(--t-base) var(--ease-out),
+    transform var(--t-fast) var(--ease-out);
+}
+/* Every button answers the finger immediately — see motion.css rule 3. */
+.ui-btn:not(:disabled):active {
+  transform: translateY(1px) scale(0.985);
 }
 .ui-btn:disabled {
   opacity: 0.45;
@@ -25,50 +34,87 @@
 .ui-btn.is-large {
   min-height: var(--tap-lg);
   font-size: 1rem;
+  border-radius: var(--r-lg);
 }
 .ui-btn-primary {
-  background: var(--accent);
+  background: var(--wash-accent);
   color: var(--on-accent);
-  border-color: var(--accent);
+  border-color: transparent;
+  box-shadow: var(--shadow-sm);
 }
-.ui-btn-primary:not(:disabled):hover {
-  background: var(--accent-press);
-  border-color: var(--accent-press);
+/* The sheen sits above the gradient and fades in on hover, so the gradient
+   itself never has to be re-declared per state. */
+.ui-btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0));
+  opacity: 0;
+  transition: opacity var(--t-base) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .ui-btn-primary:not(:disabled):hover {
+    box-shadow: var(--glow-accent);
+    transform: translateY(-1px);
+  }
+  .ui-btn-primary:not(:disabled):hover::after {
+    opacity: 1;
+  }
+  .ui-btn-secondary:not(:disabled):hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .ui-btn-danger:not(:disabled):hover {
+    background: var(--danger);
+    color: var(--on-accent);
+  }
+  .ui-btn-ghost:not(:disabled):hover {
+    background: var(--surface-dim);
+    color: var(--text);
+  }
 }
 .ui-btn-secondary {
   background: var(--surface);
   color: var(--text);
   border-color: var(--border);
-}
-.ui-btn-secondary:not(:disabled):hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  box-shadow: var(--shadow-xs);
 }
 .ui-btn-danger {
   background: transparent;
   color: var(--danger);
   border-color: var(--danger);
 }
-.ui-btn-danger:not(:disabled):hover {
-  background: var(--danger);
-  color: var(--on-accent);
-}
 .ui-btn-ghost {
   background: transparent;
   color: var(--text-soft);
   border-color: transparent;
 }
-.ui-btn-ghost:not(:disabled):hover {
-  background: var(--surface-dim);
-  color: var(--text);
-}
 
 /* card */
 .ui-card {
+  position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  padding: 14px;
+  border-radius: var(--r-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--t-base) var(--ease-out), border-color var(--t-base) var(--ease-out),
+    transform var(--t-base) var(--ease-out);
+}
+/* A one-pixel highlight along the top edge. Reads as a lit surface in light
+   mode and as a raised bevel in dark, which is what stops dark cards looking
+   like flat holes. */
+.ui-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  background: var(--hairline);
+  pointer-events: none;
 }
 
 /* sheet */
@@ -76,22 +122,41 @@
   position: fixed;
   inset: 0;
   z-index: 70;
-  background: rgba(20, 16, 13, 0.55);
+  background: rgba(9, 13, 18, 0.62);
+  backdrop-filter: blur(6px) saturate(120%);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
   display: flex;
   align-items: flex-end;
   justify-content: center;
+  animation: m-fade var(--t-base) var(--ease-out);
 }
 .ui-sheet {
+  position: relative;
   width: 100%;
   max-width: 600px;
   max-height: 92vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  background: var(--surface);
   color: var(--text);
-  border-radius: var(--r-lg) var(--r-lg) 0 0;
-  box-shadow: var(--shadow-lg);
-  animation: ui-up 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  box-shadow: var(--shadow-xl);
+  animation: ui-up 320ms var(--ease-out);
+}
+/* The grab handle. Purely an affordance — the sheet is closed by the X or the
+   backdrop, but without it a bottom sheet reads as a stuck panel. */
+.ui-sheet::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 38px;
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--border);
 }
 @keyframes ui-up {
   from {
@@ -103,13 +168,18 @@
     align-items: center;
   }
   .ui-sheet {
-    border-radius: var(--r-lg);
-    animation-name: ui-fade;
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    animation-name: ui-zoom;
   }
-  @keyframes ui-fade {
+  /* No grab handle once it is a centred dialog rather than a bottom sheet. */
+  .ui-sheet::before {
+    display: none;
+  }
+  @keyframes ui-zoom {
     from {
       opacity: 0;
-      transform: translateY(10px);
+      transform: translateY(12px) scale(0.985);
     }
   }
 }
@@ -117,8 +187,8 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 16px 16px 10px;
-  border-bottom: 1px solid var(--border);
+  padding: 20px 18px 12px;
+  border-bottom: 1px solid var(--border-soft);
 }
 .ui-sheet-head h2 {
   font-size: 1.2rem;
@@ -132,23 +202,34 @@
   flex: none;
   width: var(--tap);
   height: var(--tap);
-  border: 0;
+  border: 1px solid transparent;
   border-radius: var(--r-pill);
   background: var(--surface-dim);
+  color: var(--text-soft);
   cursor: pointer;
+  transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out),
+    transform var(--t-fast) var(--ease-out);
+}
+.ui-sheet-close:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+  transform: rotate(90deg);
 }
 .ui-sheet-body {
-  padding: 14px 16px;
+  padding: 16px 18px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 .ui-sheet-foot {
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid var(--border);
+  padding: 14px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border-soft);
+  background: var(--surface-dim);
   display: flex;
-  gap: 8px;
+  gap: 10px;
 }
 .ui-sheet-foot .ui-btn {
   flex: 1;
@@ -178,15 +259,25 @@
   min-height: var(--tap-lg);
   width: 100%;
   border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  background: var(--surface);
+  border-radius: var(--r-md);
+  background: var(--surface-dim);
   color: var(--text);
-  padding: 0 12px;
+  padding: 0 14px;
   font: inherit;
   font-size: 1rem;
+  transition: border-color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out),
+    box-shadow var(--t-fast) var(--ease-out);
 }
-.ui-input:focus-visible {
+.ui-input::placeholder {
+  color: var(--text-faint);
+}
+/* :focus, not :focus-within/:focus-visible — a text field should show focus
+   when tapped, and a tap does not raise :focus-visible on every browser. */
+.ui-input:focus {
+  outline: none;
   border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 textarea.ui-input {
   min-height: 84px;
@@ -199,8 +290,9 @@ textarea.ui-input {
   display: inline-flex;
   align-items: center;
   border: 1px solid var(--border);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-pill);
   background: var(--surface);
+  box-shadow: var(--shadow-xs);
   overflow: hidden;
 }
 .ui-stepper button {
@@ -212,6 +304,11 @@ textarea.ui-input {
   line-height: 1;
   cursor: pointer;
   color: var(--text);
+  transition: background var(--t-fast) var(--ease-out), transform var(--t-fast) var(--ease-out);
+}
+.ui-stepper button:not(:disabled):active {
+  transform: scale(0.88);
+  background: var(--accent-soft);
 }
 .ui-stepper button:disabled {
   opacity: 0.3;
@@ -245,15 +342,15 @@ textarea.ui-input {
   color: var(--text-soft);
 }
 .ui-pill-new {
-  background: var(--cardinal);
-  color: var(--cream);
+  background: var(--accent);
+  color: var(--on-accent);
 }
 .ui-pill-working {
-  background: var(--sunflower);
-  color: var(--ink);
+  background: var(--warn);
+  color: var(--text);
 }
 .ui-pill-ready {
-  background: var(--basil);
+  background: var(--ok);
   color: #fff;
 }
 .ui-pill-done {
@@ -261,12 +358,12 @@ textarea.ui-input {
   color: var(--text-faint);
 }
 .ui-pill-danger {
-  background: var(--cardinal-deep);
-  color: var(--cream);
+  background: var(--accent-press);
+  color: var(--on-accent);
 }
 .ui-pill-warn {
-  background: var(--marigold);
-  color: var(--ink);
+  background: var(--warn);
+  color: var(--text);
 }
 
 /* states */
@@ -316,17 +413,21 @@ textarea.ui-input {
   }
 }
 
+/* Themed, not hardcoded: a sunflower banner with near-black text is unreadable
+   on a dark surface. */
 .ui-error {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  background: var(--sunflower);
-  color: var(--ink);
-  border-left: 4px solid var(--cardinal);
-  border-radius: var(--r-sm);
-  padding: 11px 13px;
+  background: var(--warn-soft);
+  color: var(--text);
+  border: 1px solid var(--warn);
+  border-left-width: 4px;
+  border-radius: var(--r-md);
+  padding: 12px 14px;
   font-size: 0.88rem;
+  animation: m-rise var(--t-base) var(--ease-out);
 }
 
 .ui-toast {
@@ -335,36 +436,40 @@ textarea.ui-input {
   bottom: calc(84px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   z-index: 80;
-  padding: 11px 18px;
+  padding: 13px 20px;
   border-radius: var(--r-pill);
   font-size: 0.9rem;
-  font-weight: 600;
-  box-shadow: var(--shadow-md);
-  animation: ui-toast-in 180ms ease-out;
+  font-weight: 650;
+  box-shadow: var(--shadow-lg);
+  animation: ui-toast-in 300ms var(--ease-spring);
   max-width: calc(100vw - 32px);
 }
 .ui-toast-ok {
-  background: var(--basil);
+  background: var(--ok);
   color: #fff;
 }
 .ui-toast-error {
-  background: var(--cardinal);
-  color: var(--cream);
+  background: var(--accent);
+  color: var(--on-accent);
 }
 @keyframes ui-toast-in {
   from {
     opacity: 0;
-    transform: translate(-50%, 8px);
+    transform: translate(-50%, 16px) scale(0.94);
   }
 }
 
 /* segmented filter */
 .ui-seg {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   overflow-x: auto;
   padding-bottom: 2px;
   scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
 }
 .ui-seg::-webkit-scrollbar {
   display: none;
@@ -372,22 +477,30 @@ textarea.ui-input {
 .ui-seg button {
   flex: none;
   min-height: var(--tap);
-  padding: 0 14px;
+  padding: 0 16px;
   border-radius: var(--r-pill);
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text-soft);
-  font-weight: 600;
+  font-weight: 650;
   font-size: 0.86rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  scroll-snap-align: start;
+  transition: background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out),
+    color var(--t-fast) var(--ease-out), transform var(--t-fast) var(--ease-out),
+    box-shadow var(--t-base) var(--ease-out);
+}
+.ui-seg button:active {
+  transform: scale(0.96);
 }
 .ui-seg button.is-active {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--wash-accent);
+  border-color: transparent;
   color: var(--on-accent);
+  box-shadow: var(--glow-accent);
 }
 .ui-seg em {
   font-style: normal;
