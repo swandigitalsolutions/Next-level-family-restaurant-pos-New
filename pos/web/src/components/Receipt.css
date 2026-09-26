@@ -118,8 +118,12 @@
   }
 
   /* Hide the app without unmounting it: display:none on #root would tear down
-     React state mid-print on some browsers. */
-  body > *:not(.print-area) {
+     React state mid-print on some browsers.
+     Scoped to "a receipt is actually mounted": this stylesheet is part of the
+     one global bundle, so an unscoped rule also hid the app for every OTHER
+     window.print() in the POS — the Tables screen's QR-code sheet printed a
+     blank page, because it has no .print-area to fall back on. */
+  body:has(> .print-area) > *:not(.print-area) {
     display: none !important;
   }
 

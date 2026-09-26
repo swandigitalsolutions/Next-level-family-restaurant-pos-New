@@ -13,7 +13,7 @@
  * taxed, and any discount is split pro-rata between them. The settle sheet
  * shows both before anything is committed.
  */
-import { useCallback, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useAction } from "../lib/useQuery";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { callable } from "../lib/api";
@@ -68,10 +68,30 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
   const tables = useQuery<TableRow[]>("queries", "listTables", undefined, { enabled: mode === "table" });
   const session = useQuery<TableSession>("queries", "getTableSession", { id: sessionId }, { enabled: !!sessionId });
 
-  // When a table session loads, its saved lines become the working bill.
+  /* When a table session's saved lines arrive, they become the working bill.
+     This has to be an effect: selecting an already-open table sets sessionId
+     and the fetch starts, so there is nothing to copy until a later render.
+     Doing it inline (or on a timer straight after setSessionId) read the
+     previous render's empty data and silently left the till blank — the
+     cashier saw no lines for a table holding a full meal, could not settle it,
+     and a "Save to table" after adding one item OVERWROTE the saved items
+     (queries.saveTableSession replaces `items` wholesale).
+
+     Guarded by the session id, so this copies once per table opened and a
+     later refetch cannot wipe out lines the cashier has since added. */
+  const loadedSessionId = useRef<string | null>(null);
   const sessionLines = session.data?.items;
-  const loadSession = useCallback(() => {
-    if (!sessionLines) return;
+  const loadedId = session.data?.id;
+  useEffect(() => {
+    // No table open: forget what was loaded, so reopening it later copies
+    // its saved lines in afresh rather than being treated as already done.
+    if (!sessionId) {
+      loadedSessionId.current = null;
+      return;
+    }
+    if (!sessionLines || loadedId !== sessionId) return;
+    if (loadedSessionId.current === sessionId) return;
+    loadedSessionId.current = sessionId;
     setLines(
       sessionLines.map((l) => ({
         item_id: l.item_id,
@@ -86,7 +106,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
     );
     setCustomerName(session.data?.customer_name === "Walk-in" ? "" : session.data?.customer_name ?? "");
     setCustomerPhone(session.data?.customer_phone === "-" ? "" : session.data?.customer_phone ?? "");
-  }, [sessionLines, session.data]);
+  }, [sessionId, loadedId, sessionLines, session.data]);
 
   const visibleItems = useMemo(() => {
     const all = items.data ?? [];
@@ -120,6 +140,15 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
     setTimeout(() => setToast(null), 2800);
   }
 
+  /* The customer belongs to the sale that just ended, not to the next one.
+     These survived a settle, so the following walk-in's bill — and, now that
+     the receipt is printed again, their paper receipt — carried the previous
+     customer's name and phone number. */
+  function clearCustomer() {
+    setCustomerName("");
+    setCustomerPhone("");
+  }
+
   function addItem(item: CatalogItem) {
     setLines((prev) => {
       const at = prev.findIndex((l) => l.item_id === item.id);
@@ -150,14 +179,17 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
 
   async function openTable(table: TableRow) {
     if (table.session_id) {
+      // The effect above copies the saved lines in as soon as they arrive.
+      if (table.session_id !== sessionId) setLines([]);
       setSessionId(table.session_id);
-      setTimeout(loadSession, 0);
       return;
     }
     const out = await action.run(() =>
       callable<{ session: { id: string } }>("billing", "openTable", { table_id: table.id, customer_name: customerName || "Walk-in" }),
     );
     if (out) {
+      // A brand-new session has no saved lines to copy in, so mark it loaded.
+      loadedSessionId.current = out.session.id;
       setSessionId(out.session.id);
       setLines([]);
       tables.reload();
@@ -242,6 +274,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
         setSessionId(null);
         setDiscount("0");
         setTendered("");
+        clearCustomer();
         tables.reload();
       }
     } else {
@@ -277,6 +310,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
         setLines([]);
         setDiscount("0");
         setTendered("");
+        clearCustomer();
       }
     }
     setSettleOpen(false);
@@ -479,8 +513,11 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
           </div>
         )}
 
-        {/* Always-visible running total, thumb-reachable. */}
-        {lines.length > 0 && (
+        {/* Always-visible running total, thumb-reachable. Only when the bill is
+            in a sheet: docked, this fixed bar sits on top of the bill panel's
+            own Settle button, and its only job — opening a sheet that is not
+            rendered — is already done by the panel being permanently visible. */}
+        {!docked && lines.length > 0 && (
           <button type="button" className="till-bar" onClick={() => setBillOpen(true)}>
             <span className="till-bar-count num">{itemCount}</span>
             <span>View bill</span>
