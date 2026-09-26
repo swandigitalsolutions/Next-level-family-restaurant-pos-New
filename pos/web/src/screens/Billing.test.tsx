@@ -111,6 +111,53 @@ describe("food till", () => {
     });
   });
 
+  /* The idempotency key is the only thing between a lost response and charging
+     a customer twice, so pin both halves: a retry must reuse it, an edit must
+     not. Modelled on a settle that FAILS — after a success the cart is cleared,
+     so a "retry" of the same cart only exists when the first attempt failed. */
+  test("a retry reuses the idempotency key; editing the cart mints a new one", async () => {
+    let attempt = 0;
+    const spy = makeCallable({
+      ...baseMap,
+      "billing.createBill": () => {
+        attempt += 1;
+        if (attempt <= 2) throw new Error("the network dropped");
+        return { id: "b1", bill_no: "FOOD-000001", type: "FOOD" };
+      },
+    });
+    callable.fn = spy;
+
+    renderScreen(<BillingScreen kind="food" />);
+    await userEvent.click(screen.getByRole("tab", { name: /direct sale/i }));
+    await userEvent.click(await screen.findByText("Masala Dosa"));
+
+    const settleOnce = async () => {
+      await userEvent.click(await screen.findByRole("button", { name: /view bill/i }));
+      await userEvent.click(await screen.findByRole("button", { name: /^settle/i }));
+      await userEvent.click(await screen.findByRole("button", { name: /^save only/i }));
+    };
+    const refs = () => spy.mock.calls.filter((c) => c[1] === "createBill").map((c) => (c[2] as any).client_ref);
+
+    await settleOnce();
+    await waitFor(() => expect(refs()).toHaveLength(1));
+    const first = refs()[0];
+    expect(typeof first).toBe("string");
+
+    // Same cart, second attempt: the server must be shown the SAME key so it
+    // can recognise a replay instead of billing the customer twice.
+    await settleOnce();
+    await waitFor(() => expect(refs()).toHaveLength(2));
+    expect(refs()[1]).toBe(first);
+
+    // Now the cashier changes the order. That is a different sale, so it needs
+    // its own key — reusing it would have the server hand back the first bill
+    // and never charge the edited one.
+    await userEvent.click(await screen.findByText("Paneer Tikka"));
+    await settleOnce();
+    await waitFor(() => expect(refs()).toHaveLength(3));
+    expect(refs()[2]).not.toBe(first);
+  });
+
   /* The React rewrite shipped without a receipt: settling printed nothing, and
      the one "Print receipt" button called a bare window.print() with no print
      stylesheet, so it printed a screenshot of the till. This pins the ported

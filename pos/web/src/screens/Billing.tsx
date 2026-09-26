@@ -79,6 +79,15 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
 
      Guarded by the session id, so this copies once per table opened and a
      later refetch cannot wipe out lines the cashier has since added. */
+  /* The idempotency key for the counter sale being rung up.
+     It has to survive a RETRY, which is the whole point: the server has a
+     unique index on bills.client_ref and returns the existing bill for a
+     repeat, so the same cart settled twice bills once. Generating it inside
+     the settle call — as this did — made a fresh key every attempt, so if the
+     response was lost to a wifi blip and the cashier pressed Settle again,
+     the restaurant charged the customer twice and double-counted the takings.
+     Minted lazily and rotated only once a bill actually comes back. */
+  const clientRef = useRef<string | null>(null);
   const loadedSessionId = useRef<string | null>(null);
   const sessionLines = session.data?.items;
   const loadedId = session.data?.id;
@@ -107,6 +116,17 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
     setCustomerName(session.data?.customer_name === "Walk-in" ? "" : session.data?.customer_name ?? "");
     setCustomerPhone(session.data?.customer_phone === "-" ? "" : session.data?.customer_phone ?? "");
   }, [sessionId, loadedId, sessionLines, session.data]);
+
+  /* The key identifies a CART, not an attempt, so it rotates when the contents
+     change. Without this: attempt one succeeds but its response is lost, the
+     cashier assumes failure and edits the order, settles again — and the
+     server, seeing a key it has already banked, hands back the FIRST bill and
+     never charges the edited one. Retrying an unchanged cart still reuses the
+     key, which is what makes the retry safe. */
+  const cartSignature = JSON.stringify(lines.map((l) => [l.item_id, l.item_name, l.price, l.qty])) + `|${discount}`;
+  useEffect(() => {
+    clientRef.current = null;
+  }, [cartSignature]);
 
   const visibleItems = useMemo(() => {
     const all = items.data ?? [];
@@ -196,10 +216,12 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
     }
   }
 
-  /** Persist the working lines back onto the open table session. */
-  async function saveSession() {
-    if (!sessionId) return;
-    await action.run(() =>
+  /** Push the working lines onto the session. Returns false if the write
+   *  failed, so a caller that is about to bill can stop rather than charge
+   *  for a stale basket. */
+  async function pushSession(): Promise<boolean> {
+    if (!sessionId) return true;
+    const out = await action.run(() =>
       callable("queries", "saveTableSession", {
         id: sessionId,
         items: lines.map((l) => ({
@@ -216,8 +238,17 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
         customer_phone: customerPhone || "-",
       }),
     );
-    flash("Saved to the table");
-    tables.reload();
+    // useAction.run resolves to null on failure and to the handler's value
+    // otherwise; saveTableSession returns the session, so null means it failed.
+    return out !== null;
+  }
+
+  /** The "Save to table" button: push, then say so. */
+  async function saveSession() {
+    if (await pushSession()) {
+      flash("Saved to the table");
+      tables.reload();
+    }
   }
 
   /**
@@ -257,6 +288,15 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
     if (lines.length === 0) return;
 
     if (mode === "table" && sessionId) {
+      /* Bill what is on the screen.
+         settleTable charges whatever the SERVER has saved against the session,
+         while the receipt is printed from the lines in front of the cashier.
+         Anything added since the last "Save to table" existed only locally, so
+         without this flush the customer was charged for less than they ate and
+         the paper disagreed with the bill. Pushing the lines first makes the
+         two the same thing. */
+      if (!(await pushSession())) return;
+
       const out = await action.run(() =>
         callable<{ bills: Array<{ bill_no: string }> }>("billing", "settleTable", {
           session_id: sessionId,
@@ -279,7 +319,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
       }
     } else {
       const out = await action.run(() =>
-        callable<{ bill_no: string }>("billing", "createBill", {
+        callable<{ bill_no: string; deduplicated?: boolean }>("billing", "createBill", {
           type: isBar ? "ALCOHOL" : "FOOD",
           items: lines.map((l) => ({
             item_id: l.item_id,
@@ -300,13 +340,18 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
           payment_method: method,
           customer_name: customerName || "-",
           customer_phone: customerPhone || "-",
-          // A stable key so a double-tap on a slow tablet cannot mint two bills.
-          client_ref: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+          // Stable across retries — see clientRef above.
+          client_ref: (clientRef.current ??= `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`),
         }),
       );
       if (out) {
+        // Banked. The next sale is a new sale and needs its own key.
+        clientRef.current = null;
         if (doPrint) printReceipts(buildReceipts([out.bill_no]));
-        flash(`Bill ${out.bill_no} created`);
+        // `deduplicated` means this exact cart had already been billed and the
+        // server returned the original rather than charging twice. Say so, so
+        // nobody takes the money a second time.
+        flash(out.deduplicated ? `Already billed as ${out.bill_no} — not charged again` : `Bill ${out.bill_no} created`);
         setLines([]);
         setDiscount("0");
         setTendered("");

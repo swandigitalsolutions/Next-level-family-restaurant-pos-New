@@ -33,8 +33,14 @@ export type ReceiptData = {
   grand_total: number;
 };
 
+/* Guarded, unlike the callers suggest it needs to be: this runs at the moment
+   the cashier prints, and `undefined.toLocaleString()` would throw inside
+   render and white-screen the till with a customer waiting. A dash on the
+   paper is recoverable; a dead till at the counter is not. */
 const money = (n: number) =>
-  n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  Number.isFinite(n)
+    ? n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : "—";
 
 /** "-" is how the API spells "not given"; never print it at a customer. */
 const real = (v: string | undefined) => (v && v !== "-" ? v : "");
