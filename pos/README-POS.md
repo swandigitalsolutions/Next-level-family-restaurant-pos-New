@@ -139,6 +139,29 @@ npx ts-node src/server/index.ts
 cd web && npm install && npm run dev
 ```
 
+### Development sign-ins
+
+A local database needs staff before anything can be used. These are the
+accounts the development database is seeded with, one per role, so the role
+matrix can actually be exercised:
+
+| Username | Password | Role | Lands on |
+|---|---|---|---|
+| `admin` | `admin123` | admin | Dashboard — everything |
+| `manager` | `manager123` | manager | Dashboard — no staff, no audit log |
+| `cashier` | `cashier123` | billing | Dashboard — tills and boards |
+| `cook` | `cook123` | kitchen | Kitchen screen only, never sees money |
+| `cafe` | `cafe123` | cafe_billing | Cafe till only |
+| `owner` | `owner123` | owner | Dashboard, bills and audit — read-only |
+
+> **These are development passwords and must not reach the restaurant.**
+> They are here so a fresh clone is usable, not because they are safe. Change
+> every one of them from the Staff screen before the till is put on a counter;
+> a password change also ends that user's existing sessions.
+
+The floor is seeded with twelve tables (`T1`–`T10`, plus `G1`/`G2` in the
+garden), each with its own QR token.
+
 For the Pi, see [RUN-ON-PI.md](RUN-ON-PI.md).
 
 ---
