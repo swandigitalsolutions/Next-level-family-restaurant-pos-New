@@ -1,125 +1,140 @@
 /*
  * Sign-in.
  *
- * Every colour here comes from a semantic token, never from --cream/--ink
- * directly, so the screen follows the light/dark choice instead of staying
- * stubbornly cream on a dark device.
+ * Two panes on a landscape till: a brand pane carrying the restaurant, and a
+ * form pane carrying the work. On a phone the brand pane is dropped entirely
+ * rather than stacked or shrunk — a cashier signing in on a handset mid-shift
+ * wants the two fields, not a hero image above the fold.
+ *
+ * What used to be here: one narrow centred card floating in dead space, over
+ * two blurred red and orange blobs left from the warm palette, under a dashed
+ * red-and-yellow rule. The blobs read as a smudge on the neutral ground and
+ * the rule read as clip art, so both are gone.
+ *
+ * Every colour is a semantic token, so the screen follows the light/dark
+ * choice instead of being painted for one of them.
  */
 
 .login {
-  position: relative;
   min-height: 100vh;
   min-height: 100dvh;
   display: grid;
-  place-items: center;
-  padding: 24px;
+  /* minmax(0,1fr), not 1fr: a bare 1fr is minmax(auto,1fr), and that auto
+     minimum is the column's min-content width, which on a phone is wider than
+     the screen — the card overflowed to the right and the labels ran off. */
+  grid-template-columns: minmax(0, 1fr);
+  /* An explicit row is what makes the brand pane reach the bottom. A grid row
+     sized from content does not grow to fill its container's min-height, so
+     without this the pane stops wherever its text ends. minmax(0,1fr) rather
+     than 1fr so a short viewport scrolls instead of crushing the fields. */
+  grid-template-rows: minmax(0, 1fr);
   background: var(--bg);
-  background-image: var(--wash-app);
-  overflow: hidden;
 }
 
-/* Two slow-drifting brand blooms behind the card. Purely atmospheric — it is
-   the only screen in the app with nothing else on it. */
-.login::before,
-.login::after {
+/* ── the brand pane ─────────────────────────────────────────────────────── */
+.login-brand {
+  display: none; /* phone-first: see the 820px breakpoint */
+  position: relative;
+  overflow: hidden;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 14px;
+  padding: 48px;
+  background: var(--wash-accent);
+  color: #fff;
+}
+/* A faint diagonal weave, at low contrast. Enough to stop a large flat block
+   of colour looking like an unstyled div, not enough to read as a texture. */
+.login-brand::before {
   content: "";
   position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.5;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.05) 0 2px,
+    transparent 2px 14px
+  );
   pointer-events: none;
 }
-.login::before {
-  width: 420px;
-  height: 420px;
-  top: -140px;
-  left: -120px;
-  background: var(--accent);
-  animation: login-drift 18s var(--ease-out) infinite alternate;
-}
-.login::after {
-  width: 360px;
-  height: 360px;
-  bottom: -130px;
-  right: -110px;
-  background: var(--warn);
-  animation: login-drift 22s var(--ease-out) infinite alternate-reverse;
-}
-@keyframes login-drift {
-  to {
-    transform: translate3d(40px, 30px, 0) scale(1.12);
-  }
-}
-
-.login-card {
+.login-brand > * {
   position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: 420px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-xl);
-  padding: 30px 26px 26px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  box-shadow: var(--shadow-xl);
-  animation: login-in 520ms var(--ease-out) both;
 }
-@keyframes login-in {
-  from {
-    opacity: 0;
-    transform: translateY(18px) scale(0.98);
-  }
+.login-brand h1 {
+  font-size: clamp(2rem, 3.4vw, 2.9rem);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.login-brand p {
+  margin: -6px 0 0;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.86);
+}
+.login-brand-foot {
+  margin-top: auto;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.66);
 }
 
-/* The logo is a circular badge on white, so it gets its own white disc and a
-   warm ring — on a dark card a bare white circle would look like a hole. */
+/* The logo is a circular badge on white, so it keeps a white disc of its own. */
 .login-logo {
-  align-self: center;
-  width: 132px;
-  height: 132px;
+  width: 112px;
+  height: 112px;
   border-radius: 50%;
   object-fit: cover;
   background: #fff;
   padding: 4px;
-  box-shadow: 0 0 0 1px var(--border), var(--shadow-lg);
-  animation: login-badge 700ms var(--ease-spring) both;
-  animation-delay: 90ms;
+  box-shadow: var(--shadow-lg);
+  animation: login-badge 620ms var(--ease-spring) both;
 }
 @keyframes login-badge {
   from {
     opacity: 0;
-    transform: scale(0.82) translateY(8px);
+    transform: scale(0.84) translateY(10px);
   }
 }
 
-.login h1 {
+/* ── the form pane ──────────────────────────────────────────────────────── */
+.login-card {
   align-self: center;
-  font-size: 2rem;
-  color: var(--text);
-  margin: 2px 0 0;
+  justify-self: center;
+  width: min(100%, 420px);
+  padding: 32px 28px calc(32px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  animation: login-in 460ms var(--ease-out) both;
 }
-.login-sub {
-  align-self: center;
-  margin: -12px 0 2px;
-  font-size: 0.86rem;
-  color: var(--text-soft);
-  letter-spacing: 0.02em;
+@keyframes login-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
 }
 
-/* the Warli line rule — the venue's recurring decorative device, used once */
-.login-rule {
-  height: 6px;
-  border-radius: var(--r-pill);
-  background: repeating-linear-gradient(
-    90deg,
-    var(--accent) 0 14px,
-    transparent 14px 20px,
-    var(--warn) 20px 30px,
-    transparent 30px 36px
-  );
-  margin-bottom: 4px;
+/* Shown only where the brand pane is not. */
+.login-logo-sm {
+  width: 64px;
+  height: 64px;
+  align-self: flex-start;
+  padding: 3px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 2px;
+}
+
+.login-title {
+  font-size: 1.85rem;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin: 0;
+}
+.login-sub {
+  margin: -9px 0 6px;
+  font-size: 0.92rem;
+  color: var(--text-soft);
 }
 
 .login-pw {
@@ -129,17 +144,20 @@
 .login-pw button {
   flex: none;
   width: var(--tap-lg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: var(--surface-dim);
   color: var(--text-soft);
   cursor: pointer;
-  font-size: 1.05rem;
   transition: background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out),
-    transform var(--t-fast) var(--ease-out);
+    color var(--t-fast) var(--ease-out), transform var(--t-fast) var(--ease-out);
 }
 .login-pw button:hover {
   border-color: var(--accent);
+  color: var(--accent);
   background: var(--accent-soft);
 }
 .login-pw button:active {
@@ -159,15 +177,35 @@
 }
 
 .login-foot {
-  margin: 0;
-  text-align: center;
-  font-size: 0.78rem;
+  margin: 2px 0 0;
+  font-size: 0.8rem;
   color: var(--text-faint);
 }
 
+/* ── landscape till / desktop ───────────────────────────────────────────── */
+@media (min-width: 820px) {
+  .login {
+    /* The brand pane is the smaller half: the form is the thing being used. */
+    grid-template-columns: minmax(280px, 0.85fr) 1fr;
+  }
+  .login-brand {
+    display: flex;
+  }
+  .login-logo-sm {
+    display: none;
+  }
+  .login-card {
+    width: min(100%, 400px);
+    padding: 40px;
+  }
+  .login-title {
+    font-size: 2.05rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .login::before,
-  .login::after {
+  .login-card,
+  .login-logo {
     animation: none;
   }
 }

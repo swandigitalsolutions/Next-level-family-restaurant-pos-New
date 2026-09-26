@@ -28,7 +28,9 @@ export type IconName =
   | "bell"
   | "bell-off"
   | "sun"
-  | "moon";
+  | "moon"
+  | "eye"
+  | "eye-off";
 
 /* Paths only — every shared attribute lives on the <svg> below. */
 const PATHS: Record<IconName, ReactElement> = {
@@ -142,6 +144,20 @@ const PATHS: Record<IconName, ReactElement> = {
   /* Drawn as a filled crescent rather than an outline: at 18px an outlined
      moon reads as a smudge. */
   moon: <path d="M20 14.2A8.4 8.4 0 0 1 9.8 4a8.6 8.6 0 1 0 10.2 10.2z" fill="currentColor" />,
+  eye: (
+    <>
+      <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  "eye-off": (
+    <>
+      <path d="M9.9 5.7A10.6 10.6 0 0 1 12 5.5c6.4 0 10 6.5 10 6.5a18 18 0 0 1-3.3 4.1" />
+      <path d="M6.2 7.6A17.8 17.8 0 0 0 2 12s3.6 6.5 10 6.5a10.7 10.7 0 0 0 3.6-.6" />
+      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+      <path d="M3 3l18 18" />
+    </>
+  ),
 };
 
 export function Icon({

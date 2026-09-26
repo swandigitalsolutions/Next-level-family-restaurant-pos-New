@@ -10,6 +10,7 @@ import { useState, type FormEvent } from "react";
 import { useSession } from "../lib/session";
 import { ApiError } from "../lib/api";
 import { Button, Field, Input } from "../components/ui";
+import { Icon } from "../components/Icon";
 import "./Login.css";
 
 export function LoginScreen() {
@@ -55,11 +56,22 @@ export function LoginScreen() {
 
   return (
     <div className="login">
-      <form className="login-card" onSubmit={onSubmit}>
-        <img className="login-logo" src="/brand/logo.jpg" alt="Next Level Family Restaurant" width={132} height={132} />
+      {/* Two panes on a landscape till, stacked on a phone. The brand pane is
+          decorative and is dropped entirely below 820px rather than shrunk —
+          a cashier on a handset wants the fields, not a hero image. */}
+      <aside className="login-brand" aria-hidden="true">
+        <img className="login-logo" src="/brand/logo.jpg" alt="" width={112} height={112} />
         <h1>Next Level</h1>
-        <p className="login-sub">Family Restaurant &amp; Dhaba</p>
-        <div className="login-rule" aria-hidden="true" />
+        <p>Family Restaurant &amp; Dhaba</p>
+        <span className="login-brand-foot">Point of sale</span>
+      </aside>
+
+      <form className="login-card" onSubmit={onSubmit}>
+        {/* Repeated inside the form for the phone layout, where the pane above
+            is not rendered at all. */}
+        <img className="login-logo login-logo-sm" src="/brand/logo.jpg" alt="Next Level Family Restaurant" width={64} height={64} />
+        <h2 className="login-title">Sign in</h2>
+        <p className="login-sub">Use the account your manager set up for you.</p>
 
         <Field label="Username">
           <Input
@@ -84,7 +96,7 @@ export function LoginScreen() {
               disabled={busy || lockedFor > 0}
             />
             <button type="button" onClick={() => setReveal((v) => !v)} aria-label={reveal ? "Hide password" : "Show password"}>
-              {reveal ? "🙈" : "👁"}
+              <Icon name={reveal ? "eye-off" : "eye"} size={18} />
             </button>
           </div>
         </Field>
