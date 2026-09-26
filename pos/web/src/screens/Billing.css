@@ -109,3 +109,153 @@
   padding-bottom: 7px; border-bottom: 1px solid var(--border); }
 .cafe-bills li > span:first-child { font-family: var(--font-mono); font-size: .8rem; }
 .cafe-bills li > span:nth-child(2) { flex: 1; color: var(--text-soft); font-size: .8rem; }
+
+/* ── the docked bill (>=1100px) ─────────────────────────────────────────────
+ *
+ * What a counter terminal looks like: the menu on the left, the bill always
+ * visible on the right. Below this width the bill is a sheet reached from the
+ * running-total bar, because a 340px panel beside a menu grid does not fit on
+ * a phone or a portrait tablet.
+ *
+ * The till is a flex column at narrow widths; here it becomes a two-column
+ * grid and every existing child is pinned to column 1, so the markup order
+ * does not have to change.
+ */
+@media (min-width: 1100px) {
+  .till {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    column-gap: 18px;
+    align-content: start;
+    padding-bottom: 16px;
+  }
+  .till-main {
+    grid-column: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+  .till-cart {
+    grid-column: 2;
+    grid-row: 1;
+    position: sticky;
+    /* Clears the shell's sticky top bar. */
+    top: 74px;
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 96px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .till-cart-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .till-cart-head strong {
+    font-family: var(--font-display);
+    font-size: 1.02rem;
+  }
+  .till-cart-head span {
+    font-size: 0.8rem;
+    color: var(--text-faint);
+  }
+  .till-cart-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .till-cart-foot {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border-soft);
+    background: var(--surface-dim);
+  }
+}
+
+/* Below the dock, the panel is never rendered — but guard anyway so a stale
+   style cannot leave it stranded mid-page. */
+@media (max-width: 1099px) {
+  .till-cart {
+    display: none;
+  }
+}
+
+/* ── cash tendering ─────────────────────────────────────────────────────── */
+.till-cash {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-dim);
+}
+
+/* The notes a cashier is actually handed. */
+.till-quickcash {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.till-quickcash button {
+  flex: 1 1 auto;
+  min-width: 72px;
+  min-height: var(--tap);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: border-color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out),
+    transform var(--t-fast) var(--ease-out);
+}
+.till-quickcash button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.till-quickcash button:active {
+  transform: scale(0.96);
+  background: var(--accent-soft);
+}
+
+/* Change due is the number the cashier reads back to the customer, so it is
+   the largest thing in the block. Short-by is the same shape in the danger
+   colour rather than a different layout, so the eye lands in the same place. */
+.till-change {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--ok-soft);
+  color: var(--text);
+  font-size: 0.92rem;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.till-change strong {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--ok);
+}
+.till-change.is-short {
+  background: var(--danger-soft);
+}
+.till-change.is-short strong {
+  color: var(--danger);
+}
