@@ -47,7 +47,7 @@ export function Shell() {
           {/* The logo is a white-ground badge, so it sits on its own light chip
               rather than directly on the bar — otherwise it shows as a white
               square in dark mode. */}
-          <img className="shell-logo" src="/brand/logo.jpg" alt="" width={40} height={40} />
+          <img className="shell-logo" src="/brand/logo-badge.png" alt="" width={40} height={40} />
           <span className="shell-brand-text">
             <strong>Next Level</strong>
             <span>{current?.label ?? "POS"}</span>
@@ -85,7 +85,19 @@ export function Shell() {
             <button type="button" onClick={() => { setMenuOpen(false); setSoundOpen(true); }}>
               Order sounds
             </button>
-            <button type="button" onClick={signOut}>
+            {/* A till sits on a busy counter and this button is one row below
+                "Order sounds". Tapped by accident mid-service it drops the
+                cashier to the login screen and loses whatever is in the
+                basket, so it asks first. */}
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm("Sign out?\n\nAnything not yet saved to a bill will be lost.")) {
+                  setMenuOpen(false);
+                  signOut();
+                }
+              }}
+            >
               Sign out
             </button>
           </div>
