@@ -1,3 +1,0 @@
-# Render's Python auto-detection installs from this root file.
-# The real dependency list lives in backend/requirements.txt.
--r backend/requirements.txt
