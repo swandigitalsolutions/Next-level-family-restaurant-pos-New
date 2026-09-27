@@ -306,6 +306,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
 
   async function settle(doPrint: boolean) {
     if (lines.length === 0) return;
+    let settled = false;
 
     if (mode === "table" && sessionId) {
       /* Bill what is on the screen.
@@ -337,6 +338,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
         setTendered("");
         clearCustomer();
         tables.reload();
+        settled = true;
       }
     } else {
       const out = await action.run(() =>
@@ -378,10 +380,23 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
         setDiscountMode("amount");
         setTendered("");
         clearCustomer();
+        settled = true;
       }
     }
-    setSettleOpen(false);
-    setBillOpen(false);
+
+    /* Only leave the settle screen when a bill actually exists.
+       This used to close unconditionally. When the save failed — server
+       restarting, database down, wifi dropped — the sheet shut, the basket
+       was still sitting there, and the only sign of trouble was one line of
+       server text rendered further up the menu column, usually scrolled out
+       of sight. To the cashier the button did nothing at all, so they pressed
+       it again, or took the money for a bill that was never written. The
+       sheet now stays put and says what went wrong, right where they are
+       looking. */
+    if (settled) {
+      setSettleOpen(false);
+      setBillOpen(false);
+    }
   }
 
   // The split preview: what the two bills will actually look like.
@@ -689,6 +704,16 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
           </>
         }
       >
+        {/* Failures belong on the screen the cashier is actually looking at.
+            `settleFailed` is deliberately plain: the raw server text can be
+            anything from "boom" to a Postgres error code, which tells a
+            cashier nothing about whether the customer has been charged. */}
+        {action.error && (
+          <ErrorNote
+            message={`This bill was NOT saved — nobody has been charged. ${action.error}`}
+            onRetry={() => settle(false)}
+          />
+        )}
         {split.map((g) => (
           <Card key={g.type} className="till-split">
             <strong>{g.type === "ALCOHOL" ? "Alcohol bill" : "Food bill"}</strong>

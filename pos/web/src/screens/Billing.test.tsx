@@ -335,3 +335,51 @@ describe("bar till", () => {
     expect(await screen.findByText("3 left")).toBeInTheDocument();
   });
 });
+
+describe("when the bill cannot be saved", () => {
+  /* The defect this pins: settle() used to close the settle sheet whether or
+     not a bill had been written. On a failure the cashier was dropped back to
+     a still-full basket with the reason rendered far up the menu column,
+     usually scrolled out of view — so the button appeared to do nothing, and
+     the temptation was to take the money anyway or press it again. */
+  const failing = () => {
+    const fn = makeCallable(baseMap);
+    return vi.fn((...args: unknown[]) => {
+      if (args[1] === "createBill") return Promise.reject(new Error("Cannot reach the POS server."));
+      return (fn as any)(...args);
+    });
+  };
+
+  async function settleAndFail() {
+    renderScreen(<BillingScreen kind="food" />);
+    await userEvent.click(screen.getByRole("tab", { name: /direct sale/i }));
+    await userEvent.click(await screen.findByText("Masala Dosa"));
+    await userEvent.click(await screen.findByRole("button", { name: /view bill/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /^settle/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /^save$/i }));
+  }
+
+  test("says so plainly, and says nobody has been charged", async () => {
+    callable.fn = failing();
+    await settleAndFail();
+    const note = await screen.findByText(/was NOT saved/i);
+    expect(note).toHaveTextContent(/nobody has been charged/i);
+    expect(note).toHaveTextContent(/Cannot reach the POS server/);
+  });
+
+  test("keeps the settle screen open so the cashier can retry", async () => {
+    callable.fn = failing();
+    await settleAndFail();
+    await screen.findByText(/was NOT saved/i);
+    // Still on the settle step, not dumped back to the basket.
+    expect(screen.getByRole("button", { name: /^save$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /edit/i })).toBeInTheDocument();
+  });
+
+  test("does not clear the basket, so nothing has to be re-keyed", async () => {
+    callable.fn = failing();
+    await settleAndFail();
+    await screen.findByText(/was NOT saved/i);
+    expect(screen.getAllByText("Masala Dosa").length).toBeGreaterThan(0);
+  });
+});

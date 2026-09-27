@@ -10,7 +10,7 @@
  * no tax. A cafe sale is often a single ₹20 chai and the flow should feel
  * that cheap — tap the item, tap settle, choose cash.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useAction } from "../lib/useQuery";
 import { callable } from "../lib/api";
 import { money, todayKey } from "../lib/format";
@@ -30,6 +30,7 @@ export function CafeScreen() {
   const [categoryId, setCategoryId] = useState<string | "all">("all");
   const [search, setSearch] = useState("");
   const [billOpen, setBillOpen] = useState(false);
+  const clientRef = useRef<string | null>(null);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [method, setMethod] = useState("Cash");
   const [discount, setDiscount] = useState("0");
@@ -52,6 +53,16 @@ export function CafeScreen() {
   const subtotal = lines.reduce((a, l) => a + l.price * l.qty, 0);
   const discountNum = Math.max(0, Number(discount) || 0);
   const total = Math.max(0, subtotal - discountNum);
+
+  /* Change the basket and it becomes a different sale, so it gets a different
+     idempotency key. Without this, correcting a line after a failed attempt
+     would reuse the old key and the server would return the FIRST bill —
+     charging the customer for what they no longer ordered. */
+  const cartSignature =
+    JSON.stringify(lines.map((l) => [l.item_id, l.price, l.qty])) + `|${discountNum}`;
+  useEffect(() => {
+    clientRef.current = null;
+  }, [cartSignature]);
   const itemCount = lines.reduce((a, l) => a + l.qty, 0);
 
   // Today's takings at this counter — the operator's only view of their day.
@@ -75,6 +86,13 @@ export function CafeScreen() {
     setLines((prev) => (qty <= 0 ? prev.filter((_, i) => i !== index) : prev.map((l, i) => (i === index ? { ...l, qty } : l))));
   }
 
+  /* One key per basket, not per attempt.
+     A cafe counter runs on a phone on patchy wifi, so "Take ₹40" timing out
+     and being pressed again is routine. Minting a fresh client_ref inside the
+     call — as this did — made every retry look like a new sale to the server,
+     so a chai that was billed once could be billed twice. The key is reset
+     when the basket changes, which is what makes the next sale a new sale.
+     Same reasoning as the food till; see Billing.tsx. */
   async function settle() {
     const out = await action.run(() =>
       callable<{ bill_no: string }>("billing", "createBill", {
@@ -82,10 +100,11 @@ export function CafeScreen() {
         items: lines.map((l) => ({ item_id: l.item_id, name: l.item_name, item_name: l.item_name, price: l.price, qty: l.qty, tax_rate: 0 })),
         discount: discountNum,
         payment_method: method,
-        client_ref: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+        client_ref: (clientRef.current ??= `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`),
       }),
     );
     if (out) {
+      clientRef.current = null; // banked; the next sale needs its own key
       setToast(`Bill ${out.bill_no} — ${money(total)}`);
       setTimeout(() => setToast(null), 2600);
       setLines([]);
@@ -160,6 +179,14 @@ export function CafeScreen() {
           </>
         }
       >
+        {/* The sale failed and the counter needs to know before they take the
+            money — the copy at the top of the screen is behind this sheet. */}
+        {action.error && (
+          <ErrorNote
+            message={`This sale was NOT saved — nobody has been charged. ${action.error}`}
+            onRetry={settle}
+          />
+        )}
         <ul className="till-lines">
           {lines.map((l, i) => (
             <li key={l.item_id}>
