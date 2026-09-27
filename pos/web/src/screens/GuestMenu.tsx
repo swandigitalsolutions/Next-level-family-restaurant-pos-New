@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { money } from "../lib/format";
 import { Button, EmptyState, Field, Input, Sheet, Spinner, NumberStepper } from "../components/ui";
+import { DishPhoto } from "../components/DishPhoto";
 import "./GuestMenu.css";
 
 interface MenuItem {
@@ -79,6 +80,31 @@ export function GuestMenuScreen() {
       cancelled = true;
     };
   }, [token]);
+
+  /* The one public page. The shell's title and description are the staff
+     app's ("Next Level POS", "Point of sale for…"), which is what a guest saw
+     in their browser tab and in a shared link preview. The page is reached by
+     a per-table secret, so it is also kept out of search indexes. */
+  useEffect(() => {
+    const prevTitle = document.title;
+    const desc = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    const prevDesc = desc?.content;
+    const robots = document.createElement("meta");
+    robots.name = "robots";
+    robots.content = "noindex, nofollow";
+    document.head.appendChild(robots);
+    return () => {
+      document.title = prevTitle;
+      if (desc && prevDesc !== undefined) desc.content = prevDesc;
+      robots.remove();
+    };
+  }, []);
+  useEffect(() => {
+    const name = menu?.restaurant || "Next Level Family Restaurant";
+    document.title = menu ? `Menu · Table ${menu.table.label} · ${name}` : `Menu · ${name}`;
+    const desc = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (desc) desc.content = `Order from your table at ${name}. You pay at the table when you are finished.`;
+  }, [menu]);
 
   const allItems = useMemo(() => (menu?.categories ?? []).flatMap((c) => c.items), [menu]);
   const lines = useMemo(
@@ -208,11 +234,15 @@ export function GuestMenuScreen() {
           <ul className="guest-items">
             {group.items.map((item) => (
               <li key={item.id} className={item.available ? "" : "is-out"}>
-                {item.image_url && <img src={item.image_url} alt="" loading="lazy" />}
+                {item.image_url && <DishPhoto src={item.image_url} width={62} height={62} />}
                 <div className="guest-item-text">
                   <strong>
-                    {/* The veg / non-veg mark Indian diners expect to see first. */}
-                    <span className={item.kind === "alcohol" ? "guest-dot is-bar" : "guest-dot is-veg"} aria-hidden="true" />
+                    {/* No veg mark on food. The catalog does not record whether a
+                        dish is vegetarian, and this drew the green "veg" square
+                        on every food item — Tandoori Chicken included — which a
+                        vegetarian guest reads as a promise. Bring it back only
+                        once the menu carries a real veg flag. */}
+                    {item.kind === "alcohol" && <span className="guest-dot is-bar" aria-hidden="true" />}
                     {item.name}
                   </strong>
                   {(item.brand || item.bottle_size) && (

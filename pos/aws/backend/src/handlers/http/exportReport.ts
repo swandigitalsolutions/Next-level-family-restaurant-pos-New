@@ -24,7 +24,9 @@ function csvCell(v: unknown): string {
   // sales report into a live attack the moment they open it. A leading
   // apostrophe keeps the text readable and inert.
   if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  // A bare \r is a row break to Excel too (the file uses \r\n), so it must
+  // be quoted like \n or one customer name splits into two rows.
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 function localStamp(d: Date): string {
   const p = new Intl.DateTimeFormat("en-CA", { timeZone: RESTAURANT_TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).formatToParts(d);
@@ -93,7 +95,7 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
      "Grand Total" column must skip rows marked Cancelled. */
   const sql = `SELECT b.*, v.reason AS void_reason, v.voided_at, v.voided_by_username
      FROM bills b LEFT JOIN bill_voids v ON v.bill_id = b.id
-     ${where.length ? "WHERE " + where.join(" AND ").replace(/(type|date_key)/g, "b.$1") : ""}
+     ${where.length ? "WHERE " + where.join(" AND ").replace(/\b(type|date_key)\b/g, "b.$1") : ""}
      ORDER BY b.date_key, b.created_at LIMIT $${params.length}`;
   const rows = (await pool.query(sql, params)).rows;
   if (rows.length > EXPORT_MAX_ROWS) {

@@ -185,6 +185,16 @@
   }
 }
 
+/* The cafe has no separate Settle step, so its docked footer carries the two
+   settle buttons side by side. */
+.cafe-cart-foot {
+  display: flex;
+  gap: 8px;
+}
+.cafe-cart-foot .ui-btn {
+  flex: 1;
+}
+
 /* Below the dock, the panel is never rendered — but guard anyway so a stale
    style cannot leave it stranded mid-page. */
 @media (max-width: 1099px) {

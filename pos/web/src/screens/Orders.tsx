@@ -37,6 +37,9 @@ function toReceipt(bill: Bill): ReceiptData {
     tax: bill.tax,
     discount: bill.discount,
     grand_total: bill.grand_total,
+    // Every print from history is a copy of a bill already handed over.
+    reprint: true,
+    cancelled: bill.voided ? { reason: bill.void_reason } : null,
   };
 }
 
@@ -63,7 +66,11 @@ export function OrdersScreen() {
   const detail = useQuery<Bill>("queries", "getBill", { id: openId }, { enabled: !!openId });
 
   const orders = list.data?.orders ?? [];
-  const gross = orders.reduce((a, o) => a + o.grand_total, 0);
+  /* Cancelled bills stay in the list, but not in the takings. This summed
+     them in, so cancelling a bill left the figure an owner reads at close of
+     day unchanged — the one number the cancellation exists to correct. */
+  const gross = orders.reduce((a, o) => a + (o.voided ? 0 : o.grand_total), 0);
+  const voidedCount = orders.filter((o) => o.voided).length;
 
   return (
     <div className="orders">
@@ -94,7 +101,9 @@ export function OrdersScreen() {
 
       <Card className="orders-summary">
         <div>
-          <span>{orders.length} bills shown</span>
+          <span>
+            {orders.length} bills shown{voidedCount > 0 ? ` · ${voidedCount} cancelled, not counted` : ""}
+          </span>
           <strong className="num">{money(gross)}</strong>
         </div>
         {date && (

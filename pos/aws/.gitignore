@@ -1,6 +1,8 @@
 node_modules/
 dist/
 cdk.out/
+# generated on first request by server/thumbnails.ts
+hosting/assets/menu/thumb/
 *.tsbuildinfo
 .env
 .env.*

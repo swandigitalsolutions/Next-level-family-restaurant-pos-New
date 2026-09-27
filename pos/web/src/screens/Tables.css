@@ -26,7 +26,10 @@
 
 @media print {
   .shell-top, .shell-tabs, .shell-side, .ui-sheet-head, .ui-sheet-foot, .sm-alarm-bar { display: none !important; }
-  .ui-backdrop { position: static; background: none; }
+  /* The sheet is portalled to <body>, beside #root: print the cards alone,
+     not the table list behind them. */
+  body:has(> .ui-backdrop) > #root { display: none !important; }
+  .ui-backdrop { position: static; background: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
   .ui-sheet { max-height: none; box-shadow: none; border-radius: 0; }
   .tbl-print { border: 1px dashed #999; page-break-inside: avoid; }
 }

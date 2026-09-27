@@ -15,6 +15,7 @@
 import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
 import { withTransaction } from "../../lib/db";
 import { dateKey } from "../../lib/money";
+import { RESTAURANT_TZ } from "../../lib/config";
 import { verifyWebhookSignature } from "../../lib/razorpay";
 import { broadcast } from "../../lib/broadcastClient";
 
@@ -61,9 +62,16 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
   const markerId = razorpayPaymentId || `order_paid:${razorpayOrderId}`;
 
   const result = await withTransaction(async (client) => {
-    // 1) idempotency — insert-or-detect-existing under FOR UPDATE, same
-    //    "first writer wins" guarantee as Firestore tx.get+tx.set on a fresh doc.
-    const existing = await client.query("SELECT marker_id FROM website_payments WHERE marker_id = $1 FOR UPDATE", [markerId]);
+    // 1) idempotency — a plain read, NO row lock. `SELECT ... FOR UPDATE`
+    //    needs the UPDATE privilege, and 002_privileges.sql revokes UPDATE on
+    //    website_payments from pos_app, so the lock made EVERY webhook fail
+    //    with "permission denied" in production (the tests, connected as the
+    //    superuser, never saw it). It also locked nothing useful: the marker
+    //    row does not exist yet on a first delivery. Two concurrent deliveries
+    //    are serialized by the FOR UPDATE on the order row below; under
+    //    SERIALIZABLE the loser retries (withTransaction) and then finds the
+    //    marker here.
+    const existing = await client.query("SELECT marker_id FROM website_payments WHERE marker_id = $1", [markerId]);
     if (existing.rowCount) return { status: "already-processed" };
 
     // 2) find the order by its stored providerOrderId (the authoritative link)
@@ -88,8 +96,15 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
       return { status: "provider-order-mismatch" };
     }
 
-    // 4) never revert an order that has already left PENDING_PAYMENT
-    if (order.status !== "PENDING_PAYMENT") {
+    // 4) never revert an order that has already left PENDING_PAYMENT — with
+    //    one exception. Razorpay Checkout lets the guest retry on the SAME
+    //    order after a declined card, so payment.failed for attempt 1 can be
+    //    followed by payment.captured for attempt 2. Ignoring that capture
+    //    kept the guest's money on an order stuck at PAYMENT_FAILED. A capture
+    //    of the correct advance on a failed order is money in, so it confirms
+    //    (the amount check below still applies).
+    const retriedAfterFailure = isPaid && order.status === "PAYMENT_FAILED" && Number(order.paid_paise || 0) === 0;
+    if (order.status !== "PENDING_PAYMENT" && !retriedAfterFailure) {
       await markInsert({});
       return { status: order.status === "CONFIRMED" ? "already-confirmed" : "ignored-not-pending", ref: order.ref };
     }
@@ -102,6 +117,10 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
 
     // 5) captured/paid — amount MUST equal the 50% advance computed at order-create
     if (amountPaise !== Number(order.advance_paise)) {
+      if (retriedAfterFailure) {
+        await markInsert({ amountMismatch: true });
+        return { status: "amount-mismatch", ref: order.ref };
+      }
       await client.query(
         "UPDATE website_orders SET payment_status='FAILED', status='PAYMENT_FAILED', updated_at=$2 WHERE id=$1",
         [order.id, now],
@@ -114,7 +133,7 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
     await client.query(
       `UPDATE website_orders SET payment_status='ADVANCE_PAID', status='CONFIRMED', paid_paise=$2,
          confirmed_at=$3, updated_at=$3, date_key=$4, payments=$5 WHERE id=$1`,
-      [order.id, amountPaise, now, dateKey(now), JSON.stringify(payments)],
+      [order.id, amountPaise, now, dateKey(now, RESTAURANT_TZ), JSON.stringify(payments)],
     );
     await markInsert({ amountPaise });
     return { status: "confirmed", ref: order.ref };

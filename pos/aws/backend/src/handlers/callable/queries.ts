@@ -12,9 +12,10 @@
  */
 import { dispatch } from "../../lib/callable";
 import { assertRole, HttpError } from "../../lib/authz";
-import { OPS_ROLES, BILLING_ROLES, CAFE_ROLES, KITCHEN_ROLES, AUDIT_ROLES, RESTAURANT_TZ } from "../../lib/config";
-import { dateKey, round2 } from "../../lib/money";
-import { getPool } from "../../lib/db";
+import { OPS_ROLES, DASHBOARD_ROLES, BILLING_ROLES, CAFE_ROLES, KITCHEN_ROLES, AUDIT_ROLES, RESTAURANT_TZ, MAX_BILL_LINES, MAX_BILL_LINE_QTY } from "../../lib/config";
+import { dateKey, round2, toFloat, toPositiveInt, ValidationError, MAX_BILL_AMOUNT } from "../../lib/money";
+import { getPool, withTransaction } from "../../lib/db";
+import { computeRolling } from "../../lib/statsService";
 import { posImageUrl } from "../../lib/assetUrl";
 
 const channelOf = (kind: string, salesChannel: string) => salesChannel || (kind === "cafe" ? "OUTSIDE_CAFE" : "RESTAURANT");
@@ -71,6 +72,14 @@ const qrOrderRow = (r: any) => ({
   table_session_id: r.table_session_id ?? null, created_at: r.created_at ? new Date(r.created_at).toISOString() : null,
   items: (r.items || []).map((it: any) => ({ item_kind: it.kind, item_name: it.itemName, brand: it.brand ?? "", bottle_size: it.bottleSize ?? "", price: Number(it.price), qty: Number(it.qty), tax_rate: Number(it.taxRate) || 0, line_total: Number(it.lineTotal) })),
 });
+/** A paging argument clamped to [min, max]. `parseInt("abc")` is NaN, and
+ * Math.min/Math.max pass NaN straight through to `LIMIT $n`, which Postgres
+ * rejects — a 500 for a typo in a query string. */
+const intArg = (v: unknown, dflt: number, min: number, max: number) => {
+  const n = parseInt(String(v ?? dflt), 10);
+  return Math.min(Math.max(Number.isFinite(n) ? n : dflt, min), max);
+};
+const MAX_OFFSET = 1_000_000;
 const suffix = (s: string) => parseInt(String(s || "").match(/(\d+)\s*$/)?.[1] || "0", 10);
 
 export const handler = dispatch({
@@ -93,7 +102,9 @@ export const handler = dispatch({
   },
 
   async listTables(_body, event) {
-    assertRole(event as any, OPS_ROLES as any);
+    // Guest names, phones and running totals: the restaurant tills only. The
+    // kitchen never sees money (README rule 4) and the cafe till has no tables.
+    assertRole(event as any, BILLING_ROLES as any);
     const pool = await getPool();
     const [tables, sessions] = await Promise.all([
       pool.query("SELECT * FROM restaurant_tables ORDER BY table_no LIMIT 500"),
@@ -110,7 +121,7 @@ export const handler = dispatch({
   },
 
   async getTableSession(body, event) {
-    assertRole(event as any, OPS_ROLES as any);
+    assertRole(event as any, BILLING_ROLES as any);
     const pool = await getPool();
     const res = await pool.query("SELECT * FROM table_sessions WHERE id=$1", [String(body?.id ?? "")]);
     if (!res.rowCount) throw new HttpError(404, "not-found", "Table session not found");
@@ -119,26 +130,47 @@ export const handler = dispatch({
 
   async saveTableSession(body, event) {
     assertRole(event as any, BILLING_ROLES as any);
-    const pool = await getPool();
     const id = String(body?.id ?? "");
     const items = Array.isArray(body?.items) ? body.items : [];
+    if (items.length > MAX_BILL_LINES) throw new HttpError(422, "invalid-argument", `A table bill cannot have more than ${MAX_BILL_LINES} lines`);
+    /* Validated with the same rules as a counter bill: a negative price here
+       used to be stored as-is and settled into a bill that paid the guest.
+       Food is never taxed (README rule 2) — the old default of 5% applied to
+       any line the client sent without a rate, food included. */
     const clean = items.map((it: any) => {
-      const price = round2(it.price);
-      const qty = Math.max(1, parseInt(it.qty, 10) || 1);
-      return { kind: it.item_kind === "alcohol" ? "alcohol" : "food", itemId: it.item_id != null ? String(it.item_id) : null, itemName: (it.name || it.item_name || "").trim(), brand: (it.brand || "").trim(), bottleSize: (it.bottle_size || "").trim(), price, qty, taxRate: Number(it.tax_rate ?? 5) || 0, lineTotal: round2(price * qty) };
+      if (!it || typeof it !== "object") throw new ValidationError("That table contains an invalid line.");
+      const kind = it.item_kind === "alcohol" ? "alcohol" : "food";
+      const price = toFloat(it.price, "price");
+      const qty = it.qty == null || it.qty === "" ? 1 : toPositiveInt(it.qty, "qty");
+      if (qty > MAX_BILL_LINE_QTY) throw new ValidationError(`qty cannot exceed ${MAX_BILL_LINE_QTY}`);
+      const taxRate = kind === "alcohol" ? toFloat(it.tax_rate ?? 5, "tax_rate") : 0;
+      return { kind, itemId: it.item_id != null ? String(it.item_id) : null, itemName: String(it.name || it.item_name || "").trim(), brand: String(it.brand || "").trim(), bottleSize: String(it.bottle_size || "").trim(), price, qty, taxRate, lineTotal: round2(price * qty) };
     });
     const subtotal = round2(clean.reduce((a: number, i: any) => a + i.lineTotal, 0));
     const tax = round2(clean.reduce((a: number, i: any) => a + (i.lineTotal * i.taxRate) / 100, 0));
-    await pool.query("UPDATE table_sessions SET items=$2, customer_name=$3, customer_phone=$4, subtotal=$5, tax=$6, grand_total=$7 WHERE id=$1", [id, JSON.stringify(clean), (body?.customer_name || "Walk-in").trim() || "Walk-in", (body?.customer_phone || "-").trim() || "-", subtotal, tax, round2(subtotal + tax)]);
-    const res = await pool.query("SELECT * FROM table_sessions WHERE id=$1", [id]);
-    return sessionRow(res.rows[0]);
+    if (subtotal + tax > MAX_BILL_AMOUNT) throw new ValidationError("This table's bill is too large — please check the prices and quantities");
+
+    /* Locked, and only while the table is still open. Without the lock a save
+       that raced a settle landed AFTER it, rewriting the lines of a session
+       whose bills had already been printed; without the status check a stale
+       tab could do the same at leisure. */
+    return withTransaction(async (client) => {
+      const cur = await client.query("SELECT status FROM table_sessions WHERE id=$1 FOR UPDATE", [id]);
+      if (!cur.rowCount) throw new HttpError(404, "not-found", "Table session not found");
+      if (cur.rows[0].status !== "open") throw new HttpError(409, "failed-precondition", "This table has already been settled");
+      await client.query("UPDATE table_sessions SET items=$2, customer_name=$3, customer_phone=$4, subtotal=$5, tax=$6, grand_total=$7 WHERE id=$1", [id, JSON.stringify(clean), String(body?.customer_name || "Walk-in").trim() || "Walk-in", String(body?.customer_phone || "-").trim() || "-", subtotal, tax, round2(subtotal + tax)]);
+      const res = await client.query("SELECT * FROM table_sessions WHERE id=$1", [id]);
+      return sessionRow(res.rows[0]);
+    });
   },
 
   async listBills(body, event) {
-    assertRole(event as any, [...BILLING_ROLES, ...CAFE_ROLES] as any);
+    const caller = assertRole(event as any, [...BILLING_ROLES, ...CAFE_ROLES] as any);
     const pool = await getPool();
     const kind = String(body?.kind ?? "FOOD").toUpperCase();
-    const lim = Math.min(Math.max(parseInt(body?.limit ?? "200", 10), 1), 500);
+    // The cafe till sees its own CAFE series and nothing of the restaurant's.
+    if (caller.role === "cafe_billing" && kind !== "CAFE") throw new HttpError(403, "permission-denied", "You do not have permission to perform this action.");
+    const lim = intArg(body?.limit, 200, 1, 500);
     /* Bill history is the one place a cancelled bill must still be VISIBLE —
        it is the record of what happened, and hiding it would make the void
        untraceable from the screen people actually look at. The sales figures
@@ -153,14 +185,18 @@ export const handler = dispatch({
   },
 
   async getBill(body, event) {
-    assertRole(event as any, [...BILLING_ROLES, ...CAFE_ROLES] as any);
+    /* The owner is shown Bill history (web nav.ts, /orders) and opens a bill
+       from it, so read access follows listOrders. The cafe till reads only
+       CAFE bills; any other bill is "not found" to it, not "forbidden", so it
+       cannot probe for which ids exist. */
+    const caller = assertRole(event as any, [...BILLING_ROLES, ...CAFE_ROLES, "owner"] as any);
     const pool = await getPool();
     const res = await pool.query(
       `SELECT b.*, v.reason AS void_reason, v.voided_at, v.voided_by_username
        FROM bills b LEFT JOIN bill_voids v ON v.bill_id = b.id WHERE b.id=$1`,
       [String(body?.id ?? "")],
     );
-    if (!res.rowCount) throw new HttpError(404, "not-found", "Bill not found");
+    if (!res.rowCount || (caller.role === "cafe_billing" && res.rows[0].type !== "CAFE")) throw new HttpError(404, "not-found", "Bill not found");
     return withVoid(res.rows[0]);
   },
 
@@ -170,26 +206,29 @@ export const handler = dispatch({
     const type = String(body?.type ?? "all").toUpperCase();
     const date = body?.date || "";
     const search = String(body?.search ?? "").trim().toLowerCase();
-    const lim = Math.min(Math.max(parseInt(body?.limit ?? "25", 10), 1), 200);
-    const offset = Math.max(parseInt(body?.offset ?? "0", 10), 0);
+    const lim = intArg(body?.limit, 25, 1, 200);
+    const offset = intArg(body?.offset, 0, 0, MAX_OFFSET);
     const where: string[] = []; const params: any[] = [];
     if (search) { params.push(search); where.push(`$${params.length} = ANY(search_tokens)`); }
     if (type === "FOOD" || type === "ALCOHOL" || type === "CAFE") { params.push(type); where.push(`type = $${params.length}`); }
     if (date) { params.push(date); where.push(`date_key = $${params.length}`); }
     const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
     const total = (await pool.query(`SELECT count(*)::int AS n FROM bills ${whereSql}`, params)).rows[0].n;
-    params.push(offset + lim);
+    /* Paged by Postgres. This used to fetch LIMIT offset+lim and slice in
+       Node, so page 400 of the history pulled 10,000 full bill rows (items
+       JSON and all) into memory to return 25 of them. */
+    params.push(lim, offset);
     /* Cancelled bills stay in this list, flagged. Dropping them would leave
        a hole in the bill numbers with nothing to explain it. */
     const rows = (
       await pool.query(
         `SELECT b.*, v.reason AS void_reason, v.voided_at, v.voided_by_username
          FROM bills b LEFT JOIN bill_voids v ON v.bill_id = b.id
-         ${whereSql.replace(/(type|date_key|search_tokens)/g, "b.$1")}
-         ORDER BY b.created_at DESC LIMIT $${params.length}`,
+         ${whereSql.replace(/\b(type|date_key|search_tokens)\b/g, "b.$1")}
+         ORDER BY b.created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
         params,
       )
-    ).rows.slice(offset);
+    ).rows;
     const orders = rows.map((b) => ({ id: b.id, bill_no: b.bill_no, type: b.type, customer_name: b.customer_name, created_at: new Date(b.created_at).toISOString(), grand_total: Number(b.grand_total), payment_method: b.payment_method, status: b.status, voided: Boolean(b.voided_at), void_reason: b.void_reason ?? null, voided_by: b.voided_by_username ?? null }));
     return { orders, total, limit: lim, offset };
   },
@@ -197,8 +236,8 @@ export const handler = dispatch({
   async auditLog(body, event) {
     assertRole(event as any, AUDIT_ROLES as any);
     const pool = await getPool();
-    const lim = Math.min(Math.max(parseInt(body?.limit ?? "100", 10), 1), 500);
-    const offset = Math.max(parseInt(body?.offset ?? "0", 10), 0);
+    const lim = intArg(body?.limit, 100, 1, 500);
+    const offset = intArg(body?.offset, 0, 0, MAX_OFFSET);
     const entityType = body?.entity_type || "";
     const action = body?.action || "";
     const where: string[] = []; const params: any[] = [];
@@ -212,10 +251,20 @@ export const handler = dispatch({
   },
 
   async dashboard(_body, event) {
-    assertRole(event as any, [...OPS_ROLES, "owner"] as any);
+    // Takings: the roles the Dashboard screen is shown to (web nav.ts). Not
+    // the kitchen (README rule 4) and not the cafe till.
+    assertRole(event as any, DASHBOARD_ROLES as any);
     const pool = await getPool();
     const res = await pool.query("SELECT * FROM stats_rolling WHERE id='rolling'");
-    const r = res.rows[0] || {};
+    let r = res.rows[0] || {};
+    /* The snapshot is only rebuilt when a bill is written, so the first look
+       at the dashboard after midnight used to show yesterday's takings under
+       "today" until the first sale of the morning. A snapshot from another
+       day (or none at all) is rebuilt before it is shown. */
+    if (!r.updated_at || dateKey(new Date(r.updated_at), RESTAURANT_TZ) !== dateKey(new Date(), RESTAURANT_TZ)) {
+      await computeRolling();
+      r = (await pool.query("SELECT * FROM stats_rolling WHERE id='rolling'")).rows[0] || {};
+    }
     const t = r.today || {};
     return {
       food_sales_today: t.foodSales || 0, alcohol_sales_today: t.alcoholSales || 0, cafe_sales_today: t.cafeSales || 0, total_sales_today: t.totalSales || 0,

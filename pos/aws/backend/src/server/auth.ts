@@ -22,7 +22,7 @@ import {
   registerFailure,
   clearFailures,
 } from "../lib/repo";
-import { checkPasswordHash } from "../lib/werkzeugHash";
+import { checkPasswordHash, generatePasswordHash } from "../lib/werkzeugHash";
 import { signSession, verifySession, bearerFrom } from "./jwt";
 import type { CallerIdentity } from "./event";
 
@@ -35,6 +35,10 @@ export interface LoginOutcome {
   expiresIn?: number;
   user?: { id: string; username: string; full_name: string; role: Role };
 }
+
+/** Verified against when the username is unknown, so a miss costs the same
+ * scrypt work as a hit. Same default method as real staff hashes. */
+const DUMMY_HASH = generatePasswordHash("not-a-real-password-" + Math.random());
 
 function asRole(raw: unknown): Role | null {
   const r = normalizeRole(raw);
@@ -63,8 +67,14 @@ export async function login(
     return { ok: false, status: 400, code: "invalid-argument", message: "Username and password are required" };
   }
 
+  /* The password is checked BEFORE anything about the account is revealed, and
+     an unknown username costs the same hash work as a known one. Otherwise
+     "deactivated" (without a password) and a 15ms-vs-400ms response time both
+     tell a stranger which usernames exist. */
   const profile = await findUserByUsername(username);
-  if (!profile) {
+  const credential = profile ? await findCredentialByUsername(username) : null;
+  const passwordOk = checkPasswordHash(credential?.passwordHash ?? DUMMY_HASH, password) && !!credential;
+  if (!profile || !passwordOk) {
     await registerFailure(throttleKey);
     return { ok: false, status: 401, code: "unauthenticated", message: "Invalid username or password" };
   }
@@ -78,12 +88,6 @@ export async function login(
       code: "permission-denied",
       message: "This account has been deactivated. Contact your administrator.",
     };
-  }
-
-  const credential = await findCredentialByUsername(username);
-  if (!credential || !checkPasswordHash(credential.passwordHash, password)) {
-    await registerFailure(throttleKey);
-    return { ok: false, status: 401, code: "unauthenticated", message: "Invalid username or password" };
   }
 
   const role = asRole(profile.role);
@@ -129,7 +133,16 @@ export async function authenticate(authorizationHeader: unknown): Promise<AuthSu
   if (!claims) {
     return { ok: false, status: 401, code: "unauthenticated", message: "Your session has expired. Please log in again." };
   }
+  return authenticateClaims(claims);
+}
 
+/**
+ * Everything authenticate() checks after the signature: the account exists,
+ * is active, has not signed out since `iat`, and still has a role. The
+ * WebSocket handshake and the socket sweep use this too, so a signed-out
+ * token cannot keep a live order feed open.
+ */
+export async function authenticateClaims(claims: { uid: string; iat?: number }): Promise<AuthSuccess | AuthFailure> {
   const profile = await getUserByUid(claims.uid);
   if (!profile) {
     return { ok: false, status: 401, code: "unauthenticated", message: "Unauthorized. Please log in." };

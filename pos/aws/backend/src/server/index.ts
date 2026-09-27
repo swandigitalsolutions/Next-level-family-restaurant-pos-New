@@ -22,18 +22,22 @@ import fastifyWebsocket from "@fastify/websocket";
 import fastifyStatic from "@fastify/static";
 import { assetsRoot } from "../lib/assets";
 import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
+import { installThumbnails } from "./thumbnails";
+import { installJsonCompression } from "./compress";
 
 import { setBroadcastSink } from "../lib/broadcastClient";
 import { setIdentityProvider } from "../lib/cognitoAuth";
 import { localIdentityProvider } from "./localIdentity";
 import { getPool } from "../lib/db";
-import { login, authenticate } from "./auth";
+import { login, authenticate, authenticateClaims } from "./auth";
+import {
+  trustProxySetting, installRateLimits, installSecurityHeaders, installErrorHandler, configProblems, logSafeRequest,
+} from "./security";
 import { buildEvent, normaliseResult, type CallerIdentity } from "./event";
 import { RealtimeHub } from "./wsHub";
 import { verifySession } from "./jwt";
-import { getUserByUid, revokeSessions } from "../lib/repo";
-import { VALID_ROLES, normalizeRole, type Role } from "../lib/config";
+import { revokeSessions } from "../lib/repo";
 
 /* ── handlers, reused byte-for-byte ────────────────────────────────────── */
 import { handler as staffAdmin } from "../handlers/callable/staffAdmin";
@@ -71,21 +75,67 @@ export interface ServerOptions {
   /** Menu photography. Defaults to aws/hosting/assets next to this package. */
   assetsDir?: string;
   logger?: boolean;
+  /** Website pre-orders + the Razorpay webhook. Defaults to WEBSITE_ORDERS_ENABLED=true; off otherwise. */
+  websiteOrders?: boolean;
+}
+
+/* Website ordering is phase 2 and is not in service. Until it is, the
+   order and payment routes are not merely hidden in the staff UI (see
+   web/src/lib/features.ts) but closed on the server: nobody can create an
+   order that no one is watching for, and a stray or forged webhook has
+   nothing to act on. The public menu read stays open — it takes no money.
+   Turning it on is WEBSITE_ORDERS_ENABLED=true plus the Razorpay settings. */
+/* Vite names build output assets/<name>-<8-char hash>.<ext>. */
+const HASHED_ASSET = /[\\/]assets[\\/][^\\/]+-[A-Za-z0-9_-]{8}\.[a-z0-9]+(\.(br|gz))?$/;
+
+/** Cache-Control for a file of the built front-end. */
+export function cacheControlFor(path: string): string {
+  if (HASHED_ASSET.test(path)) return "public, max-age=31536000, immutable";
+  if (/index\.html(\.(br|gz))?$/.test(path)) return "no-cache";
+  // Fonts, logo, favicon: stable but unhashed, so a day and then revalidate.
+  return "public, max-age=86400";
+}
+
+export function websiteOrdersEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.WEBSITE_ORDERS_ENABLED === "true";
 }
 
 export function buildServer(opts: ServerOptions = {}): { app: FastifyInstance; hub: RealtimeHub } {
   const app = Fastify({
-    logger: opts.logger ?? true,
+    // The WebSocket carries its session token in the query string; the
+    // default request log would write a live 12-hour token to journald.
+    logger: (opts.logger ?? true) ? { serializers: { req: logSafeRequest } } : false,
     // Behind Cloudflare Tunnel / nginx, so the client IP arrives in a header.
     // Login throttling keys off it, and without this every request would look
-    // like it came from 127.0.0.1 and share one throttle bucket.
-    trustProxy: true,
+    // like it came from 127.0.0.1 and share one throttle bucket. Only the
+    // loopback proxy is believed — `true` let any caller name its own address
+    // in X-Forwarded-For and dodge the lockout. See ./security.
+    // Fastify accepts a hop count at runtime, but its typings omit `number`,
+    // and the wider union sends overload resolution to the HTTP/2 signature.
+    trustProxy: trustProxySetting() as boolean | string,
     bodyLimit: 2 * 1024 * 1024,
   });
+
+  installErrorHandler(app);
+  installSecurityHeaders(app);
+  installRateLimits(app);
+  installJsonCompression(app);
 
   const hub = new RealtimeHub();
   setBroadcastSink(hub.publish);
   hub.startHeartbeat();
+
+  /* A socket is authenticated once, at the handshake; re-check them all on a
+     timer so signing out, a password reset, deactivation or a role change
+     also ends the live feed, not just the next HTTP call. */
+  const sweep = setInterval(() => {
+    void hub.revalidate(async (uid, role, iat) => {
+      const auth = await authenticateClaims({ uid, iat });
+      return auth.ok && auth.caller.role === role;
+    });
+  }, Number(process.env.WS_REVALIDATE_MS) || 15_000);
+  sweep.unref?.();
+  app.addHook("onClose", async () => clearInterval(sweep));
 
   // Staff identity lives in Postgres here, not in a Cognito user pool. Without
   // this every Staff-screen action (create, reset password, change role,
@@ -139,7 +189,12 @@ export function buildServer(opts: ServerOptions = {}): { app: FastifyInstance; h
     } catch {
       return reply.code(400).send({ error: { code: "invalid-argument", message: "Request body must be valid JSON" } });
     }
-    const out = await login(parsed, headersOf(req), req.ip);
+    // The throttle key must be the address Fastify resolved through the
+    // trusted proxy only. Handing it the raw X-Forwarded-For let a client
+    // write its own and get a fresh 6 attempts per request.
+    const trusted = headersOf(req);
+    delete trusted["x-forwarded-for"];
+    const out = await login(parsed, trusted, req.ip);
     if (!out.ok) return reply.code(out.status).send({ error: { code: out.code, message: out.message } });
     return reply.code(200).send({ token: out.token, expiresIn: out.expiresIn, user: out.user });
   });
@@ -171,14 +226,32 @@ export function buildServer(opts: ServerOptions = {}): { app: FastifyInstance; h
      third larger again, so this one route is allowed a bigger body than the
      2MB global cap. It stays on the authenticated route only — the public QR
      and website endpoints keep the small limit. */
-  app.post<{ Params: { module: string; action: string } }>("/api/callable/:module/:action", { bodyLimit: 20 * 1024 * 1024 }, async (req, reply) => {
-    const handler = CALLABLE_MODULES[req.params.module];
-    if (!handler) {
-      return reply.code(404).send({ error: { code: "not-found", message: `unknown module "${req.params.module}"` } });
-    }
+  type CallableReq = FastifyRequest & { caller?: CallerIdentity };
+  const websiteOrdersOn = opts.websiteOrders ?? websiteOrdersEnabled();
+  const UPLOAD_PATH = "/api/callable/catalogAdmin/uploadItemImage";
 
+  /** module/action for either route: the upload route has no path params. */
+  const target = (req: FastifyRequest): { module: string; action: string } => {
+    const p = (req.params || {}) as { module?: string; action?: string };
+    return p.module ? { module: p.module, action: String(p.action ?? "") } : { module: "catalogAdmin", action: "uploadItemImage" };
+  };
+
+  /* Runs BEFORE the body is read. Checking the session inside the handler
+     meant an anonymous caller could make the Pi buffer 20MB per request, on
+     every module, before being told 401. */
+  const callableGate = async (req: CallableReq, reply: any) => {
+    const { module } = target(req);
+    if (!CALLABLE_MODULES[module] || (module === "websiteOrdersAdmin" && !websiteOrdersOn)) {
+      return reply.code(404).send({ error: { code: "not-found", message: `unknown module "${module}"` } });
+    }
     const auth = await authenticate(req.headers.authorization);
     if (!auth.ok) return reply.code(auth.status).send({ error: { code: auth.code, message: auth.message } });
+    req.caller = auth.caller as CallerIdentity;
+  };
+
+  const callableHandler = async (req: CallableReq, reply: any) => {
+    const { module, action } = target(req);
+    const handler = CALLABLE_MODULES[module];
 
     // Role enforcement stays inside the handlers (lib/authz assertX). This
     // layer only supplies a verified identity — exactly what the Cognito
@@ -189,14 +262,20 @@ export function buildServer(opts: ServerOptions = {}): { app: FastifyInstance; h
       headers: req.headers as any,
       body: bodyOf(req),
       query: req.query as any,
-      pathParameters: { action: req.params.action },
+      pathParameters: { action },
       sourceIp: req.ip,
-      caller: auth.caller as CallerIdentity,
+      caller: req.caller as CallerIdentity,
     });
 
     const result = normaliseResult(await handler(event));
     return reply.code(result.statusCode).headers(result.headers).send(result.body);
-  });
+  };
+
+  // The one action that carries a photo gets the big body; every other
+  // callable keeps the 2MB global cap. The static path wins over the
+  // parametric one in Fastify's router.
+  app.post(UPLOAD_PATH, { bodyLimit: 20 * 1024 * 1024, onRequest: callableGate as any }, callableHandler as any);
+  app.post("/api/callable/:module/:action", { onRequest: callableGate as any }, callableHandler as any);
 
   /* ── public routes (no session; their own auth) ──────────────────────── */
   const publicRoute = (handler: (event: any) => Promise<any>) =>
@@ -215,8 +294,15 @@ export function buildServer(opts: ServerOptions = {}): { app: FastifyInstance; h
 
   // The menu has its own handler and must be matched before the wildcard.
   app.get("/api/website/menu", publicRoute(websiteMenu));
-  app.route({ method: ["GET", "POST"], url: "/api/website/*", handler: publicRoute(websiteApi) });
-  app.post("/api/razorpay/webhook", publicRoute(paymentWebhook));
+  if (websiteOrdersOn) {
+    app.route({ method: ["GET", "POST"], url: "/api/website/*", handler: publicRoute(websiteApi) });
+    app.post("/api/razorpay/webhook", publicRoute(paymentWebhook));
+  } else {
+    const closed = async (_req: FastifyRequest, reply: any) =>
+      reply.code(503).send({ error: { code: "feature-disabled", message: "Online ordering is not available." } });
+    app.route({ method: ["GET", "POST"], url: "/api/website/*", handler: closed });
+    app.post("/api/razorpay/webhook", closed);
+  }
   app.route({ method: ["GET", "POST"], url: "/api/qr/*", handler: publicRoute(qrApi) });
 
   // Report export carries a session like any staff action.
@@ -248,17 +334,15 @@ export function buildServer(opts: ServerOptions = {}): { app: FastifyInstance; h
         socket.close(4401, "unauthenticated");
         return;
       }
-      const profile = await getUserByUid(claims.uid);
-      if (!profile || (profile.status || "active") !== "active") {
-        socket.close(4403, "forbidden");
+      // Same checks as every HTTP request — including the sign-out cutoff,
+      // which this handshake used to skip, so a token from a signed-out till
+      // could still open the live order feed.
+      const auth = await authenticateClaims(claims);
+      if (!auth.ok) {
+        socket.close(auth.status === 401 ? 4401 : 4403, auth.status === 401 ? "unauthenticated" : "forbidden");
         return;
       }
-      const r = normalizeRole(profile.role);
-      if (!(VALID_ROLES as readonly string[]).includes(r)) {
-        socket.close(4403, "no-role");
-        return;
-      }
-      hub.add(socket as any, profile.uid, r as Role);
+      hub.add(socket as any, auth.caller.uid, auth.caller.role, Number(claims.iat) || 0);
     });
   });
 
@@ -271,6 +355,8 @@ export function buildServer(opts: ServerOptions = {}): { app: FastifyInstance; h
      them. Cached hard because the filename changes when the photo does. */
   const assetsDir = opts.assetsDir ?? assetsRoot();
   if (existsSync(assetsDir)) {
+    // Registered first: a specific route wins over the /assets/* wildcard.
+    installThumbnails(app, join(assetsDir, "menu"));
     app.register(fastifyStatic, {
       root: assetsDir,
       prefix: "/assets/",
@@ -292,13 +378,36 @@ export function buildServer(opts: ServerOptions = {}): { app: FastifyInstance; h
 
   /* ── static front-end ────────────────────────────────────────────────── */
   if (opts.staticDir && existsSync(opts.staticDir)) {
-    app.register(fastifyStatic, { root: resolve(opts.staticDir), wildcard: false });
+    /* Every till reloads this app at the start of a shift, and guests load it
+       on their phones from the table QR. Two things make that instant:
+       - preCompressed: the build writes .br/.gz next to each file (see
+         web/vite.config.ts), so the ~400KB bundle goes out as ~100KB
+         without the Pi compressing on every request.
+       - Vite's hashed files never change under the same name, so they are
+         cached for a year and not even revalidated; index.html is always
+         revalidated, which is what picks up a new release. */
+    app.register(fastifyStatic, {
+      root: resolve(opts.staticDir),
+      wildcard: false,
+      preCompressed: true,
+      cacheControl: false,
+      setHeaders: (res: any, path: string) => {
+        const value = cacheControlFor(path);
+        if (typeof res.setHeader === "function") res.setHeader("cache-control", value);
+        else res.header("cache-control", value);
+      },
+    });
     // SPA fallback: anything that is not an API route renders the app shell.
     app.setNotFoundHandler((req, reply) => {
-      if (req.url.startsWith("/api/") || req.url.startsWith("/ws")) {
+      /* A missing FILE is a 404, not the app shell. Answering a stale
+         /assets/index-<old hash>.js with index.html made the browser try to
+         run HTML as a script: a blank till and a MIME error, instead of a
+         404 that a reload fixes. Only extension-less paths are app routes. */
+      const path = req.url.split("?")[0];
+      if (path.startsWith("/api/") || path.startsWith("/ws") || path.startsWith("/assets/") || /\.[a-z0-9]{1,8}$/i.test(path)) {
         return reply.code(404).send({ error: { code: "not-found", message: "Not found" } });
       }
-      return reply.sendFile("index.html");
+      return reply.header("cache-control", "no-cache").sendFile("index.html");
     });
   }
 
@@ -311,6 +420,14 @@ if (require.main === module) {
   const host = process.env.HOST || "0.0.0.0";
   const staticDir = process.env.STATIC_DIR;
   const assetsDir = process.env.ASSETS_DIR;
+
+  // Refuse to start rather than run broken or unsafe: no signing key means
+  // every login 500s; mock payments in production means fake Razorpay orders.
+  const problems = configProblems();
+  if (problems.length) {
+    for (const p of problems) console.error("config: " + p);
+    process.exit(1);
+  }
 
   const { app, hub } = buildServer({ staticDir, assetsDir });
 

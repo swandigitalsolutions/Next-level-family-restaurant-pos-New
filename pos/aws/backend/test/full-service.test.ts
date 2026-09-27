@@ -343,7 +343,12 @@ test("each role reaches exactly its own screens through the live server", async 
     ["queries", "listKitchenTickets", ["admin", "manager", "kitchen"]],
     ["queries", "listWebsiteOrders", ["admin", "manager", "billing"]],
     ["queries", "qrAdminOrders", ["admin", "manager", "billing"]],
-    ["queries", "dashboard", ["admin", "manager", "billing", "kitchen", "cafe_billing", "owner"]],
+    // Sales figures go to the Dashboard's audience only: the kitchen never
+    // sees money, and the cafe till has its own screen.
+    ["queries", "dashboard", ["admin", "manager", "billing", "owner"]],
+    ["dashboard", "getRollingStats", ["admin", "manager", "billing", "owner"]],
+    // Guest names, phones and running totals: the restaurant tills only.
+    ["queries", "listTables", ["admin", "manager", "billing"]],
   ];
 
   for (const [module, action, allowed] of matrix) {

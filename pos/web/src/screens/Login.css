@@ -137,7 +137,7 @@
   background: #fff;
   padding: 4px;
   box-shadow: var(--shadow-lg);
-  animation: login-badge 620ms var(--ease-spring) both;
+  animation: login-badge 620ms var(--ease-spring) backwards;
 }
 @keyframes login-badge {
   from {
@@ -155,7 +155,7 @@
   display: flex;
   flex-direction: column;
   gap: 15px;
-  animation: login-in 460ms var(--ease-out) both;
+  animation: login-in 460ms var(--ease-out) backwards;
 }
 
 /* On a phone the form IS the page, so a card border around the whole viewport

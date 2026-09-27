@@ -36,8 +36,16 @@ GRAND TOTAL               270.00
      Thank you, visit again!
 ```
 
-- **72mm content on an 80mm roll** (`@page { size: 80mm auto }`), which leaves
-  the margin the printer itself needs.
+- **72mm content on an 80mm roll, and each page exactly as long as the bill.**
+  `PrintArea` measures every receipt just before printing and gives it its own
+  named page (`@page receipt-0 { size: 80mm <height>mm }`), so the printer
+  feeds only what is printed — not an A4 or 297mm "roll" page of blank paper.
+  (The earlier `size: 80mm auto` is not valid CSS; Chrome silently dropped it
+  and printed on Letter/A4.)
+- **Reprints are marked.** A receipt printed again from Bill history says
+  `DUPLICATE`, and one for a cancelled bill carries a boxed
+  `CANCELLED — NOT A VALID BILL` with the reason, so a reprint can never be
+  passed off as a second sale or as proof of a payment that was reversed.
 - **Always black on white**, whatever theme the till is in. Thermal paper has
   no dark mode; a dark-theme receipt prints as a solid black rectangle and
   empties the roll.
@@ -93,8 +101,10 @@ In the Chrome print dialog, open **More settings** and:
 - **Margins → None**
 - **Headers and footers → off** (otherwise every bill carries the page URL and
   the date twice)
-- **Background graphics → on** (the dashed rules are backgrounds)
 - **Scale → 100** (not "Fit to page")
+- **Paper size** should show the receipt's own size (80 × ~85mm for a short
+  bill). If it shows A4 or Letter, the browser is older than Chrome/Edge 131,
+  which is when per-page sizes arrived — update it.
 
 Chrome remembers these per printer, so it is a one-time job per till.
 
@@ -118,8 +128,25 @@ Print to PDF first. Chrome's "Save as PDF" destination with the 80mm paper size
 produces exactly what the roll will show, and costs nothing:
 
 1. Settle a bill with **Save & print**.
-2. In the dialog choose **Save as PDF**, paper size **80mm**.
-3. The PDF should be one narrow page per bill, no app chrome, no navigation.
+2. In the dialog choose **Save as PDF**.
+3. The PDF should be one page per bill, **80mm wide and only as long as the
+   bill**, with no app chrome or navigation. A mixed table gives two pages.
+
+Verified in Chromium (Playwright, `page.pdf` with the page's own CSS sizes):
+food till, cafe till and a Bill-history reprint each produce one 80mm-wide
+page per receipt (80 × 85mm, 80 × 80mm, 80 × 101mm), with nothing but the
+receipt on it.
+
+### First print on the real printer
+
+1. Print the printer's own self-test (hold FEED while powering on) — proves
+   paper and head, independent of the PC.
+2. Print a short bill with **Save & print**. Check: nothing cut off on the
+   right (if it is, the driver's paper is 58mm — set it to 80mm), no long blank
+   tail (if there is, the driver is forcing a fixed page length — choose its
+   "roll"/"receipt" paper), and the auto-cutter fires once per bill.
+3. Print a long bill (15+ lines) — it must come out as one continuous slip.
+4. Settle a mixed food + bar table — two slips, `FOOD-` then `ALC-`.
 
 If the app's own screen appears on the page, the print stylesheet did not
 apply — that is a bug, not a setting; see `Receipt.css`, which hides everything

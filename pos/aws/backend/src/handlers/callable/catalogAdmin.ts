@@ -7,7 +7,7 @@
 import { dispatch } from "../../lib/callable";
 import { HttpError, assertManager } from "../../lib/authz";
 import { salesChannelForKind } from "../../lib/config";
-import { toFloat, toOptionalStock } from "../../lib/money";
+import { toFloat, toOptionalStock, MAX_BILL_AMOUNT } from "../../lib/money";
 import { lower } from "../../lib/normalize";
 import { writeAudit } from "../../lib/audit";
 import { getPool } from "../../lib/db";
@@ -24,6 +24,27 @@ const ACCEPTED_TYPES = new Set(["image/jpeg", "image/jpg", "image/png", "image/w
 const kindOf = (v: unknown): "food" | "alcohol" | "cafe" => {
   const s = String(v).toLowerCase();
   return s === "alcohol" ? "alcohol" : s === "cafe" ? "cafe" : "food";
+};
+
+/** The two statuses the schema allows. Anything else used to reach the CHECK
+ * constraint and come back as a generic 500. */
+const statusOf = (v: unknown): "active" | "inactive" => {
+  const s = String(v ?? "").trim().toLowerCase();
+  if (s !== "active" && s !== "inactive") throw new HttpError(422, "invalid-argument", "status must be active or inactive");
+  return s;
+};
+
+/** Price and tax rate within what the columns hold (numeric(10,2) and
+ * numeric(6,3)); past that Postgres answers "numeric field overflow" (a 500). */
+const priceOf = (v: unknown): number => {
+  const p = toFloat(v, "price");
+  if (p > MAX_BILL_AMOUNT) throw new HttpError(422, "invalid-argument", "That price is too large");
+  return p;
+};
+const taxRateOf = (v: unknown): number => {
+  const t = toFloat(v, "tax_rate");
+  if (t > 100) throw new HttpError(422, "invalid-argument", "tax_rate cannot be more than 100%");
+  return t;
 };
 
 export const handler = dispatch({
@@ -53,7 +74,7 @@ export const handler = dispatch({
     if (!cur.rowCount) throw new HttpError(404, "not-found", "Category not found");
     const c = cur.rows[0];
     const newName = name || c.name;
-    const status = body?.status ? String(body.status) : c.status;
+    const status = body?.status ? statusOf(body.status) : c.status;
     await pool.query("UPDATE categories SET name=$2, name_lower=$3, status=$4, updated_at=now() WHERE id=$1", [id, newName, lower(newName), status]);
     if (newName !== c.name) {
       await pool.query("UPDATE catalog SET category_name=$2, updated_at=now() WHERE category_id=$1", [id, newName]);
@@ -85,9 +106,9 @@ export const handler = dispatch({
       if (!name) throw new HttpError(422, "invalid-argument", kind === "food" ? "Item name is required" : "Product name is required");
       const categoryId = String(body?.category_id ?? "");
       if (!categoryId) throw new HttpError(422, "invalid-argument", "category_id is required");
-      const price = toFloat(body?.price, "price");
+      const price = priceOf(body?.price);
       const stockQty = toOptionalStock(body?.stock_qty, "stock_qty");
-      const taxRate = kind === "alcohol" ? toFloat(body?.tax_rate ?? 0, "tax_rate") : 0;
+      const taxRate = kind === "alcohol" ? taxRateOf(body?.tax_rate ?? 0) : 0;
       const catRes = await pool.query("SELECT name, sort_order FROM categories WHERE id=$1", [categoryId]);
       if (!catRes.rowCount) throw new HttpError(404, "not-found", "Category not found");
 
@@ -113,13 +134,13 @@ export const handler = dispatch({
 
     const name = has("name") ? String(body.name ?? "").trim() || cur.name : cur.name;
     const categoryId = has("category_id") ? String(body.category_id) : cur.category_id;
-    const price = has("price") ? toFloat(body.price, "price") : Number(cur.price);
+    const price = has("price") ? priceOf(body.price) : Number(cur.price);
     const stockQty = has("stock_qty") ? toOptionalStock(body.stock_qty, "stock_qty") : cur.stock_qty ?? null;
-    const taxRate = cur.kind === "alcohol" && has("tax_rate") ? toFloat(body.tax_rate, "tax_rate") : Number(cur.tax_rate) || 0;
+    const taxRate = cur.kind === "alcohol" && has("tax_rate") ? taxRateOf(body.tax_rate) : Number(cur.tax_rate) || 0;
     const description = has("description") ? String(body.description ?? "").trim() || null : cur.description ?? null;
     const brand = has("brand") ? String(body.brand ?? "").trim() || null : cur.brand ?? null;
     const bottleSize = has("bottle_size") ? String(body.bottle_size ?? "").trim() || null : cur.bottle_size ?? null;
-    const status = has("status") ? String(body.status) : cur.status;
+    const status = has("status") ? statusOf(body.status) : cur.status;
     const imagePath = has("image_url") ? String(body.image_url ?? "").trim() || null : cur.image_path ?? null;
 
     let categoryName = cur.category_name, categorySort = cur.category_sort;
@@ -184,6 +205,20 @@ export const handler = dispatch({
       throw new HttpError(413, "invalid-argument", `That photo is ${(input.length / 1048576).toFixed(1)}MB. Please use one under ${MAX_UPLOAD_BYTES / 1048576}MB.`);
     }
     if (declared && !ACCEPTED_TYPES.has(declared)) {
+      throw new HttpError(422, "invalid-argument", "Please upload a JPG, PNG or WEBP photo.");
+    }
+
+    /* Decide by the bytes, not the label. With no data: prefix there is no
+       declared type at all, and sharp will happily rasterise SVG (and TIFF,
+       GIF, HEIF...) — SVG being an XML document handed to a renderer. Only the
+       three photo formats the screen asks for get as far as processing. */
+    let format: string | undefined;
+    try {
+      format = (await sharp(input).metadata()).format;
+    } catch {
+      format = undefined;
+    }
+    if (!format || !["jpeg", "png", "webp"].includes(format)) {
       throw new HttpError(422, "invalid-argument", "Please upload a JPG, PNG or WEBP photo.");
     }
 

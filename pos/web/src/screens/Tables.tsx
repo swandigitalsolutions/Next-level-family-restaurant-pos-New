@@ -55,8 +55,10 @@ export function TablesScreen() {
       `Make a new QR code for table ${table.table_no}?\n\nThe code currently printed and sitting on that table will STOP WORKING immediately. You will need to print and place the new one.`,
     );
     if (!ok) return;
-    await action.run(() => callable("tablesAdmin", "regenerateQrToken", { id: table.id }));
-    flash(`New code for table ${table.table_no} — print it before service`);
+    // Only on success: a false "new code" toast sends someone off to reprint a
+    // card for a token that never changed.
+    const out = await action.run(() => callable("tablesAdmin", "regenerateQrToken", { id: table.id }));
+    if (out) flash(`New code for table ${table.table_no} — print it before service`);
     reload();
   }
 

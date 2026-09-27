@@ -55,6 +55,7 @@ export function CatalogScreen() {
   const [priceConfirm, setPriceConfirm] = useState<{ item: CatalogItem; next: number } | null>(null);
   const [catSheet, setCatSheet] = useState<{ id?: string; name: string } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [draftError, setDraftError] = useState<string | null>(null);
   const action = useAction();
 
   const categories = useQuery<Category[]>("queries", "listCategories", { kind });
@@ -86,13 +87,44 @@ export function CatalogScreen() {
 
   async function toggleAvailable(item: CatalogItem) {
     const next = item.status === "active" ? "inactive" : "active";
-    await action.run(() => callable("catalogAdmin", "upsertCatalogItem", { id: item.id, kind, status: next }));
-    flash(next === "active" ? `${item.name} is back on` : `${item.name} marked unavailable`);
+    const out = await action.run(() => callable("catalogAdmin", "upsertCatalogItem", { id: item.id, kind, status: next }));
+    // Only claim it when it happened: a failed toggle used to say "marked
+    // unavailable" while the dish stayed on sale. The error note says why.
+    if (out) flash(next === "active" ? `${item.name} is back on` : `${item.name} marked unavailable`);
     items.reload();
+  }
+
+  /** Open the editor clean — no leftover error from an earlier action. */
+  function openDraft(d: Draft) {
+    action.clearError();
+    setDraftError(null);
+    setDraft(d);
+  }
+
+  /** What is wrong with the draft, in the words the editor shows, or null. */
+  function draftProblem(d: Draft): string | null {
+    const price = d.price.trim();
+    if (price === "" || !Number.isFinite(Number(price)) || Number(price) < 0) {
+      return "Enter the price as a number of rupees, e.g. 180.";
+    }
+    const stock = d.stock_qty.trim();
+    if (stock !== "" && !/^\d+$/.test(stock)) {
+      return "Stock count must be a whole number, or blank if it is not tracked.";
+    }
+    if (kind === "alcohol" && (d.tax_rate.trim() === "" || !Number.isFinite(Number(d.tax_rate)) || Number(d.tax_rate) < 0)) {
+      return "Enter the tax rate as a percentage, e.g. 18.";
+    }
+    return null;
   }
 
   async function saveItem() {
     if (!draft) return;
+    /* Checked here rather than left to `Number(x) || 0`, which turned a
+       mistyped price ("1o0") into a ₹0 dish and a mistyped stock count into
+       null — silently switching stock tracking off. */
+    const problem = draftProblem(draft);
+    setDraftError(problem);
+    if (problem) return;
     const nextPrice = Number(draft.price);
     const existing = draft.id ? (items.data ?? []).find((i) => i.id === draft.id) : null;
 
@@ -166,7 +198,7 @@ export function CatalogScreen() {
 
       <div className="cat-tools">
         <Input placeholder="Search dishes…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search the catalog" />
-        <Button variant="primary" onClick={() => setDraft(emptyDraft(categories.data?.[0]?.id ?? "", kind))}>
+        <Button variant="primary" onClick={() => openDraft(emptyDraft(categories.data?.[0]?.id ?? "", kind))}>
           + Item
         </Button>
         <Button onClick={() => setCatSheet({ name: "" })}>+ Category</Button>
@@ -198,7 +230,7 @@ export function CatalogScreen() {
                     type="button"
                     className="cat-item"
                     onClick={() =>
-                      setDraft({
+                      openDraft({
                         id: item.id,
                         name: item.name,
                         category_id: item.category_id,
@@ -251,6 +283,10 @@ export function CatalogScreen() {
           </>
         }
       >
+        {/* The editor covers the page, so its failures are shown here, not
+            only in the note on the page behind the backdrop. */}
+        {draftError && <ErrorNote message={draftError} />}
+        {!draftError && action.error && <ErrorNote message={action.error} />}
         {draft && (
           <>
             <Field label="Photo" hint="Shown on the till card and the guest QR menu.">
@@ -314,6 +350,7 @@ export function CatalogScreen() {
           </>
         }
       >
+        {action.error && <ErrorNote message={action.error} />}
         {priceConfirm && (
           <p className="cat-price-change">
             <strong>{priceConfirm.item.name}</strong>

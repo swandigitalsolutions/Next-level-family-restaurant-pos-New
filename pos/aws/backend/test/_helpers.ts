@@ -1,5 +1,6 @@
 import "./_env";
 import { randomUUID } from "crypto";
+import { Pool } from "pg";
 import { getPool } from "../src/lib/db";
 
 /** Build a minimal fake API Gateway v2 event with JWT claims, matching what
@@ -22,8 +23,19 @@ export function fakeEvent(opts: { role?: string; uid?: string; username?: string
   };
 }
 
+/* TRUNCATE ... RESTART IDENTITY needs table/sequence OWNERSHIP, which the
+   application role rightly does not have. To run the whole suite the way
+   production runs - connected as pos_app, with bills/audit_log/website_payments
+   UPDATE-revoked - point TEST_DATABASE_URL at pos_app and TEST_ADMIN_DATABASE_URL
+   at the superuser; only the reset between tests then uses the superuser. */
+let adminPool: Pool | undefined;
+async function resetPool(): Promise<Pool> {
+  if (!process.env.TEST_ADMIN_DATABASE_URL) return getPool();
+  return (adminPool ??= new Pool({ connectionString: process.env.TEST_ADMIN_DATABASE_URL, max: 1, allowExitOnIdle: true }));
+}
+
 export async function resetDb(): Promise<void> {
-  const pool = await getPool();
+  const pool = await resetPool();
   await pool.query(`
     TRUNCATE bills, kitchen_tickets, qr_orders, website_orders, website_order_idempotency, website_payments,
       table_sessions, restaurant_tables, catalog, categories, audit_log, auth_throttle, users, user_credentials

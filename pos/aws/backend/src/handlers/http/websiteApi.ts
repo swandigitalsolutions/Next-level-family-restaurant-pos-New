@@ -15,7 +15,7 @@
  */
 import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
 import { getPool, withTransaction } from "../../lib/db";
-import { ADVANCE_RATE } from "../../lib/config";
+import { ADVANCE_RATE, RESTAURANT_TZ } from "../../lib/config";
 import { ValidationError, dateKey } from "../../lib/money";
 import { priceCartPaise } from "../../lib/pricing";
 import { peekCounter, commitCounter } from "../../lib/counters";
@@ -169,7 +169,7 @@ async function handlePost(event: APIGatewayProxyEventV2): Promise<APIGatewayProx
        RETURNING id`,
       [ref, idemKey, JSON.stringify(pendingOrder.customer), JSON.stringify(pendingOrder.fulfillment), JSON.stringify(pendingOrder.items),
        pendingOrder.subtotalPaise, pendingOrder.taxPaise, pendingOrder.totalPaise, pendingOrder.advancePaise, pendingOrder.balancePaise,
-       JSON.stringify(pendingOrder.payment), now, dateKey(now)],
+       JSON.stringify(pendingOrder.payment), now, dateKey(now, RESTAURANT_TZ)],
     );
     const id = insert.rows[0].id;
     if (idemKey) await finalizeIdempotencyKey(client, idemKey, id, ref);

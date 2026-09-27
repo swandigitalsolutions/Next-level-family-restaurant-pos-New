@@ -78,6 +78,9 @@ export const handler = dispatch({
     if (!fullName) throw new HttpError(422, "invalid-argument", "Full name is required");
     if (!validRole(role)) throw new HttpError(422, "invalid-argument", "Invalid role");
     if (status !== "active" && status !== "inactive") throw new HttpError(422, "invalid-argument", "Invalid status");
+    // The same guard deactivateStaff has. Without it, "edit my own account,
+    // status: inactive" was a side door around it.
+    if (uid === caller.uid && status !== "active") throw new HttpError(409, "failed-precondition", "You cannot remove your own account");
 
     const demotingLastAdmin = existing.role === "admin" && (role !== "admin" || status !== "active");
     if (demotingLastAdmin && (await countActiveAdmins(uid)) === 0) {

@@ -54,6 +54,9 @@ export function verifySession(token: string): SessionClaims | null {
   try {
     const decoded = jwt.verify(token, getSecret(), { algorithms: ["HS256"] });
     if (typeof decoded === "string" || !decoded || typeof (decoded as any).uid !== "string") return null;
+    // Every token this server mints carries exp and iat. One without them was
+    // not minted here, and would never expire nor be caught by a sign-out cutoff.
+    if (typeof (decoded as any).exp !== "number" || typeof (decoded as any).iat !== "number") return null;
     return decoded as SessionClaims;
   } catch {
     return null;

@@ -46,6 +46,9 @@ export const CAFE_ROLES: Role[] = ["admin", "manager", "cafe_billing"];
 export const KITCHEN_ROLES: Role[] = ["admin", "manager", "kitchen"];
 /** Audit log read — admin + owner ONLY (manager is deliberately excluded). */
 export const AUDIT_ROLES: Role[] = ["admin", "owner"];
+/** Dashboard (sales figures) — the roles the web nav shows it to. The kitchen
+ * never sees money; the cafe till has its own screen. */
+export const DASHBOARD_ROLES: Role[] = ["admin", "manager", "owner", "billing"];
 /** Any operational (non-owner) login — used for catalog/name reads. */
 export const OPS_ROLES: Role[] = ["admin", "manager", "billing", "cafe_billing", "kitchen"];
 

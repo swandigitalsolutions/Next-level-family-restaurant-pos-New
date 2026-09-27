@@ -26,6 +26,8 @@ process.env.PAYMENT_PROVIDER = "mock";
 process.env.ALLOW_MOCK_PAYMENTS = "true";
 process.env.RAZORPAY_WEBHOOK_SECRET = "test-webhook-secret";
 process.env.WEBSITE_API_KEYS = "test-website-key";
+// Off in production for now (server/index.ts); the suite keeps it covered.
+process.env.WEBSITE_ORDERS_ENABLED = "true";
 process.env.FUNCTIONS_EMULATOR = "true";
 
 /* Opening a NEW TCP connection to a Dockerised Postgres on Windows goes through

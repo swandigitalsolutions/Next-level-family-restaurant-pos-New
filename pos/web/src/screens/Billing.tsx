@@ -23,6 +23,7 @@ import {
 } from "../components/ui";
 import { PrintArea, type ReceiptData } from "../components/Receipt";
 import type { CatalogItem, Category, Kind, TableRow, TableSession } from "../lib/types";
+import { DishPhoto } from "../components/DishPhoto";
 import "./Billing.css";
 
 interface Line {
@@ -182,7 +183,22 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
     setCustomerPhone("");
   }
 
+  /* Stock-tracked items (bar bottles) cannot be rung up past what is left.
+     The server floors stock at zero rather than refusing, so a third
+     Budweiser against two in stock was billed and the count silently lost a
+     bottle. The till is where the cashier can still do something about it. */
+  const stockLeft = (itemId: string | null): number | null => {
+    const it = itemId ? (items.data ?? []).find((i) => i.id === itemId) : undefined;
+    return it && it.stock_qty !== null ? it.stock_qty : null;
+  };
+
   function addItem(item: CatalogItem) {
+    const left = stockLeft(item.id);
+    const inBill = lines.find((l) => l.item_id === item.id)?.qty ?? 0;
+    if (left !== null && inBill >= left) {
+      flash(`Only ${left} ${item.name} left in stock`);
+      return;
+    }
     setLines((prev) => {
       const at = prev.findIndex((l) => l.item_id === item.id);
       if (at >= 0) {
@@ -304,8 +320,14 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
     requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
   }
 
+  /* "Try again" must repeat the cashier's choice. It always retried as a plain
+     Save, so a Save & print that failed once billed on the retry and printed
+     nothing — the customer waiting for a receipt never got one. Same fix as
+     the cafe till. */
+  const lastPrintChoice = useRef(false);
   async function settle(doPrint: boolean) {
     if (lines.length === 0) return;
+    lastPrintChoice.current = doPrint;
     let settled = false;
 
     if (mode === "table" && sessionId) {
@@ -437,7 +459,12 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
                     {l.tax_rate > 0 ? ` + ${l.tax_rate}% tax` : ""}
                   </span>
                 </div>
-                <NumberStepper value={l.qty} onChange={(q) => setQty(i, q)} ariaLabel={`Quantity of ${l.item_name}`} />
+                <NumberStepper
+                  value={l.qty}
+                  onChange={(q) => setQty(i, q)}
+                  max={stockLeft(l.item_id) ?? undefined}
+                  ariaLabel={`Quantity of ${l.item_name}`}
+                />
                 <strong className="num till-line-total">{money(lineTotal(l))}</strong>
               </li>
             ))}
@@ -610,7 +637,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
                       does not fetch 200 images at once. */}
                   {item.image_url && (
                     <span className="till-item-photo">
-                      <img src={item.image_url} alt="" loading="lazy" decoding="async" />
+                      <DishPhoto src={item.image_url} width={480} height={300} />
                     </span>
                   )}
                   <span className="till-item-name">{item.name}</span>
@@ -711,7 +738,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
         {action.error && (
           <ErrorNote
             message={`This bill was NOT saved — nobody has been charged. ${action.error}`}
-            onRetry={() => settle(false)}
+            onRetry={() => settle(lastPrintChoice.current)}
           />
         )}
         {split.map((g) => (

@@ -21,6 +21,17 @@ export class ValidationError extends Error {
 const MAX_LINE_QTY = 999;
 const MAX_LINES = 200;
 
+/** Largest amount a bill column holds (numeric(10,2) in 001_init.sql). A total
+ * past it is a typo, not a sale, and must be refused here with a sentence —
+ * reaching Postgres it is a "numeric field overflow" 500 at the till. */
+export const MAX_BILL_AMOUNT = 99_999_999.99;
+
+function assertFits(amount: number, what: string): void {
+  if (amount > MAX_BILL_AMOUNT) {
+    throw new ValidationError(`${what} is too large — please check the prices and quantities`);
+  }
+}
+
 export function round2(x: number): number {
   return Math.round((Number(x) || 0) * 100) / 100;
 }
@@ -162,6 +173,7 @@ export function computeFoodBill(
   if (grandTotal < 0) {
     throw new ValidationError("Grand total cannot be negative");
   }
+  assertFits(Math.max(subtotal, grandTotal), "This bill");
   return { subtotal, discount, tax, grandTotal, items: clean };
 }
 
@@ -212,6 +224,7 @@ export function computeAlcoholBill(
   if (grandTotal < 0) {
     throw new ValidationError("Grand total cannot be negative");
   }
+  assertFits(Math.max(subtotal, grandTotal), "This bill");
   return { subtotal, discount, tax: taxTotal, grandTotal, items: clean };
 }
 
@@ -272,9 +285,15 @@ export function splitSettlement(
     if (!Number.isFinite(Number(r.qty)) || Number(r.qty) <= 0 || Number(r.qty) > MAX_LINE_QTY) {
       throw new ValidationError(`each line qty must be between 1 and ${MAX_LINE_QTY}`);
     }
+    // A session saved before its lines were validated can still carry a
+    // negative price; settling it would print a bill that pays the guest.
+    if (!Number.isFinite(Number(r.lineTotal)) || Number(r.lineTotal) < 0 || Number(r.price) < 0) {
+      throw new ValidationError("A line on this table has an invalid price. Please fix it before settling.");
+    }
   }
   const discount = toFloat(discountInput, "discount");
   const subtotal = sumLineTotal(items);
+  assertFits(subtotal + sumLineTax(items), "This table's bill");
   if (discount > subtotal) {
     throw new ValidationError("Discount cannot exceed subtotal");
   }

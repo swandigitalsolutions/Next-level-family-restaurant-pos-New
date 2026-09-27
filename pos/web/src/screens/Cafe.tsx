@@ -16,6 +16,7 @@ import { callable } from "../lib/api";
 import { money, todayKey } from "../lib/format";
 import { Button, Card, EmptyState, ErrorNote, Field, Input, NumberStepper, Segmented, Select, Sheet, Spinner, Toast } from "../components/ui";
 import { PrintArea, type ReceiptData } from "../components/Receipt";
+import { useMediaQuery } from "../lib/useMediaQuery";
 import type { CatalogItem, Category, Bill } from "../lib/types";
 import "./Billing.css";
 
@@ -38,6 +39,9 @@ export function CafeScreen() {
   const [discount, setDiscount] = useState("0");
   const [toast, setToast] = useState<string | null>(null);
   const action = useAction();
+  /* Same breakpoint as the food till: on a counter terminal the bill sits
+     beside the menu; on the phone it is a sheet behind the running total. */
+  const docked = useMediaQuery("(min-width: 1100px)");
 
   const categories = useQuery<Category[]>("queries", "listCategories", { kind: "cafe" });
   const items = useQuery<CatalogItem[]>("queries", "listCatalogItems", { kind: "cafe" });
@@ -100,7 +104,11 @@ export function CafeScreen() {
      "Take ₹40", so a customer who wanted a slip could not be given one, and
      the operator had to go and reprint it from bill history on another
      machine — which the cafe_billing role cannot even open. */
+  /* Retrying a failed sale must repeat the same choice: a Save & print that
+     timed out should still print when the retry lands. */
+  const lastPrintChoice = useRef(false);
   async function settle(doPrint: boolean) {
+    lastPrintChoice.current = doPrint;
     const out = await action.run(() =>
       callable<{ bill_no: string }>("billing", "createBill", {
         type: "CAFE",
@@ -141,85 +149,21 @@ export function CafeScreen() {
     }
   }
 
-  return (
-    <div className="till">
-      <header className="till-head">
-        <h1>Cafe counter</h1>
-        <p className="till-taxnote">No tax at this counter. Bills are numbered CAFE-xxxxxx.</p>
-      </header>
-
-      <Card className="cafe-summary">
-        <div>
-          <span>Today at this counter</span>
-          <strong className="num">{money(todaysTotal)}</strong>
-        </div>
-        <Button onClick={() => setSummaryOpen(true)}>{todaysBills.length} bills</Button>
-      </Card>
-
-      <div className="till-search">
-        <Input placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search the cafe menu" />
-      </div>
-
-      <Segmented
-        value={categoryId}
-        onChange={setCategoryId}
-        options={[{ value: "all" as const, label: "All" }, ...(categories.data ?? []).map((c) => ({ value: c.id, label: c.name }))]}
-      />
-
-      {items.error && <ErrorNote message={items.error} onRetry={items.reload} />}
-      {action.error && <ErrorNote message={action.error} />}
-
-      {items.initial ? (
-        <Spinner label="Loading" />
-      ) : visible.length === 0 ? (
-        <EmptyState icon="☕" title="Nothing here" hint="Try another category." />
+  /* The bill, defined once and placed either in the docked panel or in the
+     sheet — same pattern as Billing.tsx. */
+  const billBody = (
+    <>
+      {/* The sale failed and the counter needs to know before they take the
+          money — in the sheet, the copy at the top of the screen is hidden. */}
+      {action.error && (
+        <ErrorNote
+          message={`This sale was NOT saved — nobody has been charged. ${action.error}`}
+          onRetry={() => settle(lastPrintChoice.current)}
+        />
+      )}
+      {lines.length === 0 ? (
+        <EmptyState icon="☕" title="No items yet" hint="Tap an item to add it." />
       ) : (
-        <div className="till-grid">
-          {visible.map((item) => (
-            <button key={item.id} type="button" className="till-item" onClick={() => add(item)}>
-              <span className="till-item-name">{item.name}</span>
-              <span className="till-item-price num">{money(item.price)}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {lines.length > 0 && (
-        <button type="button" className="till-bar" onClick={() => setBillOpen(true)}>
-          <span className="till-bar-count num">{itemCount}</span>
-          <span>View bill</span>
-          <strong className="num">{money(subtotal)}</strong>
-        </button>
-      )}
-
-      <Sheet
-        open={billOpen}
-        onClose={() => setBillOpen(false)}
-        title="Cafe sale"
-        subtitle={`${itemCount} item${itemCount === 1 ? "" : "s"}`}
-        footer={
-          <>
-            <Button onClick={() => setBillOpen(false)}>Keep adding</Button>
-            {/* Save on its own for the many sales nobody wants paper for — a
-                ₹15 chai should not cost a slip of roll — and Save & print for
-                the ones that do. Same two-way choice as the food till. */}
-            <Button onClick={() => settle(false)} disabled={action.busy || lines.length === 0}>
-              {action.busy ? "Saving…" : "Save"}
-            </Button>
-            <Button variant="primary" onClick={() => settle(true)} disabled={action.busy || lines.length === 0}>
-              {action.busy ? "Settling…" : `Save & print ${money(total)}`}
-            </Button>
-          </>
-        }
-      >
-        {/* The sale failed and the counter needs to know before they take the
-            money — the copy at the top of the screen is behind this sheet. */}
-        {action.error && (
-          <ErrorNote
-            message={`This sale was NOT saved — nobody has been charged. ${action.error}`}
-            onRetry={settle}
-          />
-        )}
         <ul className="till-lines">
           {lines.map((l, i) => (
             <li key={l.item_id}>
@@ -232,31 +176,131 @@ export function CafeScreen() {
             </li>
           ))}
         </ul>
+      )}
 
-        <Field label="Discount (₹)">
-          <Input value={discount} onChange={(e) => setDiscount(e.target.value)} inputMode="decimal" />
-        </Field>
-        <Field label="Payment method">
-          <Select value={method} onChange={(e) => setMethod(e.target.value)}>
-            <option value="Cash">Cash</option>
-            <option value="Card">Card</option>
-            <option value="UPI">UPI</option>
-          </Select>
-        </Field>
+      <Field label="Discount (₹)">
+        <Input value={discount} onChange={(e) => setDiscount(e.target.value)} inputMode="decimal" />
+      </Field>
+      <Field label="Payment method">
+        <Select value={method} onChange={(e) => setMethod(e.target.value)}>
+          <option value="Cash">Cash</option>
+          <option value="Card">Card</option>
+          <option value="UPI">UPI</option>
+        </Select>
+      </Field>
 
-        <dl className="till-totals">
-          <dt>Subtotal</dt>
-          <dd className="num">{money(subtotal)}</dd>
-          {discountNum > 0 && (
+      <dl className="till-totals">
+        <dt>Subtotal</dt>
+        <dd className="num">{money(subtotal)}</dd>
+        {discountNum > 0 && (
+          <>
+            <dt>Discount</dt>
+            <dd className="num">−{money(discountNum)}</dd>
+          </>
+        )}
+        <dt className="is-total">Total</dt>
+        <dd className="is-total num">{money(total)}</dd>
+      </dl>
+    </>
+  );
+
+  /* Save on its own for the many sales nobody wants paper for — a ₹15 chai
+     should not cost a slip of roll — and Save & print for the ones that do.
+     Same two-way choice as the food till. */
+  const settleButtons = (
+    <>
+      <Button onClick={() => settle(false)} disabled={action.busy || lines.length === 0}>
+        {action.busy ? "Saving…" : "Save"}
+      </Button>
+      <Button variant="primary" onClick={() => settle(true)} disabled={action.busy || lines.length === 0}>
+        {action.busy ? "Settling…" : `Save & print ${money(total)}`}
+      </Button>
+    </>
+  );
+
+  return (
+    <div className="till">
+      <div className="till-main">
+        <header className="till-head">
+          <h1>Cafe billing</h1>
+          <p className="till-taxnote">No tax at this counter. Bills are numbered CAFE-xxxxxx.</p>
+        </header>
+
+        <Card className="cafe-summary">
+          <div>
+            <span>Today at this counter</span>
+            <strong className="num">{money(todaysTotal)}</strong>
+          </div>
+          <Button onClick={() => setSummaryOpen(true)}>{todaysBills.length} bills</Button>
+        </Card>
+
+        <div className="till-search">
+          <Input placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search the cafe menu" />
+        </div>
+
+        <Segmented
+          value={categoryId}
+          onChange={setCategoryId}
+          options={[{ value: "all" as const, label: "All" }, ...(categories.data ?? []).map((c) => ({ value: c.id, label: c.name }))]}
+        />
+
+        {items.error && <ErrorNote message={items.error} onRetry={items.reload} />}
+        {/* Docked, the bill panel shows this error beside the buttons. */}
+        {!docked && action.error && <ErrorNote message={action.error} />}
+
+        {items.initial ? (
+          <Spinner label="Loading" />
+        ) : visible.length === 0 ? (
+          <EmptyState icon="☕" title="Nothing here" hint="Try another category." />
+        ) : (
+          <div className="till-grid">
+            {visible.map((item) => (
+              <button key={item.id} type="button" className="till-item" onClick={() => add(item)}>
+                <span className="till-item-name">{item.name}</span>
+                <span className="till-item-price num">{money(item.price)}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Docked, the bill panel is already on screen — this fixed bar would
+            sit on top of it. */}
+        {!docked && lines.length > 0 && (
+          <button type="button" className="till-bar" onClick={() => setBillOpen(true)}>
+            <span className="till-bar-count num">{itemCount}</span>
+            <span>View bill</span>
+            <strong className="num">{money(subtotal)}</strong>
+          </button>
+        )}
+      </div>
+
+      {docked ? (
+        <aside className="till-cart" aria-label="Current bill">
+          <header className="till-cart-head">
+            <strong>Cafe sale</strong>
+            <span>
+              {itemCount} item{itemCount === 1 ? "" : "s"}
+            </span>
+          </header>
+          <div className="till-cart-body">{billBody}</div>
+          <footer className="till-cart-foot cafe-cart-foot">{settleButtons}</footer>
+        </aside>
+      ) : (
+        <Sheet
+          open={billOpen}
+          onClose={() => setBillOpen(false)}
+          title="Cafe sale"
+          subtitle={`${itemCount} item${itemCount === 1 ? "" : "s"}`}
+          footer={
             <>
-              <dt>Discount</dt>
-              <dd className="num">−{money(discountNum)}</dd>
+              <Button onClick={() => setBillOpen(false)}>Keep adding</Button>
+              {settleButtons}
             </>
-          )}
-          <dt className="is-total">Total</dt>
-          <dd className="is-total num">{money(total)}</dd>
-        </dl>
-      </Sheet>
+          }
+        >
+          {billBody}
+        </Sheet>
+      )}
 
       <Sheet open={summaryOpen} onClose={() => setSummaryOpen(false)} title="Today at this counter" subtitle={money(todaysTotal)}>
         {todaysBills.length === 0 ? (
