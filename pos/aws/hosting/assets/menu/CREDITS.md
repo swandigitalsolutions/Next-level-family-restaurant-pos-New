@@ -8,8 +8,8 @@ CC BY and CC BY-SA require attribution; keep this file with the app and link it 
 |---|---|---|---|---|
 | Al Faham Chicken | al-faham-chicken.webp | Vis M | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Al-Faham_Chicken_and_Kuboos_2021.jpg |
 | Arabic Coffee | arabic-coffee.webp | Canbel | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:A_dallah_a_traditional_Arabic_coffee_pot_with_cups_and_coffee_beans.jpg |
-| BBQ Chicken | bbq-chicken.webp | John Freeman | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:BBQ_Chicken_(1)_(26498009359).jpg |
 | Baby Corn Hyderabadi | baby-corn-hyderabadi.webp | Yakshitha | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Babycorn_Chilli.jpg |
+| BBQ Chicken | bbq-chicken.webp | John Freeman | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:BBQ_Chicken_(1)_(26498009359).jpg |
 | Butter Kulcha | butter-kulcha.webp | Vivekvaid | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Amritsari_Kulcha.jpg |
 | Buttermilk | buttermilk.webp | Dr. Satish Upalkar | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Buttermilk_glass.jpg |
 | Cheese Pav Bhaji | cheese-pav-bhaji.webp | Yash Agarwal | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:CheesePavBhaji.jpg |
@@ -43,12 +43,15 @@ CC BY and CC BY-SA require attribution; keep this file with the app and link it 
 | Crispy Corn | crispy-corn.webp | PattayaPatrol | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:DFC_2192_Golden_crispy_corn_fritters_piled_on_a_cooling_rack_their_crunchy_batter_studded_with_sweet_corn_kernels.jpg |
 | Cucumber Salad | cucumber-salad.webp | Benreis | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Gurkensalat_Potsdam.jpg |
 | Dahi Papdi Chaat | dahi-papdi-chaat.webp | BHAVYA KAPOOR | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:BHALE_PAPDI.jpg |
+| Dal Fry | dal-fry.webp | Ravi Talwar | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Chana_Dal_Curry.jpg |
+| Dal Tadka (Spicy) | dal-tadka-spicy.webp | Southofindia | CC BY-SA 3.0 | https://commons.wikimedia.org/wiki/File:Tadka_Dal.jpg |
 | Double Ka Meetha | double-ka-meetha.webp | Miansari66 | CC0 | https://commons.wikimedia.org/wiki/File:Double_Ka_Meetha.JPG |
 | Egg Curry | egg-curry.webp | Yakshitha | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Egg_Curry_2022.jpg |
 | Egg Keema Masala | egg-keema-masala.webp | Shahzaib Damn Cruze | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:20210904_154557a.jpg |
 | Egg Masala | egg-masala.webp | வெங்கட்ராமன். தி | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Chettinad_Egg_masala.jpg |
 | Egg Roll | egg-roll.webp | Rohitaich1 | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Chow_Roll.JPG |
 | Egg Sandwich | egg-sandwich.webp | Ocdp | CC0 | https://commons.wikimedia.org/wiki/File:Egg_Sandwich_001.jpg |
+| Gajar Halwa | gajar-halwa.webp | rovingI | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:Gajar_Halwa_(Carrot_fudge).jpg |
 | Gobi Manchurian | gobi-manchurian.webp | Harsha K R from Bangalore, India | CC BY-SA 2.0 | https://commons.wikimedia.org/wiki/File:Gobi_Manchurian.jpg |
 | Grill Chicken | grill-chicken.webp | Anandha abirami Govindan | CC BY 3.0 | https://commons.wikimedia.org/wiki/File:Grill_chicken.jpg |
 | Grilled Veg Sandwich | grilled-veg-sandwich.webp | Jemin Ramoliya | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Vegetable_grill_sandwich-Ahmedabad-Gujarat-0005.jpg |
@@ -70,6 +73,7 @@ CC BY and CC BY-SA require attribution; keep this file with the app and link it 
 | Mutton Dopiaza | mutton-dopiaza.webp | 赤猫法師 | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Mutton_Dopiaza.jpg |
 | Onion Dosa | onion-dosa.webp | Manpreet Kaur from India | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:Onion_Dosa_(22325953018).jpg |
 | Orange Juice | orange-juice.webp | Agricultural Research Service | Public domain | https://commons.wikimedia.org/wiki/File:Orange_juice_1.jpg |
+| Palak Dal | palak-dal.webp | Yummy O Yummy | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:Dal_Palak_Spinach_and_lentil_curry_(15914333462).jpg |
 | Palak Paneer | palak-paneer.webp | DreamyFlutura11 | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Palak_Paneer_(Cottage_cheese_in_spinach_gravy).jpg |
 | Paneer Chilli | paneer-chilli.webp | Marajozkee | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Chilly_Paneer_01.jpg |
 | Paneer Kaju Masala | paneer-kaju-masala.webp | Sidhabiswanath | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Cashew_paneer.jpg |
