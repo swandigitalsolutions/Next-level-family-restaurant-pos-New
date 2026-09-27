@@ -28,6 +28,14 @@ function weekdayLabel(key: string): string {
   return new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "UTC" }).format(d).toUpperCase();
 }
 
+/* "Sales" means money the restaurant actually kept, so every figure below
+   excludes bills that have been cancelled. A void is recorded in `bill_voids`
+   rather than by editing the bill (see db/migrations/004_bill_voids.sql), so
+   the exclusion has to be written into each query — a voided bill is still a
+   perfectly valid row in `bills`. Miss one and the dashboard quietly reports
+   takings the till never took. */
+const NOT_VOIDED = "NOT EXISTS (SELECT 1 FROM bill_voids v WHERE v.bill_id = bills.id)";
+
 export async function computeRolling() {
   const pool = await getPool();
   const today = dateKey(new Date(), RESTAURANT_TZ);
@@ -36,28 +44,28 @@ export async function computeRolling() {
   const [todayRow, dailyRows, mixRows, hourlyRows, itemRows, menuCounts, recentRows] = await Promise.all([
     pool.query(
       `SELECT type, count(*)::int AS n, coalesce(sum(grand_total),0) AS total
-       FROM bills WHERE date_key = $1 GROUP BY type`,
+       FROM bills WHERE date_key = $1 AND ${NOT_VOIDED} GROUP BY type`,
       [today],
     ),
     pool.query(
       `SELECT date_key, type, count(*)::int AS n, coalesce(sum(grand_total),0) AS total
-       FROM bills WHERE date_key >= $1 GROUP BY date_key, type`,
+       FROM bills WHERE date_key >= $1 AND ${NOT_VOIDED} GROUP BY date_key, type`,
       [since],
     ),
     pool.query(
       `SELECT payment_method, count(*)::int AS n, coalesce(sum(grand_total),0) AS total
-       FROM bills WHERE date_key >= $1 GROUP BY payment_method ORDER BY total DESC`,
+       FROM bills WHERE date_key >= $1 AND ${NOT_VOIDED} GROUP BY payment_method ORDER BY total DESC`,
       [since],
     ),
     pool.query(
       `SELECT hour, count(*)::int AS n, coalesce(sum(grand_total),0) AS total
-       FROM bills WHERE date_key >= $1 GROUP BY hour ORDER BY hour`,
+       FROM bills WHERE date_key >= $1 AND ${NOT_VOIDED} GROUP BY hour ORDER BY hour`,
       [since],
     ),
     pool.query(
       `SELECT item->>'itemName' AS name, sum((item->>'qty')::numeric)::numeric AS qty, sum((item->>'lineTotal')::numeric) AS total
        FROM bills, jsonb_array_elements(items) AS item
-       WHERE date_key >= $1
+       WHERE date_key >= $1 AND ${NOT_VOIDED}
        GROUP BY item->>'itemName'
        ORDER BY qty DESC, total DESC
        LIMIT 6`,
@@ -72,7 +80,7 @@ export async function computeRolling() {
         (SELECT count(*) FROM categories WHERE kind='alcohol' AND status='active')::int AS alcohol_categories,
         (SELECT count(*) FROM categories WHERE kind='cafe' AND status='active')::int AS cafe_categories
     `),
-    pool.query(`SELECT id, bill_no, customer_name, grand_total, payment_method, created_at, type FROM bills ORDER BY created_at DESC LIMIT 6`),
+    pool.query(`SELECT id, bill_no, customer_name, grand_total, payment_method, created_at, type FROM bills WHERE ${NOT_VOIDED} ORDER BY created_at DESC LIMIT 6`),
   ]);
 
   const byType = (rows: any[], t: string) => rows.find((r) => r.type === t);

@@ -204,6 +204,114 @@ export const handler = dispatch({
     computeRolling().catch((e) => console.error("stats refresh failed (non-fatal)", e));
     return result;
   },
+
+  /**
+   * Cancel a settled bill.
+   *
+   * A till without this is a till that cannot correct itself: ring table 7's
+   * order against table 4, or bill the same walk-in twice, and the day's
+   * takings stay wrong forever. Every real POS has a void; the question is
+   * only what it does to the record.
+   *
+   * It does NOT edit the bill. `bills` is UPDATE/DELETE-revoked for this role
+   * on purpose (002_privileges.sql), so the void is written as a separate,
+   * equally permanent fact in `bill_voids` — the paper equivalent of striking
+   * a line through the entry rather than erasing it. The customer's copy
+   * still matches the stored row exactly, and who cancelled it, when and why
+   * are all on the record.
+   *
+   * Manager and above only: a void moves money off the books, so it is not a
+   * thing a cashier does alone on a busy counter.
+   *
+   * Stock is deliberately NOT returned. The kitchen has already cooked it; a
+   * wrongly-addressed bill does not put the chicken back in the fridge. Stock
+   * corrections are a separate, visible act in the menu screen.
+   */
+  async voidBill(body, event) {
+    const caller = assertRole(event as any, ["manager", "admin"] as any);
+
+    const billNo = String(body?.bill_no ?? "").trim();
+    const billId = String(body?.bill_id ?? "").trim();
+    if (!billNo && !billId) throw new HttpError(422, "invalid-argument", "Which bill? Pass bill_no or bill_id.");
+
+    /* A reason is required, and a real one. "Cancelled" tells whoever reads
+       the day's reconciliation nothing at all, and this is the only record
+       anyone will ever have of why the money moved. */
+    const reason = String(body?.reason ?? "").trim();
+    if (reason.length < 4) {
+      throw new HttpError(422, "invalid-argument", "Please give a reason for cancelling this bill.");
+    }
+    if (reason.length > 300) {
+      throw new HttpError(422, "invalid-argument", "That reason is too long — keep it under 300 characters.");
+    }
+
+    const result = await withTransaction(async (client) => {
+      /* A plain SELECT, no row lock. `SELECT ... FOR UPDATE` on `bills`
+         needs the UPDATE privilege, which this role deliberately does not
+         have — the lock attempt fails with "permission denied for table
+         bills". That is the immutability rule doing its job, so the race
+         between two managers both hitting Cancel is settled by the PRIMARY
+         KEY on bill_voids.bill_id instead: the second INSERT loses, and the
+         unique violation is caught below. */
+      const res = await client.query(
+        billId
+          ? "SELECT id, bill_no, grand_total, date_key, type FROM bills WHERE id=$1"
+          : "SELECT id, bill_no, grand_total, date_key, type FROM bills WHERE bill_no=$1",
+        [billId || billNo],
+      );
+      const bill = res.rows[0];
+      if (!bill) throw new HttpError(404, "not-found", "That bill does not exist.");
+
+      const already = await client.query(
+        "SELECT reason, voided_at, voided_by_username FROM bill_voids WHERE bill_id=$1",
+        [bill.id],
+      );
+      if (already.rowCount) {
+        const v = already.rows[0];
+        throw new HttpError(
+          409,
+          "already-exists",
+          `${bill.bill_no} was already cancelled${v.voided_by_username ? ` by ${v.voided_by_username}` : ""}.`,
+        );
+      }
+
+      try {
+        await client.query(
+          `INSERT INTO bill_voids (bill_id, bill_no, grand_total, date_key, reason, voided_by_uid, voided_by_username, voided_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,now())`,
+          [bill.id, bill.bill_no, bill.grand_total, bill.date_key, reason, caller.uid, caller.username || null],
+        );
+      } catch (err: any) {
+        // 23505: another manager cancelled the same bill a moment ago.
+        if (err?.code === "23505") {
+          throw new HttpError(409, "already-exists", `${bill.bill_no} was already cancelled.`);
+        }
+        throw err;
+      }
+
+      await auditInTx(client, {
+        actorUid: caller.uid,
+        actorUsername: caller.username || null,
+        actorRole: caller.role,
+        action: "bill.void",
+        entityType: "bill",
+        entityId: bill.id,
+        details: { bill_no: bill.bill_no, grand_total: Number(bill.grand_total), type: bill.type, reason },
+      });
+
+      return {
+        bill_id: bill.id,
+        bill_no: bill.bill_no,
+        grand_total: Number(bill.grand_total),
+        reason,
+        voided_by: caller.username || null,
+      };
+    });
+
+    // The day's takings just changed, so the dashboard has to be rebuilt.
+    computeRolling().catch((e) => console.error("stats refresh failed (non-fatal)", e));
+    return result;
+  },
 });
 
 function sessionRow(row: any) {

@@ -5,9 +5,18 @@
  * immutable, enforced by the database itself (`REVOKE UPDATE, DELETE` in
  * 002_privileges.sql). Drawing those controls would only produce an error.
  * A correction is a new, corrective bill — not an edit.
+ *
+ * Cancelling is the one exception, and it is not an edit either. A till has
+ * to be able to take a wrong bill off the day's takings — rung against the
+ * wrong table, charged twice — so `billing.voidBill` writes the cancellation
+ * as its own permanent record and the bill row is never touched. Cancelled
+ * bills stay in this list, marked, because a gap in the bill numbers with no
+ * explanation is worse than a struck-through line. Manager and above only.
  */
 import { useState } from "react";
-import { useQuery } from "../lib/useQuery";
+import { useQuery, useAction } from "../lib/useQuery";
+import { callable } from "../lib/api";
+import { useSession } from "../lib/session";
 import { money, dateTime, titleCase, todayKey } from "../lib/format";
 import { Card, EmptyState, ErrorNote, Input, Pill, Segmented, Sheet, Spinner, Button, Field } from "../components/ui";
 import { PrintArea, type ReceiptData } from "../components/Receipt";
@@ -39,6 +48,11 @@ export function OrdersScreen() {
   const [search, setSearch] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
   const [toPrint, setToPrint] = useState<ReceiptData[]>([]);
+  const [voidFor, setVoidFor] = useState<Bill | null>(null);
+  const [voidReason, setVoidReason] = useState("");
+  const voidAction = useAction();
+  const { role } = useSession();
+  const mayVoid = role === "admin" || role === "manager";
 
   const list = useQuery<{ orders: OrderSummary[]; total: number }>("queries", "listOrders", {
     type,
@@ -100,10 +114,11 @@ export function OrdersScreen() {
         <ul className="orders-list stagger">
           {orders.map((o) => (
             <li key={o.id}>
-              <button type="button" onClick={() => setOpenId(o.id)}>
+              <button type="button" onClick={() => setOpenId(o.id)} className={o.voided ? "is-voided" : undefined}>
                 <span className="orders-no">{o.bill_no}</span>
                 <span className="orders-mid">
                   <Pill tone={o.type === "ALCOHOL" ? "danger" : o.type === "CAFE" ? "warn" : "neutral"}>{o.type}</Pill>
+                  {o.voided && <Pill tone="danger">Cancelled</Pill>}
                   <em>{o.customer_name && o.customer_name !== "-" ? o.customer_name : "Walk-in"}</em>
                 </span>
                 <span className="orders-when">{dateTime(o.created_at)}</span>
@@ -120,17 +135,30 @@ export function OrdersScreen() {
         title={detail.data?.bill_no ?? "Bill"}
         subtitle={detail.data ? `${detail.data.type} · ${dateTime(detail.data.created_at)}` : undefined}
         footer={
-          <Button
-            variant="primary"
-            disabled={!detail.data}
-            onClick={() => {
-              if (!detail.data) return;
-              setToPrint([toReceipt(detail.data)]);
-              requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
-            }}
-          >
-            Print receipt
-          </Button>
+          <>
+            {mayVoid && detail.data && !detail.data.voided && (
+              <Button
+                onClick={() => {
+                  setVoidReason("");
+                  voidAction.clearError();
+                  setVoidFor(detail.data!);
+                }}
+              >
+                Cancel bill
+              </Button>
+            )}
+            <Button
+              variant="primary"
+              disabled={!detail.data}
+              onClick={() => {
+                if (!detail.data) return;
+                setToPrint([toReceipt(detail.data)]);
+                requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+              }}
+            >
+              Print receipt
+            </Button>
+          </>
         }
       >
         {detail.loading && !detail.data ? (
@@ -175,11 +203,66 @@ export function OrdersScreen() {
               <dd className="is-total num">{money(detail.data.grand_total)}</dd>
             </dl>
 
-            <p className="orders-meta">
-              Paid by {titleCase(detail.data.payment_method)} · this bill is final and cannot be changed.
-            </p>
+            {detail.data.voided ? (
+              <ErrorNote
+                message={`Cancelled${detail.data.voided_by ? ` by ${detail.data.voided_by}` : ""}${
+                  detail.data.voided_at ? ` on ${dateTime(detail.data.voided_at)}` : ""
+                } — ${detail.data.void_reason ?? "no reason recorded"}. It does not count towards takings.`}
+              />
+            ) : (
+              <p className="orders-meta">
+                Paid by {titleCase(detail.data.payment_method)} · this bill is final and cannot be changed.
+              </p>
+            )}
           </>
         ) : null}
+      </Sheet>
+
+
+      {/* Cancelling a bill. Deliberately a second, explicit step with a
+          required reason rather than a one-tap action behind a confirm(): it
+          takes money off the day's takings and the reason is the only record
+          anyone will have of why. */}
+      <Sheet
+        open={voidFor !== null}
+        onClose={() => setVoidFor(null)}
+        title={`Cancel ${voidFor?.bill_no ?? "bill"}?`}
+        subtitle="The bill stays on record, marked cancelled. It stops counting towards takings."
+        footer={
+          <>
+            <Button onClick={() => setVoidFor(null)} disabled={voidAction.busy}>
+              Keep it
+            </Button>
+            <Button
+              variant="danger"
+              disabled={voidAction.busy || voidReason.trim().length < 4}
+              onClick={async () => {
+                if (!voidFor) return;
+                const out = await voidAction.run(() =>
+                  callable("billing", "voidBill", { bill_id: voidFor.id, reason: voidReason.trim() }),
+                );
+                if (out) {
+                  setVoidFor(null);
+                  setVoidReason("");
+                  detail.reload();
+                  list.reload();
+                }
+              }}
+            >
+              {voidAction.busy ? "Cancelling…" : `Cancel ${voidFor ? money(voidFor.grand_total) : ""}`}
+            </Button>
+          </>
+        }
+      >
+        {voidAction.error && <ErrorNote message={voidAction.error} />}
+        <Field label="Why is this being cancelled?" hint="Whoever reads the day's takings will only have this line to go on.">
+          <Input
+            value={voidReason}
+            onChange={(e) => setVoidReason(e.target.value)}
+            placeholder="e.g. rung against the wrong table"
+            maxLength={300}
+          />
+        </Field>
       </Sheet>
 
       <PrintArea receipts={toPrint} gstin={import.meta.env.VITE_RESTAURANT_GSTIN} />

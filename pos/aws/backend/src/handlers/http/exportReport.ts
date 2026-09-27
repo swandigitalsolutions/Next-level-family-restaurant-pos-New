@@ -86,7 +86,15 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
   // eventually fails with an opaque platform error. Fetching one row beyond
   // the limit is how we tell "exactly at the limit" from "too many".
   params.push(EXPORT_MAX_ROWS + 1);
-  const sql = `SELECT * FROM bills ${where.length ? "WHERE " + where.join(" AND ") : ""} ORDER BY date_key, created_at LIMIT $${params.length}`;
+  /* Cancelled bills are EXPORTED, not filtered out, with the cancellation in
+     its own columns. An accountant reconciling this against the bill-number
+     series needs to see why BILL-000123 is missing from the takings; a
+     silently shorter file looks like data loss. Anything summing the
+     "Grand Total" column must skip rows marked Cancelled. */
+  const sql = `SELECT b.*, v.reason AS void_reason, v.voided_at, v.voided_by_username
+     FROM bills b LEFT JOIN bill_voids v ON v.bill_id = b.id
+     ${where.length ? "WHERE " + where.join(" AND ").replace(/(type|date_key)/g, "b.$1") : ""}
+     ORDER BY b.date_key, b.created_at LIMIT $${params.length}`;
   const rows = (await pool.query(sql, params)).rows;
   if (rows.length > EXPORT_MAX_ROWS) {
     return json(413, {
@@ -95,10 +103,11 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
     });
   }
 
-  const header = ["Type", "Bill No", "Date", "Customer", "Phone", "Subtotal", "Discount", "Tax", "Grand Total", "Payment Method", "Status"];
+  const header = ["Type", "Bill No", "Date", "Customer", "Phone", "Subtotal", "Discount", "Tax", "Grand Total", "Payment Method", "Status", "Cancelled", "Cancelled By", "Cancel Reason"];
   const lines = [header.join(",")];
   for (const r of rows) {
-    lines.push([r.type, r.bill_no, localStamp(new Date(r.created_at)), r.customer_name, r.customer_phone, r.subtotal, r.discount, r.tax, r.grand_total, r.payment_method, r.status].map(csvCell).join(","));
+    lines.push([r.type, r.bill_no, localStamp(new Date(r.created_at)), r.customer_name, r.customer_phone, r.subtotal, r.discount, r.tax, r.grand_total, r.payment_method, r.status,
+      r.voided_at ? "YES" : "", r.voided_by_username ?? "", r.void_reason ?? ""].map(csvCell).join(","));
   }
 
   const stamp = localStamp(new Date()).replace(/[- :]/g, "").slice(0, 15);

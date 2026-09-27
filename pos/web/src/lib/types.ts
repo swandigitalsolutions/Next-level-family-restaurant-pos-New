@@ -98,6 +98,13 @@ export interface Bill {
   created_at: string | null;
   website_order_no: string | null;
   items: BillLine[];
+  /** Set when the bill has been cancelled. The bill still exists and is still
+      shown — it simply no longer counts towards takings. See billing.voidBill
+      and db/migrations/004_bill_voids.sql. */
+  voided?: boolean;
+  void_reason?: string | null;
+  voided_by?: string | null;
+  voided_at?: string | null;
 }
 
 export interface OrderSummary {
@@ -109,6 +116,13 @@ export interface OrderSummary {
   grand_total: number;
   payment_method: string;
   status: string;
+  /** Set when the bill has been cancelled. The bill still exists and is still
+      shown — it simply no longer counts towards takings. See billing.voidBill
+      and db/migrations/004_bill_voids.sql. */
+  voided?: boolean;
+  void_reason?: string | null;
+  voided_by?: string | null;
+  voided_at?: string | null;
 }
 
 export type QrStatus = "NEW" | "ACCEPTED" | "PREPARING" | "READY" | "SERVED" | "CANCELLED";

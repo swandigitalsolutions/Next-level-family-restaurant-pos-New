@@ -32,6 +32,15 @@ const billRow = (r: any) => ({
   payment_method: r.payment_method, status: r.status, created_at: r.created_at ? new Date(r.created_at).toISOString() : null,
   items: (r.items || []).map((it: any) => ({ item_name: it.itemName, brand: it.brand ?? "", bottle_size: it.bottleSize ?? "", price: Number(it.price), qty: Number(it.qty), tax_rate: Number(it.taxRate) || 0, line_total: Number(it.lineTotal) })),
 });
+/* A bill plus whether it has been cancelled. `voided` is a plain boolean so
+   no screen has to know that a void lives in its own table. */
+const withVoid = (r: any) => ({
+  ...billRow(r),
+  voided: Boolean(r.voided_at),
+  void_reason: r.void_reason ?? null,
+  voided_at: r.voided_at ? new Date(r.voided_at).toISOString() : null,
+  voided_by: r.voided_by_username ?? null,
+});
 const sessionRow = (r: any) => {
   const items = (r.items || []).map((it: any) => ({ item_kind: it.kind, item_id: it.itemId ?? null, item_name: it.itemName, brand: it.brand ?? "", bottle_size: it.bottleSize ?? "", price: Number(it.price), qty: Number(it.qty), tax_rate: Number(it.taxRate) || 0, line_total: Number(it.lineTotal) }));
   const subtotal = round2(items.reduce((s: number, i: any) => s + i.line_total, 0));
@@ -130,16 +139,29 @@ export const handler = dispatch({
     const pool = await getPool();
     const kind = String(body?.kind ?? "FOOD").toUpperCase();
     const lim = Math.min(Math.max(parseInt(body?.limit ?? "200", 10), 1), 500);
-    const res = await pool.query("SELECT * FROM bills WHERE type=$1 ORDER BY created_at DESC LIMIT $2", [kind, lim]);
-    return res.rows.map(billRow);
+    /* Bill history is the one place a cancelled bill must still be VISIBLE —
+       it is the record of what happened, and hiding it would make the void
+       untraceable from the screen people actually look at. The sales figures
+       exclude it (lib/statsService.ts); this list marks it instead. */
+    const res = await pool.query(
+      `SELECT b.*, v.reason AS void_reason, v.voided_at, v.voided_by_username
+       FROM bills b LEFT JOIN bill_voids v ON v.bill_id = b.id
+       WHERE b.type=$1 ORDER BY b.created_at DESC LIMIT $2`,
+      [kind, lim],
+    );
+    return res.rows.map(withVoid);
   },
 
   async getBill(body, event) {
     assertRole(event as any, [...BILLING_ROLES, ...CAFE_ROLES] as any);
     const pool = await getPool();
-    const res = await pool.query("SELECT * FROM bills WHERE id=$1", [String(body?.id ?? "")]);
+    const res = await pool.query(
+      `SELECT b.*, v.reason AS void_reason, v.voided_at, v.voided_by_username
+       FROM bills b LEFT JOIN bill_voids v ON v.bill_id = b.id WHERE b.id=$1`,
+      [String(body?.id ?? "")],
+    );
     if (!res.rowCount) throw new HttpError(404, "not-found", "Bill not found");
-    return billRow(res.rows[0]);
+    return withVoid(res.rows[0]);
   },
 
   async listOrders(body, event) {
@@ -157,8 +179,18 @@ export const handler = dispatch({
     const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
     const total = (await pool.query(`SELECT count(*)::int AS n FROM bills ${whereSql}`, params)).rows[0].n;
     params.push(offset + lim);
-    const rows = (await pool.query(`SELECT * FROM bills ${whereSql} ORDER BY created_at DESC LIMIT $${params.length}`, params)).rows.slice(offset);
-    const orders = rows.map((b) => ({ id: b.id, bill_no: b.bill_no, type: b.type, customer_name: b.customer_name, created_at: new Date(b.created_at).toISOString(), grand_total: Number(b.grand_total), payment_method: b.payment_method, status: b.status }));
+    /* Cancelled bills stay in this list, flagged. Dropping them would leave
+       a hole in the bill numbers with nothing to explain it. */
+    const rows = (
+      await pool.query(
+        `SELECT b.*, v.reason AS void_reason, v.voided_at, v.voided_by_username
+         FROM bills b LEFT JOIN bill_voids v ON v.bill_id = b.id
+         ${whereSql.replace(/(type|date_key|search_tokens)/g, "b.$1")}
+         ORDER BY b.created_at DESC LIMIT $${params.length}`,
+        params,
+      )
+    ).rows.slice(offset);
+    const orders = rows.map((b) => ({ id: b.id, bill_no: b.bill_no, type: b.type, customer_name: b.customer_name, created_at: new Date(b.created_at).toISOString(), grand_total: Number(b.grand_total), payment_method: b.payment_method, status: b.status, voided: Boolean(b.voided_at), void_reason: b.void_reason ?? null, voided_by: b.voided_by_username ?? null }));
     return { orders, total, limit: lim, offset };
   },
 
