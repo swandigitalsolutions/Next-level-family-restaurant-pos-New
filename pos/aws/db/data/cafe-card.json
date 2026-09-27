@@ -1,0 +1,94 @@
+{
+  "_comment": "The outside cafe counter's own card. Separate from the restaurant menu because the cafe is a separate till with its own staff role (cafe_billing) and its own catalog — kind='cafe'. Same shape as menu-card.json: [name, price in rupees].",
+  "_flags": {
+    "taxed": false,
+    "note": "Nothing on the cafe card is taxed. Only alcohol is."
+  },
+  "categories": [
+    {
+      "name": "Fresh Juices",
+      "items": [
+        ["Fresh Lime Juice", 40],
+        ["Fresh Lime Soda", 50],
+        ["Orange Juice", 70],
+        ["Mosambi Juice", 70],
+        ["Watermelon Juice", 60],
+        ["Pineapple Juice", 70],
+        ["Pomegranate Juice", 90],
+        ["Grape Juice", 70],
+        ["Mango Juice", 70],
+        ["Mixed Fruit Juice", 90],
+        ["Carrot Juice", 60],
+        ["ABC Juice (Apple Beet Carrot)", 100]
+      ]
+    },
+    {
+      "name": "Milkshakes",
+      "items": [
+        ["Mango Shake", 80],
+        ["Banana Shake", 70],
+        ["Chocolate Shake", 90],
+        ["Strawberry Shake", 90],
+        ["Vanilla Shake", 80],
+        ["Butterscotch Shake", 90],
+        ["Oreo Shake", 100],
+        ["Cold Coffee", 80],
+        ["Cold Coffee with Ice Cream", 100]
+      ]
+    },
+    {
+      "name": "Ice Creams",
+      "items": [
+        ["Vanilla Ice Cream", 50],
+        ["Chocolate Ice Cream", 60],
+        ["Strawberry Ice Cream", 60],
+        ["Butterscotch Ice Cream", 60],
+        ["Mango Ice Cream", 60],
+        ["Pista Ice Cream", 70],
+        ["Kulfi", 60],
+        ["Falooda", 110],
+        ["Ice Cream Sundae", 120],
+        ["Gadbad Ice Cream", 140]
+      ]
+    },
+    {
+      "name": "Water & Soft Drinks",
+      "items": [
+        ["Mineral Water (500 ml)", 10],
+        ["Mineral Water (1 L)", 20],
+        ["Soda", 20],
+        ["Soft Drink (200 ml)", 20],
+        ["Soft Drink (600 ml)", 40],
+        ["Packaged Juice (Tetra)", 40],
+        ["Buttermilk", 30],
+        ["Lassi (Sweet)", 60],
+        ["Lassi (Salted)", 60]
+      ]
+    },
+    {
+      "name": "Tea & Coffee",
+      "items": [
+        ["Tea", 15],
+        ["Special Tea", 25],
+        ["Tandoori Chai", 40],
+        ["Green Tea", 30],
+        ["Coffee", 25],
+        ["Filter Coffee", 30],
+        ["Boost / Horlicks", 40],
+        ["Hot Chocolate", 60]
+      ]
+    },
+    {
+      "name": "Cafe Snacks",
+      "items": [
+        ["Veg Puff", 25],
+        ["Egg Puff", 30],
+        ["Chicken Puff", 40],
+        ["Samosa (2 pc)", 30],
+        ["Cake Slice", 50],
+        ["Cookies (100 g)", 40],
+        ["Biscuits", 20]
+      ]
+    }
+  ]
+}

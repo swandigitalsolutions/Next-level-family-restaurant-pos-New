@@ -259,3 +259,40 @@
 .till-change.is-short strong {
   color: var(--danger);
 }
+
+/* ── discount: rupees or percent ────────────────────────────────────────── */
+.till-discount {
+  display: flex;
+  gap: 8px;
+}
+.till-discount .ui-input {
+  flex: 1;
+  min-width: 0;
+}
+.till-discount-mode {
+  flex: none;
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-dim);
+  overflow: hidden;
+}
+.till-discount-mode button {
+  width: 46px;
+  min-height: var(--tap-lg);
+  border: 0;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
+}
+.till-discount-mode button.is-on {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.till-discount-mode button:not(.is-on):hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}

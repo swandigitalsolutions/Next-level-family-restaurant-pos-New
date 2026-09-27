@@ -91,7 +91,7 @@ describe("food till", () => {
     await userEvent.click(await screen.findByRole("button", { name: /^settle/i }));
     // "Save only" rather than "Save & print": this test is about the bill the
     // server is sent, and jsdom has no window.print().
-    await userEvent.click(await screen.findByRole("button", { name: /^save only/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /^save$/i }));
 
     await waitFor(() => {
       const call = spy.mock.calls.find((c) => c[1] === "createBill");
@@ -109,6 +109,28 @@ describe("food till", () => {
       expect(typeof body.client_ref).toBe("string");
       expect(body.client_ref.length).toBeGreaterThan(8);
     });
+  });
+
+  /* Settling is the last screen before a bill becomes immutable, so it offers
+     the three ways out the Flask till had. "Edit" went missing when printing
+     was added, which left no way back from the confirmation. */
+  test("settle offers Edit, Save and Save & print, and Edit goes back to the bill", async () => {
+    callable.fn = makeCallable(baseMap);
+    renderScreen(<BillingScreen kind="food" />);
+    await userEvent.click(screen.getByRole("tab", { name: /direct sale/i }));
+    await userEvent.click(await screen.findByText("Masala Dosa"));
+    await userEvent.click(await screen.findByRole("button", { name: /view bill/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /^settle/i }));
+
+    expect(await screen.findByRole("button", { name: /^edit$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^save$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /save & print/i })).toBeInTheDocument();
+
+    // Edit must return to the bill, not strand the cashier on a closed sheet.
+    await userEvent.click(screen.getByRole("button", { name: /^edit$/i }));
+    expect(await screen.findByLabelText(/discount in rupees/i)).toBeInTheDocument();
+    // Nothing was billed.
+    expect((callable.fn as any).mock.calls.filter((c: any[]) => c[1] === "createBill")).toHaveLength(0);
   });
 
   /* The idempotency key is the only thing between a lost response and charging
@@ -134,7 +156,7 @@ describe("food till", () => {
     const settleOnce = async () => {
       await userEvent.click(await screen.findByRole("button", { name: /view bill/i }));
       await userEvent.click(await screen.findByRole("button", { name: /^settle/i }));
-      await userEvent.click(await screen.findByRole("button", { name: /^save only/i }));
+      await userEvent.click(await screen.findByRole("button", { name: /^save$/i }));
     };
     const refs = () => spy.mock.calls.filter((c) => c[1] === "createBill").map((c) => (c[2] as any).client_ref);
 
@@ -231,7 +253,7 @@ describe("the food + alcohol split", () => {
     await userEvent.click(screen.getByText("Kingfisher")); // 180  -> 300 subtotal
     await userEvent.click(await screen.findByRole("button", { name: /view bill/i }));
 
-    const discountField = screen.getByLabelText(/discount/i);
+    const discountField = screen.getByLabelText(/discount in rupees/i);
     await userEvent.clear(discountField);
     await userEvent.type(discountField, "50");
 
@@ -242,6 +264,35 @@ describe("the food + alcohol split", () => {
     expect(within(foodCard.closest("div")!).getByText("−₹20.00")).toBeInTheDocument();
     const barCard = screen.getByText("Alcohol bill").closest("div")!;
     expect(within(barCard).getByText("−₹30.00")).toBeInTheDocument();
+  });
+
+  /* A percentage is resolved on the client — the server only ever accepts
+     rupees — so the conversion is the thing that can silently charge the wrong
+     amount. Masala Dosa 120 + Kingfisher 180 + 18% tax on the bar line = 32.40,
+     so the taxed total is 332.40 and 10% of it is 33.24. */
+  test("a percentage discount converts to rupees against the taxed total", async () => {
+    callable.fn = makeCallable(mixed);
+    renderScreen(<BillingScreen kind="food" />);
+
+    await userEvent.click(await screen.findByText("Masala Dosa"));
+    await userEvent.click(screen.getByText("Kingfisher"));
+    await userEvent.click(await screen.findByRole("button", { name: /view bill/i }));
+
+    await userEvent.click(screen.getByRole("button", { name: "%" }));
+    const pct = screen.getByLabelText(/discount percentage/i);
+    await userEvent.clear(pct);
+    await userEvent.type(pct, "10");
+
+    // The field shows what it will actually take off, so the cashier can say
+    // the number out loud before committing.
+    expect(await screen.findByText(/10% of ₹332\.40 = ₹33\.24/)).toBeInTheDocument();
+
+    await userEvent.click(await screen.findByRole("button", { name: /^settle/i }));
+    // 33.24 split pro-rata: 120/300 of it on food = 13.30, remainder 19.94.
+    const foodCard = await screen.findByText("Food bill");
+    expect(within(foodCard.closest("div")!).getByText("−₹13.30")).toBeInTheDocument();
+    const barCard = screen.getByText("Alcohol bill").closest("div")!;
+    expect(within(barCard).getByText("−₹19.94")).toBeInTheDocument();
   });
 
   test("a food-only sale previews one bill, not two", async () => {

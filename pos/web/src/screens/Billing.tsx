@@ -50,6 +50,11 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [discount, setDiscount] = useState("0");
+  /* Cashiers are told "give them ten percent" as often as "take fifty off",
+     and doing that arithmetic by hand at the counter is where wrong discounts
+     come from. The server only ever accepts rupees, so a percentage is
+     resolved here and the bill still carries one plain amount. */
+  const [discountMode, setDiscountMode] = useState<"amount" | "percent">("amount");
   const [method, setMethod] = useState("Cash");
   /* Cash handed over at the counter. Kept as a string so the field can be
      empty, which means "exact" rather than zero. */
@@ -123,7 +128,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
      server, seeing a key it has already banked, hands back the FIRST bill and
      never charges the edited one. Retrying an unchanged cart still reuses the
      key, which is what makes the retry safe. */
-  const cartSignature = JSON.stringify(lines.map((l) => [l.item_id, l.item_name, l.price, l.qty])) + `|${discount}`;
+  const cartSignature = JSON.stringify(lines.map((l) => [l.item_id, l.item_name, l.price, l.qty])) + `|${discount}|${discountMode}`;
   useEffect(() => {
     clientRef.current = null;
   }, [cartSignature]);
@@ -140,7 +145,15 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
 
   const subtotal = lines.reduce((a, l) => a + lineTotal(l), 0);
   const tax = lines.reduce((a, l) => a + (lineTotal(l) * l.tax_rate) / 100, 0);
-  const discountNum = Math.max(0, Number(discount) || 0);
+  const discountInput = Math.max(0, Number(discount) || 0);
+  /* A percentage applies to the taxed total, and is capped at 100 so a
+     mistyped "1000%" cannot make a bill go negative. Rounded to paise before
+     anything else uses it, so the figure shown, the figure sent and the figure
+     printed are the same number. */
+  const discountNum =
+    discountMode === "percent"
+      ? Math.round(Math.min(100, discountInput) * (subtotal + tax)) / 100
+      : discountInput;
   const grandTotal = Math.max(0, subtotal + tax - discountNum);
   const itemCount = lines.reduce((a, l) => a + l.qty, 0);
   const tenderedNum = Math.max(0, Number(tendered) || 0);
@@ -278,6 +291,13 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
     }));
   }
 
+  /** Back out of Settle to the bill, to change a line before committing.
+   *  Docked, the bill is already on screen, so only the sheet closes. */
+  function backToBill() {
+    setSettleOpen(false);
+    if (!docked) setBillOpen(true);
+  }
+
   /** Mount the receipts, then print once the browser has laid them out. */
   function printReceipts(receipts: ReceiptData[]) {
     setToPrint(receipts);
@@ -313,6 +333,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
         setLines([]);
         setSessionId(null);
         setDiscount("0");
+        setDiscountMode("amount");
         setTendered("");
         clearCustomer();
         tables.reload();
@@ -354,6 +375,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
         flash(out.deduplicated ? `Already billed as ${out.bill_no} — not charged again` : `Bill ${out.bill_no} created`);
         setLines([]);
         setDiscount("0");
+        setDiscountMode("amount");
         setTendered("");
         clearCustomer();
       }
@@ -412,8 +434,42 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
           <Field label="Phone (optional)">
             <Input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} inputMode="tel" />
           </Field>
-          <Field label="Discount (₹)">
-            <Input value={discount} onChange={(e) => setDiscount(e.target.value)} inputMode="decimal" />
+          <Field
+            label="Discount"
+            hint={
+              discountMode === "percent" && discountNum > 0
+                ? `${Math.min(100, discountInput)}% of ${money(subtotal + tax)} = ${money(discountNum)}`
+                : undefined
+            }
+          >
+            <div className="till-discount">
+              <Input
+                value={discount}
+                onChange={(e) => setDiscount(e.target.value)}
+                inputMode="decimal"
+                aria-label={discountMode === "percent" ? "Discount percentage" : "Discount in rupees"}
+              />
+              {/* Two buttons rather than a dropdown: it is a one-tap change on
+                  a screen where the cashier already has a finger on the keypad. */}
+              <div className="till-discount-mode" role="group" aria-label="Discount type">
+                <button
+                  type="button"
+                  className={discountMode === "amount" ? "is-on" : ""}
+                  onClick={() => setDiscountMode("amount")}
+                  aria-pressed={discountMode === "amount"}
+                >
+                  ₹
+                </button>
+                <button
+                  type="button"
+                  className={discountMode === "percent" ? "is-on" : ""}
+                  onClick={() => setDiscountMode("percent")}
+                  aria-pressed={discountMode === "percent"}
+                >
+                  %
+                </button>
+              </div>
+            </div>
           </Field>
     
           <dl className="till-totals">
@@ -614,12 +670,18 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
         title="Settle"
         subtitle={split.length > 1 ? "This creates two separate bills — only alcohol is taxed." : "Bills can never be edited afterwards."}
         footer={
-          /* Two ways out, as the Flask till had: most customers want the
-             printed bill, but a staff meal or a re-settle does not need paper
-             and the roll is not free. */
+          /* Three ways out, as the Flask till had. Edit first, because this is
+             the last screen before a bill becomes immutable and the commonest
+             reason to be here having second thoughts is a wrong line. Then
+             Save on its own — a staff meal or a re-settle does not need paper
+             and the roll is not free — and Save & print, which is what most
+             customers get. */
           <>
+            <Button onClick={backToBill} disabled={action.busy}>
+              Edit
+            </Button>
             <Button onClick={() => settle(false)} disabled={action.busy}>
-              {action.busy ? "Saving…" : "Save only"}
+              {action.busy ? "Saving…" : "Save"}
             </Button>
             <Button variant="primary" onClick={() => settle(true)} disabled={action.busy}>
               {action.busy ? "Settling…" : `Save & print ${money(grandTotal)}`}
