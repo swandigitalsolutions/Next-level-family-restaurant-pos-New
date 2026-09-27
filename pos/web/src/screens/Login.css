@@ -38,11 +38,32 @@
   overflow: hidden;
   flex-direction: column;
   align-items: flex-start;
-  justify-content: center;
-  gap: 14px;
-  padding: 48px;
-  background: var(--wash-accent);
+  /* Three bands — brand, what it runs, the footer — rather than one clump
+     floating in the middle of a very tall panel. */
+  justify-content: space-between;
+  gap: 32px;
+  padding: 56px 48px;
+  background: linear-gradient(150deg, #d81b34 0%, #b3122a 45%, #7d0c1e 100%);
   color: #fff;
+}
+/* A light source behind the logo, so the panel reads as a surface rather than
+   a flat fill of colour. */
+.login-brand::after {
+  content: "";
+  position: absolute;
+  top: -18%;
+  left: -12%;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.22), transparent 68%);
+  pointer-events: none;
+}
+.login-brand-top {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
 }
 /* A faint diagonal weave, at low contrast. Enough to stop a large flat block
    of colour looking like an unstyled div, not enough to read as a texture. */
@@ -52,16 +73,45 @@
   inset: 0;
   background-image: repeating-linear-gradient(
     45deg,
-    rgba(255, 255, 255, 0.05) 0 2px,
-    transparent 2px 14px
+    rgba(255, 255, 255, 0.045) 0 2px,
+    transparent 2px 16px
   );
   pointer-events: none;
+  z-index: 1;
 }
 .login-brand > * {
   position: relative;
+  z-index: 2;
+}
+
+/* What the system runs. Each line gets a tick, set in a circle so the list
+   reads as a set of capabilities rather than bullet points. */
+.login-brand-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  font-size: 0.97rem;
+  color: rgba(255, 255, 255, 0.92);
+}
+.login-brand-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.login-brand-list li::before {
+  content: "";
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16) center / 11px 11px no-repeat
+    url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12.5l5 5L20 6.5'/%3E%3C/svg%3E");
 }
 .login-brand h1 {
-  font-size: clamp(2rem, 3.4vw, 2.9rem);
+  font-size: clamp(2rem, 3.2vw, 2.7rem);
   letter-spacing: -0.02em;
   margin: 0;
 }
@@ -71,7 +121,6 @@
   color: rgba(255, 255, 255, 0.86);
 }
 .login-brand-foot {
-  margin-top: auto;
   font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.18em;
@@ -81,8 +130,8 @@
 
 /* The logo is a circular badge on white, so it keeps a white disc of its own. */
 .login-logo {
-  width: 112px;
-  height: 112px;
+  width: 104px;
+  height: 104px;
   border-radius: 50%;
   object-fit: cover;
   background: #fff;
@@ -107,6 +156,18 @@
   flex-direction: column;
   gap: 15px;
   animation: login-in 460ms var(--ease-out) both;
+}
+
+/* On a phone the form IS the page, so a card border around the whole viewport
+   would be noise. From the two-pane width it becomes a raised surface, which
+   is what stops it reading as text floating on a grey field. */
+@media (min-width: 820px) {
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-lg);
+  }
 }
 @keyframes login-in {
   from {
@@ -135,6 +196,8 @@
   margin: -9px 0 6px;
   font-size: 0.92rem;
   color: var(--text-soft);
+  /* Keeps a single short word off a line of its own. */
+  text-wrap: pretty;
 }
 
 .login-pw {

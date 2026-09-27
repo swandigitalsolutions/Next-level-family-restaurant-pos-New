@@ -60,9 +60,21 @@ export function LoginScreen() {
           decorative and is dropped entirely below 820px rather than shrunk —
           a cashier on a handset wants the fields, not a hero image. */}
       <aside className="login-brand" aria-hidden="true">
-        <img className="login-logo" src="/brand/logo.jpg" alt="" width={112} height={112} />
-        <h1>Next Level</h1>
-        <p>Family Restaurant &amp; Dhaba</p>
+        <div className="login-brand-top">
+          <img className="login-logo" src="/brand/logo.jpg" alt="" width={104} height={104} />
+          <h1>Next Level</h1>
+          <p>Family Restaurant &amp; Dhaba</p>
+        </div>
+
+        {/* The middle of this panel was empty. Naming what the system actually
+            runs is truer than a stock photo and tells a new server what they
+            are signing in to. */}
+        <ul className="login-brand-list">
+          <li>Restaurant, bar and cafe tills</li>
+          <li>Table QR ordering</li>
+          <li>Kitchen display</li>
+        </ul>
+
         <span className="login-brand-foot">Point of sale</span>
       </aside>
 
@@ -71,7 +83,7 @@ export function LoginScreen() {
             is not rendered at all. */}
         <img className="login-logo login-logo-sm" src="/brand/logo.jpg" alt="Next Level Family Restaurant" width={64} height={64} />
         <h2 className="login-title">Sign in</h2>
-        <p className="login-sub">Use the account your manager set up for you.</p>
+        <p className="login-sub">Use the account your manager gave you.</p>
 
         <Field label="Username">
           <Input
