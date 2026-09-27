@@ -20,6 +20,7 @@
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 import fastifyWebsocket from "@fastify/websocket";
 import fastifyStatic from "@fastify/static";
+import { assetsRoot } from "../lib/assets";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -166,7 +167,11 @@ export function buildServer(opts: ServerOptions = {}): { app: FastifyInstance; h
   });
 
   /* ── callable modules (authenticated) ────────────────────────────────── */
-  app.post<{ Params: { module: string; action: string } }>("/api/callable/:module/:action", async (req, reply) => {
+  /* A dish photo straight off a phone arrives here as base64, which is a
+     third larger again, so this one route is allowed a bigger body than the
+     2MB global cap. It stays on the authenticated route only — the public QR
+     and website endpoints keep the small limit. */
+  app.post<{ Params: { module: string; action: string } }>("/api/callable/:module/:action", { bodyLimit: 20 * 1024 * 1024 }, async (req, reply) => {
     const handler = CALLABLE_MODULES[req.params.module];
     if (!handler) {
       return reply.code(404).send({ error: { code: "not-found", message: `unknown module "${req.params.module}"` } });
@@ -264,13 +269,20 @@ export function buildServer(opts: ServerOptions = {}): { app: FastifyInstance; h
      serves them directly. Without this the POS, the QR menu and the website
      all render dishes with no photo — the files exist, nothing was serving
      them. Cached hard because the filename changes when the photo does. */
-  const assetsDir = opts.assetsDir ?? resolve(__dirname, "../../..", "hosting/assets");
+  const assetsDir = opts.assetsDir ?? assetsRoot();
   if (existsSync(assetsDir)) {
     app.register(fastifyStatic, {
       root: assetsDir,
       prefix: "/assets/",
       decorateReply: false, // the front-end registration below owns sendFile
-      wildcard: false,
+      /* wildcard:true, deliberately. With it false, @fastify/static walks the
+         folder ONCE at boot and registers a route per file it finds — so a
+         dish photo uploaded from the menu editor was written to disk
+         correctly and then served 404 until the next restart. The owner saw
+         the upload succeed, the preview appear, the item save, and a broken
+         image on the till. A directory whose contents change while the
+         process runs has to be matched at request time. */
+      wildcard: true,
       cacheControl: true,
       maxAge: "7d",
     });

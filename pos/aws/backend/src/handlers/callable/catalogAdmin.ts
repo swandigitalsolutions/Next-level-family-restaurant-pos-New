@@ -11,7 +11,15 @@ import { toFloat, toOptionalStock } from "../../lib/money";
 import { lower } from "../../lib/normalize";
 import { writeAudit } from "../../lib/audit";
 import { getPool } from "../../lib/db";
-import { randomUUID } from "crypto";
+import { randomUUID, createHash } from "crypto";
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import sharp from "sharp";
+import { menuImagesDir, CARD_WIDTH, CARD_HEIGHT } from "../../lib/assets";
+
+/** A phone photo is a few MB; anything much past this is not a dish photo. */
+const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
+const ACCEPTED_TYPES = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
 
 const kindOf = (v: unknown): "food" | "alcohol" | "cafe" => {
   const s = String(v).toLowerCase();
@@ -131,6 +139,81 @@ export const handler = dispatch({
       await writeAudit({ actorUid: caller.uid, actorUsername: caller.username || null, actorRole: caller.role, action: "menu.item.price_change", entityType: cur.kind === "food" ? "food_item" : cur.kind === "cafe" ? "cafe_item" : "alcohol_item", entityId: id, details: { name, price: { from: Number(cur.price), to: price } } });
     }
     return { id, name, price, status };
+  },
+
+
+  /**
+   * Take a photo the owner dropped on the menu editor and make it a card.
+   *
+   * The owner photographs a dish on a phone: 4000x3000, 4MB, portrait as
+   * often as not. The till card is 16:10. Left alone, the browser would crop
+   * it on the fly and the owner would have no idea which part survived, so
+   * the crop happens HERE, once, and the stored file IS the card.
+   *
+   * `fit: "cover"` with `position: "attention"` lets sharp pick the crop
+   * window by where the detail is, rather than blindly taking the middle —
+   * on a plate shot off-centre, the middle is tablecloth.
+   *
+   * EVERY upload is re-encoded to webp. That is not only for size: it means
+   * nothing that arrives here is ever served back as the file that was
+   * uploaded, so a file that is secretly HTML or SVG cannot become a stored
+   * cross-site-scripting payload on the till.
+   *
+   * The filename carries a hash of the bytes, so replacing a dish's photo
+   * writes a NEW file. Menu images are served with a 7-day cache; reusing the
+   * name would leave the old photo on the counter screen until it expired.
+   */
+  async uploadItemImage(body, event) {
+    assertManager(event as any);
+
+    const raw = String(body?.data ?? "");
+    // data:image/jpeg;base64,xxxx  — or just the base64 payload.
+    const m = /^data:([^;,]+);base64,(.*)$/s.exec(raw);
+    const declared = m ? m[1].toLowerCase() : "";
+    const b64 = m ? m[2] : raw;
+    if (!b64) throw new HttpError(422, "invalid-argument", "No image was uploaded");
+
+    let input: Buffer;
+    try {
+      input = Buffer.from(b64, "base64");
+    } catch {
+      throw new HttpError(422, "invalid-argument", "That file could not be read as an image");
+    }
+    if (!input.length) throw new HttpError(422, "invalid-argument", "That file is empty");
+    if (input.length > MAX_UPLOAD_BYTES) {
+      throw new HttpError(413, "invalid-argument", `That photo is ${(input.length / 1048576).toFixed(1)}MB. Please use one under ${MAX_UPLOAD_BYTES / 1048576}MB.`);
+    }
+    if (declared && !ACCEPTED_TYPES.has(declared)) {
+      throw new HttpError(422, "invalid-argument", "Please upload a JPG, PNG or WEBP photo.");
+    }
+
+    // sharp reads the actual bytes, so a .jpg that is really something else
+    // fails here rather than on a cashier's screen.
+    let out: Buffer;
+    try {
+      out = await sharp(input, { failOn: "error" })
+        .rotate() // honour the phone's EXIF orientation before cropping
+        .resize(CARD_WIDTH, CARD_HEIGHT, { fit: "cover", position: "attention", withoutEnlargement: false })
+        .webp({ quality: 82 })
+        .toBuffer();
+    } catch {
+      throw new HttpError(422, "invalid-argument", "That file is not a photo we can read. Please upload a JPG, PNG or WEBP.");
+    }
+
+    const base = lower(String(body?.name ?? "item").trim())
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 48) || "item";
+    const stamp = createHash("sha256").update(out).digest("hex").slice(0, 8);
+    const file = `${base}-${stamp}.webp`;
+
+    const dir = menuImagesDir();
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, file), out);
+
+    // The site-root path is what catalog.image_path holds and what every
+    // screen renders; see server/index.ts, which serves /assets/ from here.
+    return { image_url: `/assets/menu/${file}`, width: CARD_WIDTH, height: CARD_HEIGHT, bytes: out.length };
   },
 
   async deleteCatalogItem(body, event) {

@@ -15,6 +15,7 @@ import { useQuery, useAction } from "../lib/useQuery";
 import { callable } from "../lib/api";
 import { money } from "../lib/format";
 import { Button, EmptyState, ErrorNote, Field, Input, Segmented, Select, Sheet, Spinner, Toast, Pill } from "../components/ui";
+import { ImageDrop } from "../components/ImageDrop";
 import type { CatalogItem, Category, Kind } from "../lib/types";
 import "./Catalog.css";
 
@@ -29,6 +30,8 @@ interface Draft {
   tax_rate: string;
   stock_qty: string;
   status: string;
+  /** Site-root path of the dish photo, "" for none. */
+  image_url: string;
 }
 
 const emptyDraft = (categoryId: string, kind: Kind): Draft => ({
@@ -41,6 +44,7 @@ const emptyDraft = (categoryId: string, kind: Kind): Draft => ({
   tax_rate: kind === "alcohol" ? "18" : "0",
   stock_qty: "",
   status: "active",
+  image_url: "",
 });
 
 export function CatalogScreen() {
@@ -110,6 +114,7 @@ export function CatalogScreen() {
       price: Number(draft.price) || 0,
       description: draft.description.trim(),
       status: draft.status,
+      image_url: draft.image_url,
     };
     if (kind === "alcohol") {
       payload.brand = draft.brand.trim();
@@ -204,6 +209,7 @@ export function CatalogScreen() {
                         tax_rate: String(item.tax_rate),
                         stock_qty: item.stock_qty === null ? "" : String(item.stock_qty),
                         status: item.status,
+                        image_url: item.image_url ?? "",
                       })
                     }
                   >
@@ -247,6 +253,14 @@ export function CatalogScreen() {
       >
         {draft && (
           <>
+            <Field label="Photo" hint="Shown on the till card and the guest QR menu.">
+              <ImageDrop
+                value={draft.image_url}
+                onChange={(image_url) => setDraft({ ...draft, image_url })}
+                itemName={draft.name}
+                disabled={action.busy}
+              />
+            </Field>
             <Field label="Name">
               <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
             </Field>
