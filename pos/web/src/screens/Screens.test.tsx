@@ -335,7 +335,11 @@ describe("cafe till", () => {
     renderScreen(<CafeScreen />);
     await userEvent.click(await screen.findByText("Cafe Chai"));
     await userEvent.click(await screen.findByRole("button", { name: /view bill/i }));
-    await userEvent.click(screen.getByRole("button", { name: /^take /i }));
+    // "Save" rather than "Save & print": this test is about the bill the
+    // server is sent, and jsdom has no window.print(). The counter now has
+    // both, which is the point — it could not print at all before.
+    expect(screen.getByRole("button", { name: /save & print/i })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /^save$/i }));
 
     await waitFor(() => {
       const call = spy.mock.calls.find((c) => c[1] === "createBill");

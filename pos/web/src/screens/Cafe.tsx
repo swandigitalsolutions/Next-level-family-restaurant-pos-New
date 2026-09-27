@@ -15,6 +15,7 @@ import { useQuery, useAction } from "../lib/useQuery";
 import { callable } from "../lib/api";
 import { money, todayKey } from "../lib/format";
 import { Button, Card, EmptyState, ErrorNote, Field, Input, NumberStepper, Segmented, Select, Sheet, Spinner, Toast } from "../components/ui";
+import { PrintArea, type ReceiptData } from "../components/Receipt";
 import type { CatalogItem, Category, Bill } from "../lib/types";
 import "./Billing.css";
 
@@ -31,6 +32,7 @@ export function CafeScreen() {
   const [search, setSearch] = useState("");
   const [billOpen, setBillOpen] = useState(false);
   const clientRef = useRef<string | null>(null);
+  const [toPrint, setToPrint] = useState<ReceiptData[]>([]);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [method, setMethod] = useState("Cash");
   const [discount, setDiscount] = useState("0");
@@ -93,7 +95,12 @@ export function CafeScreen() {
      so a chai that was billed once could be billed twice. The key is reset
      when the basket changes, which is what makes the next sale a new sale.
      Same reasoning as the food till; see Billing.tsx. */
-  async function settle() {
+  /* The cafe counter could take money but could not print. The food and bar
+     tills have had a receipt since day one; this screen's only button was
+     "Take ₹40", so a customer who wanted a slip could not be given one, and
+     the operator had to go and reprint it from bill history on another
+     machine — which the cafe_billing role cannot even open. */
+  async function settle(doPrint: boolean) {
     const out = await action.run(() =>
       callable<{ bill_no: string }>("billing", "createBill", {
         type: "CAFE",
@@ -105,6 +112,26 @@ export function CafeScreen() {
     );
     if (out) {
       clientRef.current = null; // banked; the next sale needs its own key
+      if (doPrint) {
+        /* Built from the lines still on screen, before they are cleared —
+           the slip has to say what was just sold, not what is left. */
+        setToPrint([
+          {
+            bill_no: out.bill_no,
+            created_at: new Date().toLocaleString("en-IN"),
+            type: "CAFE",
+            customer_name: "-",
+            customer_phone: "-",
+            payment_method: method,
+            items: lines.map((l) => ({ item_name: l.item_name, qty: l.qty, line_total: l.price * l.qty })),
+            subtotal,
+            tax: 0,
+            discount: discountNum,
+            grand_total: total,
+          },
+        ]);
+        requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+      }
       setToast(`Bill ${out.bill_no} — ${money(total)}`);
       setTimeout(() => setToast(null), 2600);
       setLines([]);
@@ -173,8 +200,14 @@ export function CafeScreen() {
         footer={
           <>
             <Button onClick={() => setBillOpen(false)}>Keep adding</Button>
-            <Button variant="primary" onClick={settle} disabled={action.busy || lines.length === 0}>
-              {action.busy ? "Settling…" : `Take ${money(total)}`}
+            {/* Save on its own for the many sales nobody wants paper for — a
+                ₹15 chai should not cost a slip of roll — and Save & print for
+                the ones that do. Same two-way choice as the food till. */}
+            <Button onClick={() => settle(false)} disabled={action.busy || lines.length === 0}>
+              {action.busy ? "Saving…" : "Save"}
+            </Button>
+            <Button variant="primary" onClick={() => settle(true)} disabled={action.busy || lines.length === 0}>
+              {action.busy ? "Settling…" : `Save & print ${money(total)}`}
             </Button>
           </>
         }
@@ -242,6 +275,7 @@ export function CafeScreen() {
       </Sheet>
 
       {toast && <Toast message={toast} />}
+      <PrintArea receipts={toPrint} gstin={import.meta.env.VITE_RESTAURANT_GSTIN} />
     </div>
   );
 }
