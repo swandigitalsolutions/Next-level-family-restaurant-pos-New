@@ -50,8 +50,8 @@ const ROLE_CARDS: Array<{ role: Role; title: string; can: string; cannot: string
   },
   {
     role: "cafe_billing",
-    title: "Cafe counter",
-    can: "The outside cafe till only.",
+    title: "Cafe billing",
+    can: "Cafe billing only.",
     cannot: "Cannot touch restaurant billing or the menu.",
   },
 ];
@@ -120,11 +120,13 @@ export function StaffScreen() {
         `Deactivate ${member.full_name || member.username}?\n\nThey will be signed out immediately, on their next tap. The account is kept, not deleted, because their past bills refer to it.`,
       );
       if (!ok) return;
-      await action.run(() => callable("staffAdmin", "deactivateStaff", { uid: member.id }));
-      flash(`${member.username} can no longer sign in`);
+      // Toast only on success — a failed deactivation must not tell the owner
+      // that someone who still has access "can no longer sign in".
+      const out = await action.run(() => callable("staffAdmin", "deactivateStaff", { uid: member.id }));
+      if (out) flash(`${member.username} can no longer sign in`);
     } else {
-      await action.run(() => callable("staffAdmin", "updateStaff", { uid: member.id, status: "active" }));
-      flash(`${member.username} can sign in again`);
+      const out = await action.run(() => callable("staffAdmin", "updateStaff", { uid: member.id, status: "active" }));
+      if (out) flash(`${member.username} can sign in again`);
     }
     reload();
   }

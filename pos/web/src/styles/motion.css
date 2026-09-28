@@ -31,13 +31,18 @@
   transform: none;
   transition: opacity var(--t-slow) var(--ease-out), transform var(--t-slow) var(--ease-out);
   transition-delay: var(--reveal-delay, 0ms);
+  /* Released once revealed: a lingering will-change: transform makes this
+     element the containing block for position:fixed descendants. */
+  will-change: auto;
 }
 
 /* Staggered children — a list that arrives one row at a time rather than as a
    single slab. Capped at 10 so a 200-row bill history does not take 4 seconds
    to finish arriving. */
+/* `backwards`, not `both` — see .m-route below: a filled transform would trap
+   any position:fixed child of a list row. */
 .stagger > * {
-  animation: m-rise var(--t-slow) var(--ease-out) both;
+  animation: m-rise var(--t-slow) var(--ease-out) backwards;
 }
 .stagger > *:nth-child(1) { animation-delay: 20ms; }
 .stagger > *:nth-child(2) { animation-delay: 45ms; }
@@ -140,9 +145,13 @@
   }
 }
 
-/* Route transition — the new screen arrives rather than blinking into place. */
+/* Route transition — the new screen arrives rather than blinking into place.
+   `backwards`, never `both`: a transform animation that stays filled keeps
+   making <main> the containing block for every position:fixed descendant, so
+   the Settle dialog, toasts and bottom bars were positioned against the whole
+   scrolled page and opened far below the viewport. */
 .m-route {
-  animation: m-rise 300ms var(--ease-out) both;
+  animation: m-rise 300ms var(--ease-out) backwards;
 }
 
 /* Momentum scrolling + no scroll chaining, so flicking a long menu list does

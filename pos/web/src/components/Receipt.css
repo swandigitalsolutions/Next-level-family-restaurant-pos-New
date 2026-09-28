@@ -9,8 +9,16 @@
  * bill sheet is a separate, themed thing.
  */
 
+/* Laid out but invisible on screen, not display:none — PrintArea measures each
+   receipt to size its printed page. Fixed and hidden, so it never adds scroll
+   or catches a tap. */
 .print-area {
-  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: -1;
 }
 
 .receipt {
@@ -60,6 +68,29 @@
 }
 .receipt-when {
   font-size: 10px;
+}
+
+.receipt-mark {
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+/* Solid black-bordered box: survives a faded roll and a quick glance. */
+.receipt-cancelled {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+  margin: 6px 0;
+  padding: 5px 4px;
+  border: 2px solid #000;
+  font-size: 10.5px;
+}
+.receipt-cancelled strong {
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .receipt-meta {
@@ -112,10 +143,9 @@
  * and all — which is what the React rewrite was doing before.
  */
 @media print {
-  @page {
-    size: 80mm auto;
-    margin: 3mm;
-  }
+  /* Page size is set per receipt by PrintArea (a named page exactly as long as
+     the bill). No global `size` here: this stylesheet is in the one bundle, and
+     the Tables screen's QR cards print on ordinary A4. */
 
   /* Hide the app without unmounting it: display:none on #root would tear down
      React state mid-print on some browsers.
@@ -130,6 +160,8 @@
   .print-area {
     display: block !important;
     position: static;
+    visibility: visible;
+    z-index: auto;
   }
 
   body {

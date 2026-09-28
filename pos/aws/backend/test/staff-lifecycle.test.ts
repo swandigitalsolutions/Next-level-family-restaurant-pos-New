@@ -243,6 +243,16 @@ test("an admin cannot deactivate themselves and lock the restaurant out", async 
   assert.equal((await loginAs("boss", "Boss#2026")).status, 200, "they can still get in");
 });
 
+test("an admin cannot deactivate themselves through updateStaff either", async () => {
+  const boss = await admin();
+  // With a second admin present the last-admin guard does not apply, so only
+  // the self-guard stands between this and the admin locking themselves out.
+  await call(boss.token, "createStaff", { username: "admin2", password: "Two#2026", full_name: "Admin2", role: "admin" });
+  const res = await raw(boss.token, "updateStaff", { uid: boss.uid, status: "inactive" });
+  assert.equal(res.status, 409);
+  assert.equal((await loginAs("boss", "Boss#2026")).status, 200, "they can still get in");
+});
+
 test("the last remaining admin cannot be deactivated", async () => {
   const boss = await admin();
   // A second admin, then remove the first via the second — leaving one.

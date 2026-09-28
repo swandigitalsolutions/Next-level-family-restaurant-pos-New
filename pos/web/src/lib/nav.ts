@@ -35,7 +35,7 @@ const ALL_NAV: NavItem[] = [
   { path: "/dashboard", label: "Dashboard", short: "Home", icon: "dashboard", roles: ["admin", "manager", "owner", "billing"] },
   { path: "/billing", label: "Food billing", short: "Food", icon: "food", roles: ALL_OPS },
   { path: "/alcohol", label: "Bar billing", short: "Bar", icon: "bar", roles: ALL_OPS },
-  { path: "/cafe", label: "Cafe till", short: "Cafe", icon: "cafe", roles: ["admin", "manager", "cafe_billing"] },
+  { path: "/cafe", label: "Cafe billing", short: "Cafe", icon: "cafe", roles: ["admin", "manager", "cafe_billing"] },
   { path: "/qr-orders", label: "QR orders", short: "QR", icon: "qr", roles: ALL_OPS },
   { path: "/website-orders", label: "Website orders", short: "Web", icon: "globe", roles: ALL_OPS },
   { path: "/kitchen", label: "Kitchen", short: "Kitchen", icon: "kitchen", roles: ["admin", "manager", "kitchen"] },

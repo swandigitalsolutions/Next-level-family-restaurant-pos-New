@@ -51,7 +51,10 @@ const toSessionLine = (i: any): SessionLine => ({
   bottleSize: i.bottleSize ?? i.bottle_size ?? "",
   price: Number(i.price) || 0,
   qty: Number(i.qty) || 0,
-  taxRate: Number(i.taxRate ?? i.tax_rate) || 0,
+  // Only alcohol is taxed (README rule 2). Enforced again here, at the moment
+  // money is taken, so a food line saved with a rate by an older build (or
+  // straight into the JSONB) still settles tax-free.
+  taxRate: i.kind === "alcohol" ? Number(i.taxRate ?? i.tax_rate) || 0 : 0,
   lineTotal: Number(i.lineTotal ?? i.line_total) || 0,
 });
 
@@ -66,7 +69,9 @@ export const handler = dispatch({
     const isAlc = type === "ALCOHOL";
     const computed = isAlc
       ? computeAlcoholBill(rawItems, body?.discount)
-      : computeFoodBill(rawItems, body?.discount, type === "CAFE" ? 0 : body?.tax_percent);
+      // Food and cafe are never taxed (README rule 2), so a client-sent
+      // tax_percent is ignored rather than trusted.
+      : computeFoodBill(rawItems, body?.discount, 0);
 
     const paymentMethod = String(body?.payment_method ?? "Cash") || "Cash";
     const customerName = String(body?.customer_name ?? "-").trim() || "-";

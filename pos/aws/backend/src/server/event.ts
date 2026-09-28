@@ -22,6 +22,7 @@ export interface CallerIdentity {
   username: string;
   /** Read fresh from Postgres per request — never from the token. */
   role: Role;
+  fullName?: string;
 }
 
 export interface BuildEventInput {

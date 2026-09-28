@@ -1,5 +1,15 @@
 # Running the POS on the Raspberry Pi 5
 
+> **Superseded for production by [`DEPLOYMENT_GUIDE.md`](../DEPLOYMENT_GUIDE.md).**
+> This page predates the pre-production audit. Parts of it are wrong for a live
+> install:
+> - it applies only migrations 001–002 (all four are required);
+> - its backup recipe writes empty files;
+> - its tunnel forwards the whole POS to the internet;
+> - it keeps mock payments in the production env file.
+>
+> Use the guide. This page is kept for the local-trial notes.
+
 The whole system is one Node process plus a PostgreSQL on the same box. No
 cloud account, and it keeps taking orders when the internet is down.
 

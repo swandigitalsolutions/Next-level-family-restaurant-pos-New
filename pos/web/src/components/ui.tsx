@@ -2,7 +2,8 @@
  * The shared primitives. Everything is at least 48px tall because staff use
  * these one-handed, at speed, sometimes with wet hands.
  */
-import { useEffect, type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes } from "react";
+import { useEffect, useRef, type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes } from "react";
+import { createPortal } from "react-dom";
 import { money } from "../lib/format";
 import "./ui.css";
 
@@ -55,17 +56,63 @@ export function Sheet({
   children: ReactNode;
   footer?: ReactNode;
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") return onClose();
+      /* aria-modal says the page behind is inert, so Tab has to stay in here;
+         without this a keyboard user tabbed straight out of an open Settle
+         sheet into the menu grid behind the backdrop. */
+      if (e.key !== "Tab" || !dialogRef.current) return;
+      const focusable = [...dialogRef.current.querySelectorAll<HTMLElement>(
+        'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])',
+      )].filter((el) => el.offsetParent !== null || el === document.activeElement);
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const inside = dialogRef.current.contains(document.activeElement);
+      if (e.shiftKey && (document.activeElement === first || !inside)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (document.activeElement === last || !inside)) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  /* Move focus into the dialog when it opens and give it back when it closes.
+     Keyed on `open` alone: onClose is a fresh function most renders, and
+     re-running this would yank focus out of a field mid-typing. */
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.activeElement as HTMLElement | null;
+    if (!dialogRef.current?.contains(document.activeElement)) dialogRef.current?.focus({ preventScroll: true });
+    return () => {
+      if (previous && document.contains(previous)) previous.focus({ preventScroll: true });
+    };
+  }, [open]);
+
   if (!open) return null;
-  return (
+  /* Portalled to <body>. Rendered in place, any ancestor with a transform,
+     filter or will-change (a route or list animation) becomes the containing
+     block for this position:fixed backdrop, and the dialog opens centred on
+     the whole scrolled page — far below the viewport. */
+  return createPortal(
     <div className="ui-backdrop" onClick={onClose} role="presentation">
-      <div className="ui-sheet" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={dialogRef}
+        className="ui-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+      >
         <header className="ui-sheet-head">
           <div>
             <h2>{title}</h2>
@@ -78,7 +125,8 @@ export function Sheet({
         <div className="ui-sheet-body">{children}</div>
         {footer && <footer className="ui-sheet-foot">{footer}</footer>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -191,10 +239,13 @@ export function ErrorNote({ message, onRetry }: { message: string; onRetry?: () 
 }
 
 export function Toast({ message, tone = "ok" }: { message: string; tone?: "ok" | "error" }) {
-  return (
+  /* Portalled for the same reason as Sheet: a toast is position:fixed and must
+     sit on the viewport, not on whatever animated container rendered it. */
+  return createPortal(
     <div className={`ui-toast ui-toast-${tone}`} role="status">
       {message}
-    </div>
+    </div>,
+    document.body,
   );
 }
 

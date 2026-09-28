@@ -47,17 +47,22 @@ interface Client {
   socket: WebSocket;
   uid: string;
   role: Role;
+  /** `iat` of the token the socket opened with, for the sign-out cutoff. */
+  iat: number;
   channels: Set<BroadcastChannel>;
   alive: boolean;
 }
+
+/** Is this socket still entitled to what it was given? See revalidate(). */
+export type SocketCheck = (uid: string, role: Role, iat: number) => Promise<boolean>;
 
 export class RealtimeHub {
   private clients = new Set<Client>();
   private heartbeat: NodeJS.Timeout | null = null;
 
   /** Register an authenticated socket. Returns an unsubscribe function. */
-  add(socket: WebSocket, uid: string, role: Role): () => void {
-    const client: Client = { socket, uid, role, channels: new Set(channelsForRole(role)), alive: true };
+  add(socket: WebSocket, uid: string, role: Role, iat = 0): () => void {
+    const client: Client = { socket, uid, role, iat, channels: new Set(channelsForRole(role)), alive: true };
     this.clients.add(client);
 
     socket.on("pong", () => {
@@ -127,6 +132,31 @@ export class RealtimeHub {
       }
     }, intervalMs);
     this.heartbeat.unref?.();
+  }
+
+  /**
+   * Close every socket whose owner has since been signed out, deactivated or
+   * moved to another role. HTTP re-checks this on every request; a socket is
+   * checked once at the handshake, so without a sweep a cashier who was
+   * signed out, or a till login demoted to kitchen, keeps hearing
+   * `live_orders` for as long as the tab stays open.
+   */
+  async revalidate(check: SocketCheck): Promise<void> {
+    for (const client of [...this.clients]) {
+      let ok = false;
+      try {
+        ok = await check(client.uid, client.role, client.iat);
+      } catch {
+        continue; // a database blip is not a reason to drop every terminal
+      }
+      if (ok) continue;
+      this.clients.delete(client);
+      try {
+        client.socket.close(4401, "session ended");
+      } catch {
+        /* already gone */
+      }
+    }
   }
 
   stopHeartbeat(): void {

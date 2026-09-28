@@ -70,7 +70,7 @@ export function LoginScreen() {
             runs is truer than a stock photo and tells a new server what they
             are signing in to. */}
         <ul className="login-brand-list">
-          <li>Restaurant, bar and cafe tills</li>
+          <li>Food, bar and cafe billing</li>
           <li>Table QR ordering</li>
           <li>Kitchen display</li>
         </ul>

@@ -70,6 +70,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     };
   }, [user]);
 
+  // The server refused the token mid-shift (see api.ts): end the session here
+  // too, so the router sends the user back to the login screen.
+  useEffect(() => {
+    const onLost = () => {
+      realtime.disconnect();
+      setUser(null);
+    };
+    window.addEventListener(api.AUTH_LOST_EVENT, onLost);
+    return () => window.removeEventListener(api.AUTH_LOST_EVENT, onLost);
+  }, []);
+
   const signIn = useCallback(async (username: string, password: string) => {
     const out = await api.login(username, password);
     setUser(out.user);

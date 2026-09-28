@@ -10,6 +10,7 @@
  * no dark mode, and a receipt rendered in dark-theme colours prints as a solid
  * black rectangle.
  */
+import { useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import "./Receipt.css";
 
@@ -31,6 +32,10 @@ export type ReceiptData = {
   tax: number;
   discount: number;
   grand_total: number;
+  /** Printed again from Bill history — marked so it cannot pass as a second sale. */
+  reprint?: boolean;
+  /** Cancelled after settling. A reprint of it must never look like a valid bill. */
+  cancelled?: { reason?: string | null } | null;
 };
 
 /* Guarded, unlike the callers suggest it needs to be: this runs at the moment
@@ -57,7 +62,15 @@ export function Receipt({ data, gstin }: { data: ReceiptData; gstin?: string }) 
         <span className="receipt-kind">{(data.type ?? "FOOD").toUpperCase()} BILL</span>
         <span className="receipt-no">{data.bill_no}</span>
         <span className="receipt-when">{data.created_at}</span>
+        {data.reprint && !data.cancelled && <span className="receipt-mark">DUPLICATE</span>}
       </header>
+
+      {data.cancelled && (
+        <div className="receipt-cancelled">
+          <strong>CANCELLED — NOT A VALID BILL</strong>
+          {data.cancelled.reason && <span>Reason: {data.cancelled.reason}</span>}
+        </div>
+      )}
 
       {(customer || phone || data.payment_method) && (
         <div className="receipt-meta">
@@ -118,13 +131,36 @@ export function Receipt({ data, gstin }: { data: ReceiptData; gstin?: string }) 
  * so this takes a list and prints them one per page.
  */
 export function PrintArea({ receipts, gstin }: { receipts: ReceiptData[]; gstin?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [pageCss, setPageCss] = useState("");
+
+  /* One page per receipt, exactly as long as that receipt.
+     `@page { size: 80mm auto }` is not valid CSS — `size` cannot mix a length
+     with `auto` — so Chrome dropped it and printed on the driver's default
+     paper: Letter in the PDF preview, and 80×297mm on most thermal drivers,
+     which feeds ~20cm of blank roll after every short bill. Measured here,
+     before the caller's window.print() (two frames later), and applied as a
+     named page per receipt. */
+  useLayoutEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    const pxPerMm = 96 / 25.4;
+    const rules = [...root.querySelectorAll<HTMLElement>(".receipt")].map((el, i) => {
+      const heightMm = Math.ceil(el.getBoundingClientRect().height / pxPerMm) + 2 * PAGE_MARGIN_MM + 2;
+      el.style.setProperty("page", `receipt-${i}`);
+      return `@page receipt-${i} { size: 80mm ${heightMm}mm; margin: ${PAGE_MARGIN_MM}mm; }`;
+    });
+    setPageCss(rules.join("\n"));
+  }, [receipts, gstin]);
+
   if (receipts.length === 0) return null;
 
   /* Portalled to <body> so the print stylesheet can hide every sibling with
      `body > *:not(.print-area)`. Left inside #root it would be hidden along
      with the app it is nested in. */
   return createPortal(
-    <div className="print-area">
+    <div className="print-area" ref={ref}>
+      <style>{`@media print {\n${pageCss}\n}`}</style>
       {receipts.map((r, i) => (
         <Receipt key={`${r.bill_no}-${i}`} data={r} gstin={gstin} />
       ))}
@@ -132,3 +168,6 @@ export function PrintArea({ receipts, gstin }: { receipts: ReceiptData[]; gstin?
     document.body,
   );
 }
+
+/** Matches the printer's own unprintable edge on an 80mm roll. */
+const PAGE_MARGIN_MM = 3;

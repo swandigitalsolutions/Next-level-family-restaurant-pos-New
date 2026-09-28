@@ -81,7 +81,7 @@ describe("the role picker", () => {
     renderScreen(<StaffScreen />);
     await userEvent.click(await screen.findByRole("button", { name: /add a staff member/i }));
 
-    for (const title of ["Admin", "Manager", "Owner", "Reception / billing", "Kitchen", "Cafe counter"]) {
+    for (const title of ["Admin", "Manager", "Owner", "Reception / billing", "Kitchen", "Cafe billing"]) {
       expect(screen.getAllByText(title).length).toBeGreaterThan(0);
     }
     expect(screen.getByText(/never sees prices, bills, or any money at all/i)).toBeInTheDocument();

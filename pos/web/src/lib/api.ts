@@ -14,6 +14,9 @@
 
 const TOKEN_KEY = "nlfr.session.token";
 
+/** Fired on `window` when the server refuses this device's session token. */
+export const AUTH_LOST_EVENT = "nlfr:auth-lost";
+
 export interface SessionUser {
   id: string;
   username: string;
@@ -77,6 +80,20 @@ async function request(path: string, init: RequestInit): Promise<any> {
   }
 
   const body = await parse(res);
+  /* A 401 on a signed-in call means this session is over — signed out on
+     another device, password changed, or the shift-long token expired. Drop
+     the token and tell the session, which sends the user to the login screen.
+     Without this the till stayed "signed in" with every tap failing on a
+     line of red text. (A failed sign-in is also a 401, but it carried no
+     token, so it is not a lost session.) */
+  if (res.status === 401 && new Headers(init.headers).has("authorization")) {
+    setToken(null);
+    try {
+      window.dispatchEvent(new Event(AUTH_LOST_EVENT));
+    } catch {
+      /* no window (tests) */
+    }
+  }
   if (!res.ok) {
     const code = body?.error?.code ?? "internal";
     const message = body?.error?.message ?? `Request failed (${res.status})`;

@@ -29,11 +29,24 @@ async function tableByToken(token: string) {
   return res.rows[0] || null;
 }
 
+/* The kitchen moves its TICKET (kitchen.setKitchenTicketStatus), which writes
+   qr_orders.kitchen_status and leaves qr_orders.status at ACCEPTED. The guest
+   watching their phone was therefore stuck on "Accepted" while the food was
+   cooked, plated and served. Show whichever of the two is further along. */
+const KITCHEN_TO_GUEST: Record<string, string> = { PREPARING: "PREPARING", READY: "READY", DONE: "SERVED" };
+export function guestStatus(status: string, kitchenStatus?: string | null): string {
+  if (status === "CANCELLED") return status;
+  const fromKitchen = KITCHEN_TO_GUEST[String(kitchenStatus ?? "")];
+  if (!fromKitchen) return status;
+  const order = QR_STATUSES as readonly string[];
+  return order.indexOf(fromKitchen) > order.indexOf(status) ? fromKitchen : status;
+}
+
 function qrOrderPayload(row: any) {
   return {
     id: row.public_ref, order_no: row.order_no, public_ref: row.public_ref,
     table_id: row.table_id ?? null, table_session_id: row.table_session_id ?? null,
-    customer_name: row.customer_name, note: row.note ?? null, status: row.status,
+    customer_name: row.customer_name, note: row.note ?? null, status: guestStatus(row.status, row.kitchen_status),
     subtotal: Number(row.subtotal), tax: Number(row.tax), grand_total: Number(row.grand_total),
     pushed_to_bill: row.pushed_to_bill ? 1 : 0,
     created_at: row.created_at ? new Date(row.created_at).toISOString() : null,
@@ -77,7 +90,13 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
 
     // POST /orders
     if (method === "POST" && parts[0] === "orders" && !parts[1]) {
-      const body = event.body ? JSON.parse(event.isBase64Encoded ? Buffer.from(event.body, "base64").toString("utf8") : event.body) : {};
+      let body: any;
+      try {
+        body = event.body ? JSON.parse(event.isBase64Encoded ? Buffer.from(event.body, "base64").toString("utf8") : event.body) : {};
+      } catch {
+        return err("That order could not be read. Please try again.");
+      }
+      if (!body || typeof body !== "object") return err("That order could not be read. Please try again.");
       const token = String(body.token || "").trim();
       const rawItems: any[] = Array.isArray(body.items) ? body.items : [];
       if (rawItems.length === 0) return err("Your cart is empty.");
@@ -90,7 +109,7 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
 
       const clean: any[] = []; let subtotal = 0; let taxTotal = 0;
       for (const raw of rawItems) {
-        const kind = raw.kind === "alcohol" ? "alcohol" : "food";
+        if (!raw || typeof raw !== "object") return err("That order contains an invalid item.");
         const itemId = String(raw.id || "");
         const qty = Number(raw.qty);
         // Integer, not merely finite: a qty of 2.5 priced a real line at half a
@@ -99,7 +118,13 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
         if (!itemId || !Number.isInteger(qty)) return err("That order contains an invalid item.");
         if (qty <= 0 || qty > MAX_QR_LINE_QTY) return err(`Quantity must be between 1 and ${MAX_QR_LINE_QTY}.`);
         const r = (await pool.query("SELECT * FROM catalog WHERE id=$1", [itemId])).rows[0];
-        if (!r || r.status !== "active") return err("One of the items is no longer available. Please refresh the menu.");
+        // The QR menu offers only restaurant food and bar items; a cafe-till
+        // product is not on it, so an id for one is not a real order.
+        if (!r || r.status !== "active" || r.kind === "cafe") return err("One of the items is no longer available. Please refresh the menu.");
+        // The catalog decides what a line is, never the browser. Trusting the
+        // client's `kind` let a guest send a beer as "food": no tax on it, and
+        // it settled onto the FOOD bill series (README rule 2).
+        const kind = r.kind === "alcohol" ? "alcohol" : "food";
         if (r.stock_qty !== null && r.stock_qty !== undefined && Number(r.stock_qty) <= 0) return err(`${r.name} just sold out. Please remove it and try again.`);
         const price = round2(Number(r.price));
         const taxRate = kind === "alcohol" ? Number(r.tax_rate) || 0 : 0;

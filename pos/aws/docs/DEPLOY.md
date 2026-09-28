@@ -1,5 +1,9 @@
 # Deploying the AWS build
 
+> **Not the production path.** The POS runs self-hosted on a Raspberry Pi. See
+> [`DEPLOYMENT_GUIDE.md`](../../../DEPLOYMENT_GUIDE.md). This AWS/CDK track is
+> unused, and `cdk deploy` would create billable AWS resources.
+
 Firebase (`firebase/`) is the live system and stays untouched throughout.
 This deploys a **separate, independent** AWS stack. Nothing here is
 reversible-free — read this whole file before running anything, and do it

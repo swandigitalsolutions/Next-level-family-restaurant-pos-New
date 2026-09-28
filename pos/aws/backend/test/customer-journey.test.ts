@@ -432,7 +432,9 @@ test("ACT 3 — a settled bill cannot be altered by anyone, including the databa
   // There is no endpoint to try. Nothing in the API can edit or delete a bill.
   const modules = ["billing", "queries", "websiteOrdersAdmin", "catalogAdmin", "staffAdmin"];
   for (const m of modules) {
-    for (const a of ["updateBill", "editBill", "deleteBill", "voidBill", "removeBill"]) {
+    /* billing.voidBill exists (004_bill_voids.sql) but writes a reversal to
+       bill_voids — it never touches the bill row; asserted below. */
+    for (const a of ["updateBill", "editBill", "deleteBill", "removeBill"]) {
       const res = await fetch(`${base}/api/callable/${m}/${a}`, {
         method: "POST",
         headers: { "content-type": "application/json", authorization: `Bearer ${admin.token}` },
@@ -442,9 +444,16 @@ test("ACT 3 — a settled bill cannot be altered by anyone, including the databa
     }
   }
 
+  const voided = await fetch(`${base}/api/callable/billing/voidBill`, {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${admin.token}` },
+    body: JSON.stringify({ bill_id: bill.id, reason: "rung up on the wrong table" }),
+  });
+  assert.equal(voided.status, 200, "an admin can cancel a bill");
+
   const pool = await getPool();
   const row = (await pool.query("SELECT grand_total FROM bills WHERE id=$1", [bill.id])).rows[0];
-  assert.equal(Number(row.grand_total), 260, "still exactly what was charged");
+  assert.equal(Number(row.grand_total), 260, "still exactly what was charged, even after cancelling");
 });
 
 /* ═══════════════════════════════════════════════════════════════════════════
