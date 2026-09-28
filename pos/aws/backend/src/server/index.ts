@@ -202,7 +202,12 @@ export function buildServer(opts: ServerOptions = {}): { app: FastifyInstance; h
   app.get("/api/auth/me", async (req, reply) => {
     const auth = await authenticate(req.headers.authorization);
     if (!auth.ok) return reply.code(auth.status).send({ error: { code: auth.code, message: auth.message } });
-    return reply.send({ user: auth.caller });
+    /* The same shape login returns. This used to send the internal caller
+       ({uid,...}) so after any page reload the web app had no user.id: the
+       Staff screen lost its "You" mark and enabled Deactivate on the admin's
+       own account. `uid` is kept for anything already reading it. */
+    const c = auth.caller as CallerIdentity;
+    return reply.send({ user: { id: c.uid, uid: c.uid, username: c.username, full_name: c.fullName ?? c.username, role: c.role } });
   });
 
   /* Sign out, server-side — the Flask `POST /api/logout` (session.clear()).
@@ -440,6 +445,26 @@ if (require.main === module) {
   };
   process.on("SIGTERM", () => void shutdown("SIGTERM"));
   process.on("SIGINT", () => void shutdown("SIGINT"));
+
+  /* Bills are immutable because 002_privileges.sql REVOKEs UPDATE/DELETE
+     from pos_app — and a superuser ignores every REVOKE. Running the Pi as
+     `postgres` would silently throw that guarantee away, so refuse. If the
+     database is not up yet, start anyway (health reports it) and check once
+     it answers; the process exits as soon as the answer is "superuser". */
+  const refuseSuperuser = async (): Promise<void> => {
+    if (process.env.ALLOW_DB_SUPERUSER === "true") return;
+    try {
+      const pool = await getPool();
+      const r = await pool.query("SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user");
+      if (r.rows[0]?.rolsuper || r.rows[0]?.rolbypassrls) {
+        console.error("config: DATABASE_URL connects as a superuser. Connect as pos_app, or bills stop being immutable.");
+        process.exit(1);
+      }
+    } catch {
+      setTimeout(() => void refuseSuperuser(), 10_000).unref();
+    }
+  };
+  void refuseSuperuser();
 
   app.listen({ port, host }).catch((e) => {
     app.log.error(e);

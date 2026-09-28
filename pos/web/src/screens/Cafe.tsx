@@ -73,8 +73,13 @@ export function CafeScreen() {
 
   // Today's takings at this counter — the operator's only view of their day.
   const today = todayKey();
-  const todaysBills = (bills.data ?? []).filter((b) => (b.created_at ?? "").slice(0, 10) === today);
-  const todaysTotal = todaysBills.reduce((a, b) => a + b.grand_total, 0);
+  /* The restaurant's day, not UTC's: slicing the ISO string put every sale
+     between midnight and 05:30 IST on the previous day. And a cancelled bill
+     is listed (so the gap in numbers is explained) but is not money taken —
+     counting it overstated the drawer by exactly the cancelled amount. */
+  const todaysBills = (bills.data ?? []).filter((b) => !!b.created_at && todayKey(new Date(b.created_at)) === today);
+  const takenBills = todaysBills.filter((b) => !b.voided);
+  const todaysTotal = takenBills.reduce((a, b) => a + b.grand_total, 0);
 
   function add(item: CatalogItem) {
     setLines((prev) => {
@@ -231,7 +236,7 @@ export function CafeScreen() {
             <span>Today at this counter</span>
             <strong className="num">{money(todaysTotal)}</strong>
           </div>
-          <Button onClick={() => setSummaryOpen(true)}>{todaysBills.length} bills</Button>
+          <Button onClick={() => setSummaryOpen(true)}>{takenBills.length} bills</Button>
         </Card>
 
         <div className="till-search">
@@ -310,8 +315,8 @@ export function CafeScreen() {
             {todaysBills.map((b) => (
               <li key={b.id}>
                 <span className="num">{b.bill_no}</span>
-                <span>{b.payment_method}</span>
-                <strong className="num">{money(b.grand_total)}</strong>
+                <span>{b.voided ? "Cancelled" : b.payment_method}</span>
+                <strong className="num">{b.voided ? <s>{money(b.grand_total)}</s> : money(b.grand_total)}</strong>
               </li>
             ))}
           </ul>

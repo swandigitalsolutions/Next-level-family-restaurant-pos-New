@@ -59,7 +59,8 @@ export function CatalogScreen() {
   const action = useAction();
 
   const categories = useQuery<Category[]>("queries", "listCategories", { kind });
-  const items = useQuery<CatalogItem[]>("queries", "listCatalogItems", { kind });
+  // include_inactive: dishes switched off stay here so they can be put back on.
+  const items = useQuery<CatalogItem[]>("queries", "listCatalogItems", { kind, include_inactive: true });
 
   const visible = useMemo(() => {
     const all = items.data ?? [];

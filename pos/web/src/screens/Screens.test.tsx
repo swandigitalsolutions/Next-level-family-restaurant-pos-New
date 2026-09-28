@@ -49,6 +49,7 @@ import { CatalogScreen } from "./Catalog";
 import { OrdersScreen } from "./Orders";
 import { AuditScreen } from "./Audit";
 import { CafeScreen } from "./Cafe";
+import { money } from "../lib/format";
 import { TablesScreen } from "./Tables";
 import { DashboardScreen } from "./Dashboard";
 import { ApiError } from "../lib/api";
@@ -356,6 +357,26 @@ describe("cafe till", () => {
     });
     renderScreen(<CafeScreen />);
     expect(await screen.findByText(/today at this counter/i)).toBeInTheDocument();
+  });
+
+  test("today's takings leave out a cancelled bill and yesterday's sales", async () => {
+    const now = new Date();
+    const bill = (id: string, grand_total: number, created_at: string, voided = false) => ({
+      id, bill_no: id, type: "CAFE", customer_name: "-", created_at, grand_total, payment_method: "Cash", status: "paid", voided,
+    });
+    callable.fn = makeCallable({
+      "queries.listCategories": [cat],
+      "queries.listCatalogItems": [chai],
+      "queries.listBills": [
+        bill("CAFE-000003", 40, now.toISOString()),
+        bill("CAFE-000002", 100, now.toISOString(), true),
+        bill("CAFE-000001", 500, new Date(now.getTime() - 36 * 3600_000).toISOString()),
+      ],
+    });
+    renderScreen(<CafeScreen />);
+    expect(await screen.findByRole("button", { name: "1 bills" })).toBeInTheDocument();
+    expect(screen.getByText(money(40))).toBeInTheDocument();
+    expect(screen.queryByText(money(140))).not.toBeInTheDocument();
   });
 });
 

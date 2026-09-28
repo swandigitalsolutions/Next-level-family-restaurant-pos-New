@@ -29,11 +29,24 @@ async function tableByToken(token: string) {
   return res.rows[0] || null;
 }
 
+/* The kitchen moves its TICKET (kitchen.setKitchenTicketStatus), which writes
+   qr_orders.kitchen_status and leaves qr_orders.status at ACCEPTED. The guest
+   watching their phone was therefore stuck on "Accepted" while the food was
+   cooked, plated and served. Show whichever of the two is further along. */
+const KITCHEN_TO_GUEST: Record<string, string> = { PREPARING: "PREPARING", READY: "READY", DONE: "SERVED" };
+export function guestStatus(status: string, kitchenStatus?: string | null): string {
+  if (status === "CANCELLED") return status;
+  const fromKitchen = KITCHEN_TO_GUEST[String(kitchenStatus ?? "")];
+  if (!fromKitchen) return status;
+  const order = QR_STATUSES as readonly string[];
+  return order.indexOf(fromKitchen) > order.indexOf(status) ? fromKitchen : status;
+}
+
 function qrOrderPayload(row: any) {
   return {
     id: row.public_ref, order_no: row.order_no, public_ref: row.public_ref,
     table_id: row.table_id ?? null, table_session_id: row.table_session_id ?? null,
-    customer_name: row.customer_name, note: row.note ?? null, status: row.status,
+    customer_name: row.customer_name, note: row.note ?? null, status: guestStatus(row.status, row.kitchen_status),
     subtotal: Number(row.subtotal), tax: Number(row.tax), grand_total: Number(row.grand_total),
     pushed_to_bill: row.pushed_to_bill ? 1 : 0,
     created_at: row.created_at ? new Date(row.created_at).toISOString() : null,

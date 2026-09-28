@@ -175,5 +175,5 @@ export async function authenticateClaims(claims: { uid: string; iat?: number }):
     return { ok: false, status: 403, code: "permission-denied", message: "Your account has no role assigned." };
   }
 
-  return { ok: true, caller: { uid: profile.uid, username: profile.username, role } };
+  return { ok: true, caller: { uid: profile.uid, username: profile.username, role, fullName: profile.fullName } };
 }

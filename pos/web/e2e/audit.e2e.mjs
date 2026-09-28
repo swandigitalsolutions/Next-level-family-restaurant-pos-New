@@ -513,7 +513,9 @@ spec("staff: create, edit role, reset password, deactivate, reactivate", async (
   await dlg.getByLabel("Full name").fill("E2E Person");
   await dlg.getByLabel("Username").fill(uname);
   await dlg.getByLabel(/^Password/).fill("start12345");
-  await dlg.getByRole("radio", { name: /Kitchen/ }).check();
+  // The radio itself is invisible and ignores the pointer; staff tap the card.
+  await dlg.locator(".stf-role", { hasText: /^Kitchen/ }).click();
+  check(await dlg.getByRole("radio", { name: /Kitchen/ }).isChecked(), "tapping the Kitchen card selects it");
   await dlg.getByRole("button", { name: "Save" }).click();
   await toastText(p);
   let r = await fetch(`${BASE}/api/auth/login`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ username: uname, password: "start12345" }) });
@@ -522,15 +524,19 @@ spec("staff: create, edit role, reset password, deactivate, reactivate", async (
   const card = p.locator(".stf-card", { hasText: `@${uname}` });
   await card.getByRole("button", { name: "Edit" }).click();
   const ed = p.getByRole("dialog", { name: "Edit staff member" });
-  await ed.getByRole("radio", { name: /Cafe billing/ }).check();
+  await ed.locator(".stf-role", { hasText: /^Cafe billing/ }).click();
+  check(await ed.getByRole("radio", { name: /Cafe billing/ }).isChecked(), "tapping the Cafe billing card selects it");
   await ed.getByRole("button", { name: "Save" }).click();
   await toastText(p);
 
   await card.getByRole("button", { name: "Password" }).click();
   const pw = p.getByRole("dialog", { name: /New password for/ });
   await pw.getByLabel("New password").fill("second12345");
-  await pw.getByRole("button", { name: "Set password" }).click();
-  await toastText(p);
+  // Wait for the server, not for a toast: the Edit toast is still on screen.
+  await Promise.all([
+    p.waitForResponse((res) => /\/api\/callable\/staffAdmin\//.test(res.url()) && res.request().method() === "POST"),
+    pw.getByRole("button", { name: "Set password" }).click(),
+  ]);
   r = await fetch(`${BASE}/api/auth/login`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ username: uname, password: "second12345" }) });
   check(r.ok && (await r.json()).user.role === "cafe_billing", "new password works, role now cafe_billing");
 

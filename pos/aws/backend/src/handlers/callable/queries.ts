@@ -12,7 +12,7 @@
  */
 import { dispatch } from "../../lib/callable";
 import { assertRole, HttpError } from "../../lib/authz";
-import { OPS_ROLES, DASHBOARD_ROLES, BILLING_ROLES, CAFE_ROLES, KITCHEN_ROLES, AUDIT_ROLES, RESTAURANT_TZ, MAX_BILL_LINES, MAX_BILL_LINE_QTY } from "../../lib/config";
+import { OPS_ROLES, MANAGE_ROLES, DASHBOARD_ROLES, BILLING_ROLES, CAFE_ROLES, KITCHEN_ROLES, AUDIT_ROLES, RESTAURANT_TZ, MAX_BILL_LINES, MAX_BILL_LINE_QTY } from "../../lib/config";
 import { dateKey, round2, toFloat, toPositiveInt, ValidationError, MAX_BILL_AMOUNT } from "../../lib/money";
 import { getPool, withTransaction } from "../../lib/db";
 import { computeRolling } from "../../lib/statsService";
@@ -92,12 +92,19 @@ export const handler = dispatch({
   },
 
   async listCatalogItems(body, event) {
-    assertRole(event as any, OPS_ROLES as any);
+    const caller = assertRole(event as any, OPS_ROLES as any);
     const pool = await getPool();
     const kind = body?.kind === "alcohol" ? "alcohol" : body?.kind === "cafe" ? "cafe" : "food";
+    /* The menu editor needs the dishes that are switched OFF too — it has an
+       "Off / Put back on" toggle for exactly them. Returning active rows only
+       meant a dish marked unavailable vanished from the editor and could not
+       be put back without SQL. Tills never ask, so they still see only what
+       can be sold; only the roles that can edit the menu may ask. */
+    const withInactive = body?.include_inactive === true && (MANAGE_ROLES as string[]).includes(caller.role);
+    const statusSql = withInactive ? "status IN ('active','inactive')" : "status='active'";
     const res = body?.category_id
-      ? await pool.query("SELECT * FROM catalog WHERE status='active' AND category_id=$1 ORDER BY name_lower LIMIT 3000", [body.category_id])
-      : await pool.query("SELECT * FROM catalog WHERE kind=$1 AND status='active' ORDER BY category_sort, name_lower LIMIT 3000", [kind]);
+      ? await pool.query(`SELECT * FROM catalog WHERE ${statusSql} AND category_id=$1 ORDER BY name_lower LIMIT 3000`, [body.category_id])
+      : await pool.query(`SELECT * FROM catalog WHERE kind=$1 AND ${statusSql} ORDER BY category_sort, name_lower LIMIT 3000`, [kind]);
     return res.rows.map(itemRow).filter((r) => !body?.category_id || r.kind === kind);
   },
 
@@ -209,7 +216,21 @@ export const handler = dispatch({
     const lim = intArg(body?.limit, 25, 1, 200);
     const offset = intArg(body?.offset, 0, 0, MAX_OFFSET);
     const where: string[] = []; const params: any[] = [];
-    if (search) { params.push(search); where.push(`$${params.length} = ANY(search_tokens)`); }
+    if (search) {
+      /* Every word typed must match. The whole box used to be compared as ONE
+         token, so "Ravi Kumar" or "asha k" found nothing, and phone numbers —
+         which the search box promises — were never indexed at all. Tokens are
+         word prefixes up to 24 chars (lib/normalize.ts searchTokens). */
+      const words = search.split(/[\s,]+/).filter(Boolean).slice(0, 8).map((w) => w.slice(0, 24));
+      params.push(words);
+      let cond = `search_tokens @> $${params.length}::text[]`;
+      const digits = search.replace(/\D/g, "");
+      if (/^[+\d\s-]+$/.test(search) && digits.length >= 4) {
+        params.push(`%${digits}%`);
+        cond = `(${cond} OR regexp_replace(coalesce(customer_phone, ''), '\\D', '', 'g') LIKE $${params.length})`;
+      }
+      where.push(cond);
+    }
     if (type === "FOOD" || type === "ALCOHOL" || type === "CAFE") { params.push(type); where.push(`type = $${params.length}`); }
     if (date) { params.push(date); where.push(`date_key = $${params.length}`); }
     const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";

@@ -132,6 +132,12 @@ test("a role change takes effect on the next request without re-logging-in", asy
   };
 
   assert.equal((await me()).user.role, "billing");
+  // /me must describe the user the way login did — the web app keeps whichever
+  // it got last, and a page reload used to leave it with no user.id.
+  const fromMe = (await me()).user;
+  assert.equal(fromMe.id, body.user.id);
+  assert.equal(fromMe.id, uid);
+  assert.equal(fromMe.full_name, body.user.full_name);
 
   const pool = await getPool();
   await pool.query("UPDATE users SET role='manager' WHERE uid=$1", [uid]);
