@@ -18,8 +18,16 @@ import { buildBillRow, insertBill } from "../../lib/billDoc";
 import { auditInTx } from "../../lib/audit";
 import { getPool, withTransaction } from "../../lib/db";
 import { computeRolling } from "../../lib/statsService";
+import { sendThankYou, normalizeMobile } from "../../lib/thankYou";
 
 const OPERATIONAL = ["billing", "manager", "admin"] as const;
+
+/** The till asks for the thank-you seconds after printing. Anything older is
+ * a replay from bill history or a stale tab, and must not message a customer
+ * who left hours ago. */
+const THANK_YOU_MAX_AGE_MS = 30 * 60 * 1000;
+/** A table settle yields at most a food and an alcohol bill. */
+const THANK_YOU_MAX_BILLS = 2;
 
 /** Shape of a caller-supplied retry key. Deliberately the same alphabet and
  * length window as the website channel's Idempotency-Key, so there is one rule
@@ -316,6 +324,45 @@ export const handler = dispatch({
     // The day's takings just changed, so the dashboard has to be rebuilt.
     computeRolling().catch((e) => console.error("stats refresh failed (non-fatal)", e));
     return result;
+  },
+
+  /**
+   * Thank the customer on WhatsApp + SMS for a bill that has just been
+   * printed. The till fires this after Save & print and does not wait on it;
+   * see lib/thankYou.ts for the duplicate guard and delivery recording.
+   *
+   * Takes bill ids only. The number messaged is the one stored on the bill,
+   * so this cannot be used to text an arbitrary phone.
+   */
+  async sendThankYou(body, event) {
+    const caller = assertRole(event as any, ["cafe_billing", "billing", "manager", "admin"] as any);
+    const raw: unknown[] = Array.isArray(body?.bill_ids) ? body.bill_ids : body?.bill_id ? [body.bill_id] : [];
+    const ids = [...new Set(raw.map((v) => String(v ?? "").trim()).filter(Boolean))];
+    if (ids.length === 0) throw new HttpError(422, "invalid-argument", "Which bill? Pass bill_ids.");
+    if (ids.length > THANK_YOU_MAX_BILLS) throw new HttpError(422, "invalid-argument", `At most ${THANK_YOU_MAX_BILLS} bills per message.`);
+
+    const pool = await getPool();
+    const res = await pool.query(
+      `SELECT b.id, b.bill_no, b.type, b.customer_phone, b.created_at, (v.bill_id IS NOT NULL) AS voided
+       FROM bills b LEFT JOIN bill_voids v ON v.bill_id = b.id WHERE b.id = ANY($1)`,
+      [ids],
+    );
+    // The cafe till only ever sees CAFE bills; anything else is "not found"
+    // to it, exactly as in queries.getBill.
+    const rows = res.rows.filter((r) => caller.role !== "cafe_billing" || r.type === "CAFE");
+    if (rows.length !== ids.length) throw new HttpError(404, "not-found", "Bill not found");
+
+    const now = Date.now();
+    if (rows.some((r) => now - new Date(r.created_at).getTime() > THANK_YOU_MAX_AGE_MS)) {
+      return { status: "skipped", reason: "stale" };
+    }
+    const phones = new Set(rows.map((r) => normalizeMobile(r.customer_phone)).filter(Boolean));
+    if (phones.size > 1) throw new HttpError(422, "invalid-argument", "Those bills belong to different customers.");
+
+    return sendThankYou(
+      rows.map((r) => ({ id: r.id, bill_no: r.bill_no, customer_phone: r.customer_phone, voided: Boolean(r.voided) })),
+      caller,
+    );
   },
 });
 

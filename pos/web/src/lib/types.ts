@@ -105,6 +105,20 @@ export interface Bill {
   void_reason?: string | null;
   voided_by?: string | null;
   voided_at?: string | null;
+  /** The WhatsApp/SMS thank-you sent after the bill was printed; null when
+      none was attempted (no phone, not printed, messaging off). Only
+      queries.getBill carries it. See aws/backend/src/lib/thankYou.ts. */
+  thank_you?: ThankYouStatus | null;
+}
+
+export type DeliveryStatus = "PENDING" | "SENT" | "FAILED" | "SKIPPED";
+
+export interface ThankYouStatus {
+  whatsapp: DeliveryStatus;
+  whatsapp_error: string | null;
+  sms: DeliveryStatus;
+  sms_error: string | null;
+  updated_at: string;
 }
 
 export interface OrderSummary {

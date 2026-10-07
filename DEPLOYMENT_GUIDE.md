@@ -106,25 +106,28 @@ into `DATABASE_URL` in §4.
 
 ```bash
 cd /opt/nlpos/pos/aws/db/migrations
-for f in 001_init 002_privileges 003_signout 004_bill_voids; do
+for f in 001_init 002_privileges 003_signout 004_bill_voids 005_bill_notifications; do
   sudo -u postgres psql -d posdb -v ON_ERROR_STOP=1 -f $f.sql || break
 done
 ```
 
-- **All four are required.** Without 003, sign-out and session revocation
-  break; without 004, bill history and the dashboard break.
-- Several older documents list only 001–002 or 001–003. **This guide is the
-  current list.**
+- **All five are required.** Without 003, sign-out and session revocation
+  break; without 004, bill history and the dashboard break; without 005,
+  opening a bill in Bill history fails and customer thank-you messages
+  cannot be sent.
+- Several older documents list only 001–002, 001–003 or 001–004. **This guide
+  is the current list.**
 - 001 cannot be re-run (it stops with "relation users already exists" and
-  changes nothing). 002, 003 and 004 are safe to re-run; 002 re-asserts that
-  cancelled-bill records stay unchangeable.
+  changes nothing). 002–005 are safe to re-run; 002 re-asserts that
+  cancelled-bill records stay unchangeable and that thank-you delivery
+  records cannot be deleted.
 
 **Record what you applied.** Nothing tracks this automatically, so keep a
 table of your own:
 
 ```bash
 sudo -u postgres psql -d posdb -c "CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, applied_at timestamptz DEFAULT now());
-  INSERT INTO schema_migrations(name) VALUES ('001_init'),('002_privileges'),('003_signout'),('004_bill_voids') ON CONFLICT DO NOTHING;"
+  INSERT INTO schema_migrations(name) VALUES ('001_init'),('002_privileges'),('003_signout'),('004_bill_voids'),('005_bill_notifications') ON CONFLICT DO NOTHING;"
 ```
 
 ### 3.3 Load the menu  [verified]
@@ -189,7 +192,7 @@ sudo chown -R pos: /var/lib/pos/assets
 | `ASSETS_DIR` | recommended | `pos/aws/hosting/assets` in the checkout | Dish photos. Served at `/assets/*`; uploads go into `ASSETS_DIR/menu`, and thumbnails are made on first request into `ASSETS_DIR/menu/thumb`. Must be writable by `pos`. |
 | `PORT` / `HOST` | no | `8080` / `0.0.0.0` | Listen address. `0.0.0.0` so the tills can reach it; firewall it (§6). |
 | `RESTAURANT_TZ` | no | `Asia/Kolkata` | The business day, dashboard hours and CSV timestamps. |
-| `RESTAURANT_NAME` | no | Next Level Family Restaurant | Shown on the guest QR menu. |
+| `RESTAURANT_NAME` | no | Next Level Family Restaurant | Shown on the guest QR menu and in the customer thank-you message. |
 | `DB_POOL_MAX` | recommended | `5` | Set to `20`: one process serves the whole floor. |
 | `NODE_ENV` | recommended | — | `production` turns on the stricter startup checks. |
 
@@ -210,6 +213,37 @@ sudo chown -R pos: /var/lib/pos/assets
 | `DB_QUERY_TIMEOUT_MS` | no | `20000` | Client-side limit on one query. |
 | `EXPORT_MAX_ROWS` | no | `20000` | Largest CSV export. |
 | `PASSWORD_HASH_METHOD` | no | `scrypt` | Hash used for new passwords. |
+
+**Customer thank-you messages (WhatsApp + SMS):**
+
+After **Save & print** on the food or bar till, a customer whose bill carries
+a valid Indian mobile number gets one thank-you on WhatsApp and one by SMS.
+Printing never waits on this, and a failed message never affects the bill.
+Each bill is messaged at most once, even if it is printed again. The
+outcome is saved per bill and shown in Bill history as *WhatsApp Sent / Failed*
+and *SMS Sent / Failed* (hover over *Failed* to see the provider's reason). A
+channel with no credentials shows *Off* and is skipped. With neither channel
+configured, nothing is sent and nothing is recorded. The cafe till takes no
+phone number, so it sends nothing. Credentials are read only by the server and
+are never sent to a browser.
+
+| Variable | Required | Default | What it does / what happens if it is wrong |
+|---|---|---|---|
+| `THANK_YOU_FEEDBACK_URL` | recommended | — | The "Please share your valuable feedback" link. Left unset, that line is dropped from the message. |
+| `THANK_YOU_REVIEW_URL` | recommended | — | The "Visit us again" link: your Google Maps or Google review page. Left unset, that line is dropped. |
+| `THANK_YOU_MESSAGES` | no | `on` | `off` stops all thank-you messages without removing the credentials. |
+| `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN` | for WhatsApp | — | Meta WhatsApp Cloud API. Use a permanent System User token, not the 24-hour test token. |
+| `WHATSAPP_TEMPLATE_NAME` | **for real customers** | — | An **approved** template. WhatsApp refuses free-form text to anyone who has not messaged you in the last 24 hours, so without a template every customer's message fails. The template needs three body variables, in this order: `{{1}}` restaurant name, `{{2}}` feedback link, `{{3}}` review link. Suggested body: *🙏 Thank you for visiting {{1}}! We hope you enjoyed your experience with us. ⭐ Please share your valuable feedback: {{2}} 📍 Visit us again: {{3}} Thank you for choosing us! ❤️* |
+| `WHATSAPP_TEMPLATE_LANG` | no | `en` | The template's language code as approved (e.g. `en`, `en_US`). |
+| `WHATSAPP_API_VERSION` | no | `v21.0` | Graph API version. |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | for SMS | — | Twilio credentials. |
+| `TWILIO_FROM` | for SMS | — | Sender: a Twilio number (`+1…`) or a Messaging Service SID (`MG…`). **India:** SMS to Indian numbers needs DLT registration of the sender ID and the exact message text. Unregistered messages fail and show as *SMS Failed*. |
+| `MESSAGING_TIMEOUT_MS` | no | `10000` | Longest the server waits for either provider before recording *Failed*. |
+
+A bill stuck at *Sending* means the server stopped part-way through sending.
+It is deliberately not retried, because a customer receiving the message
+twice is worse than not receiving it. The server log has one line per bill:
+`thank-you FOOD-000123 to ••••3210: whatsapp=SENT sms=FAILED (reason)`.
 
 **Website ordering (§5):**
 

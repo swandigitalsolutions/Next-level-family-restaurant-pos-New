@@ -215,6 +215,73 @@ describe("food till", () => {
   });
 });
 
+describe("customer thank-you message", () => {
+  const billed = { id: "b1", bill_no: "FOOD-000042", type: "FOOD" };
+
+  async function sellTo(phone: string, button: RegExp) {
+    renderScreen(<BillingScreen kind="food" />);
+    await userEvent.click(screen.getByRole("tab", { name: /direct sale/i }));
+    await userEvent.click(await screen.findByText("Masala Dosa"));
+    await userEvent.click(await screen.findByRole("button", { name: /view bill/i }));
+    if (phone) await userEvent.type(screen.getByLabelText(/phone/i), phone);
+    await userEvent.click(await screen.findByRole("button", { name: /^settle/i }));
+    await userEvent.click(await screen.findByRole("button", { name: button }));
+  }
+  const thanks = (spy: any) => spy.mock.calls.filter((c: any[]) => c[1] === "sendThankYou");
+
+  test("Save & print asks the server to thank the customer for that bill — after printing", async () => {
+    const order: string[] = [];
+    const spy = makeCallable({
+      ...baseMap,
+      "billing.createBill": billed,
+      "billing.sendThankYou": () => { order.push("thanks"); return { status: "processed" }; },
+    });
+    callable.fn = spy;
+    const print = vi.spyOn(window, "print").mockImplementation(() => { order.push("print"); });
+
+    await sellTo("98765 43210", /save & print/i);
+
+    await waitFor(() => expect(thanks(spy)).toHaveLength(1));
+    // Only the bill id goes up; the server reads the number from the bill.
+    expect(thanks(spy)[0][2]).toEqual({ bill_ids: ["b1"] });
+    expect(order).toEqual(["print", "thanks"]);
+    print.mockRestore();
+  });
+
+  test("plain Save does not send a message", async () => {
+    const spy = makeCallable({ ...baseMap, "billing.createBill": billed, "billing.sendThankYou": {} });
+    callable.fn = spy;
+    await sellTo("9876543210", /^save$/i);
+    await screen.findByText(/Bill FOOD-000042 created/);
+    expect(thanks(spy)).toHaveLength(0);
+  });
+
+  test("no phone number, no request", async () => {
+    const spy = makeCallable({ ...baseMap, "billing.createBill": billed, "billing.sendThankYou": {} });
+    callable.fn = spy;
+    const print = vi.spyOn(window, "print").mockImplementation(() => {});
+    await sellTo("", /save & print/i);
+    await waitFor(() => expect(print).toHaveBeenCalled());
+    expect(thanks(spy)).toHaveLength(0);
+    print.mockRestore();
+  });
+
+  test("a failed message is invisible to the cashier: the sale completes as normal", async () => {
+    const spy = makeCallable({
+      ...baseMap,
+      "billing.createBill": billed,
+      "billing.sendThankYou": () => { throw new Error("Cannot reach the POS server."); },
+    });
+    callable.fn = spy;
+    const print = vi.spyOn(window, "print").mockImplementation(() => {});
+    await sellTo("9876543210", /save & print/i);
+    await waitFor(() => expect(thanks(spy)).toHaveLength(1));
+    expect(await screen.findByText(/Bill FOOD-000042 created/)).toBeInTheDocument();
+    expect(screen.queryByText(/Cannot reach the POS server/)).not.toBeInTheDocument();
+    print.mockRestore();
+  });
+});
+
 describe("the food + alcohol split", () => {
   const mixed = {
     ...baseMap,

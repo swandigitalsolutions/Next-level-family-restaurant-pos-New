@@ -199,12 +199,23 @@ export const handler = dispatch({
     const caller = assertRole(event as any, [...BILLING_ROLES, ...CAFE_ROLES, "owner"] as any);
     const pool = await getPool();
     const res = await pool.query(
-      `SELECT b.*, v.reason AS void_reason, v.voided_at, v.voided_by_username
-       FROM bills b LEFT JOIN bill_voids v ON v.bill_id = b.id WHERE b.id=$1`,
+      `SELECT b.*, v.reason AS void_reason, v.voided_at, v.voided_by_username,
+              n.whatsapp_status AS ty_whatsapp, n.whatsapp_error AS ty_whatsapp_error,
+              n.sms_status AS ty_sms, n.sms_error AS ty_sms_error, n.updated_at AS ty_at
+       FROM bills b LEFT JOIN bill_voids v ON v.bill_id = b.id
+       LEFT JOIN bill_notifications n ON n.bill_id = b.id WHERE b.id=$1`,
       [String(body?.id ?? "")],
     );
     if (!res.rowCount || (caller.role === "cafe_billing" && res.rows[0].type !== "CAFE")) throw new HttpError(404, "not-found", "Bill not found");
-    return withVoid(res.rows[0]);
+    const r = res.rows[0];
+    /* Delivery status of the thank-you message (lib/thankYou.ts); null when
+       none was attempted — no phone, not printed, or messaging switched off.
+       The number messaged is deliberately not included; the bill already
+       shows the one the cashier typed. */
+    const thank_you = r.ty_whatsapp
+      ? { whatsapp: r.ty_whatsapp, whatsapp_error: r.ty_whatsapp_error ?? null, sms: r.ty_sms, sms_error: r.ty_sms_error ?? null, updated_at: new Date(r.ty_at).toISOString() }
+      : null;
+    return { ...withVoid(r), thank_you };
   },
 
   async listOrders(body, event) {

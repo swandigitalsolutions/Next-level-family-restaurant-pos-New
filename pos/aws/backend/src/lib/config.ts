@@ -176,5 +176,33 @@ export const ADVANCE_RATE = 0.5;
 export const LOGIN_MAX_ATTEMPTS = 6;
 export const LOGIN_LOCKOUT_SECONDS = 5 * 60;
 
+/**
+ * The customer thank-you message sent after a bill is printed (lib/thankYou.ts).
+ * Read on every call rather than at import, so a changed .env takes effect on
+ * restart without a rebuild and tests can vary it.
+ *
+ *   RESTAURANT_NAME        the name in the greeting (shared with the QR menu)
+ *   THANK_YOU_FEEDBACK_URL "Please share your valuable feedback" link
+ *   THANK_YOU_REVIEW_URL   "Visit us again" link — Google Maps / review page
+ *   THANK_YOU_MESSAGES     "off" switches the whole feature off
+ *
+ * Provider credentials (WHATSAPP_*, TWILIO_*) are read in lib/messaging.ts and
+ * never leave the server.
+ */
+export interface ThankYouSettings {
+  enabled: boolean;
+  restaurantName: string;
+  feedbackUrl: string;
+  reviewUrl: string;
+}
+export function thankYouSettings(env: NodeJS.ProcessEnv = process.env): ThankYouSettings {
+  return {
+    enabled: String(env.THANK_YOU_MESSAGES ?? "on").trim().toLowerCase() !== "off",
+    restaurantName: (env.RESTAURANT_NAME || "Next Level Family Restaurant").trim(),
+    feedbackUrl: String(env.THANK_YOU_FEEDBACK_URL ?? "").trim(),
+    reviewUrl: String(env.THANK_YOU_REVIEW_URL ?? "").trim(),
+  };
+}
+
 /** Default sample GSTIN printed on receipts (frontend/js/common.js RESTAURANT_GSTIN). */
 export const RESTAURANT_GSTIN = process.env.RESTAURANT_GSTIN || "22AAAAA0000A1Z5";

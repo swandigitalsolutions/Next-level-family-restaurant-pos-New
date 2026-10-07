@@ -19,6 +19,8 @@
  *   psql posdb_test -c "CREATE ROLE pos_app LOGIN PASSWORD 'change-me';"
  *   psql posdb_test -f ../db/migrations/002_privileges.sql
  *   psql posdb_test -f ../db/migrations/003_signout.sql
+ *   psql posdb_test -f ../db/migrations/004_bill_voids.sql
+ *   psql posdb_test -f ../db/migrations/005_bill_notifications.sql
  */
 process.env.DATABASE_URL = process.env.TEST_DATABASE_URL || "postgres://postgres@localhost:55432/posdb_test";
 process.env.RESTAURANT_TZ = "Asia/Kolkata";

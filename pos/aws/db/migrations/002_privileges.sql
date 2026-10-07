@@ -38,6 +38,10 @@ BEGIN
   IF to_regclass('public.bill_voids') IS NOT NULL THEN
     EXECUTE 'REVOKE UPDATE, DELETE ON bill_voids FROM pos_app';
   END IF;
+  -- 005: deleting a delivery record would re-arm a thank-you already sent.
+  IF to_regclass('public.bill_notifications') IS NOT NULL THEN
+    EXECUTE 'REVOKE DELETE ON bill_notifications FROM pos_app';
+  END IF;
 END $$;
 
 -- NOTE: the app must never take a row lock (SELECT ... FOR UPDATE / FOR SHARE)

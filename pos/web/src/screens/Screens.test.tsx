@@ -276,6 +276,25 @@ describe("bill history", () => {
     expect(screen.queryByRole("button", { name: /void/i })).toBeNull();
   });
 
+  test("shows whether the customer's thank-you went out on WhatsApp and SMS", async () => {
+    callable.fn = makeCallable({
+      "queries.listOrders": { orders: [summary], total: 1 },
+      "queries.getBill": {
+        ...summary, source: null, customer_phone: "9876543210", subtotal: 240, discount: 0, tax: 0,
+        website_order_no: null, items: [],
+        thank_you: { whatsapp: "SENT", whatsapp_error: null, sms: "FAILED", sms_error: "DLT template mismatch", updated_at: new Date().toISOString() },
+      },
+    });
+
+    renderScreen(<OrdersScreen />);
+    await userEvent.click(await screen.findByText("FOOD-000001"));
+    const line = (await screen.findByText(/thank-you message/i)).closest("p")!;
+    expect(within(line).getByText("WhatsApp").closest("span")).toHaveTextContent("WhatsApp Sent");
+    const sms = within(line).getByText("SMS").closest("span")!;
+    expect(sms).toHaveTextContent("SMS Failed");
+    expect(sms).toHaveAttribute("title", "DLT template mismatch");
+  });
+
   test("says the immutability rule on the screen itself", async () => {
     callable.fn = makeCallable({ "queries.listOrders": { orders: [], total: 0 } });
     renderScreen(<OrdersScreen />);

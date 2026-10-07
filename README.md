@@ -97,12 +97,13 @@ docker run -d --name nlfr-pg -e POSTGRES_HOST_AUTH_METHOD=trust \
   -e POSTGRES_USER=postgres -e POSTGRES_DB=posdb -p 5432:5432 postgres:16-alpine
 
 # schema, privileges, and the real 202-dish menu
-# (production install: see DEPLOYMENT_GUIDE.md — all four migrations, 001–004)
+# (production install: see DEPLOYMENT_GUIDE.md — all five migrations, 001–005)
 psql "$DB" -f pos/aws/db/migrations/001_init.sql
 psql "$DB" -c "CREATE ROLE pos_app LOGIN PASSWORD 'change-me';"
 psql "$DB" -f pos/aws/db/migrations/002_privileges.sql
 psql "$DB" -f pos/aws/db/migrations/003_signout.sql
 psql "$DB" -f pos/aws/db/migrations/004_bill_voids.sql
+psql "$DB" -f pos/aws/db/migrations/005_bill_notifications.sql
 cd pos/aws/db && npm install && DATABASE_URL="$DB" node scripts/seed-menu.mjs
 
 # the POS server — JWT_SECRET must be 32+ characters or it refuses to sign in

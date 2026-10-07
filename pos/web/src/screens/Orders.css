@@ -42,6 +42,7 @@
 .orders-lines li > span:first-child { min-width: 2.6ch; font-weight: 700; color: var(--accent); }
 .orders-lines li > span:nth-child(2) { flex: 1; }
 .orders-meta { margin: 0; font-size: .78rem; color: var(--text-faint); }
+.orders-thanks { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
 
 /* A cancelled bill stays in the list — a gap in the bill numbers with no
    explanation is worse than a struck-through line — but must not read as

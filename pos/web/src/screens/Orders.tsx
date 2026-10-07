@@ -18,10 +18,33 @@ import { useQuery, useAction } from "../lib/useQuery";
 import { callable } from "../lib/api";
 import { useSession } from "../lib/session";
 import { money, dateTime, titleCase, todayKey } from "../lib/format";
-import { Card, EmptyState, ErrorNote, Input, Pill, Segmented, Sheet, Spinner, Button, Field } from "../components/ui";
+import { Card, EmptyState, ErrorNote, Input, Pill, Segmented, Sheet, Spinner, Button, Field, type PillTone } from "../components/ui";
 import { PrintArea, type ReceiptData } from "../components/Receipt";
-import type { Bill, OrderSummary } from "../lib/types";
+import type { Bill, DeliveryStatus, OrderSummary, ThankYouStatus } from "../lib/types";
 import "./Orders.css";
+
+const DELIVERY: Record<DeliveryStatus, { label: string; tone: PillTone }> = {
+  SENT: { label: "Sent", tone: "done" },
+  FAILED: { label: "Failed", tone: "danger" },
+  PENDING: { label: "Sending", tone: "working" },
+  SKIPPED: { label: "Off", tone: "neutral" },
+};
+
+/** Whether the customer was thanked on WhatsApp and SMS after printing. The
+ *  provider's reason for a failure is on hover, for whoever sets up messaging. */
+function ThankYouLine({ status }: { status: ThankYouStatus }) {
+  const channel = (name: string, s: DeliveryStatus, error: string | null) => (
+    <span title={error ?? undefined}>
+      {name} <Pill tone={DELIVERY[s].tone}>{DELIVERY[s].label}</Pill>
+    </span>
+  );
+  return (
+    <p className="orders-meta orders-thanks">
+      Thank-you message · {channel("WhatsApp", status.whatsapp, status.whatsapp_error)}{" "}
+      {channel("SMS", status.sms, status.sms_error)}
+    </p>
+  );
+}
 
 /** A stored bill, as the printer needs it. */
 function toReceipt(bill: Bill): ReceiptData {
@@ -179,6 +202,7 @@ export function OrdersScreen() {
               {detail.data.customer_phone !== "-" ? ` · ${detail.data.customer_phone}` : ""}
             </p>
             {detail.data.website_order_no && <p className="orders-customer">Website order {detail.data.website_order_no}</p>}
+            {detail.data.thank_you && <ThankYouLine status={detail.data.thank_you} />}
 
             <ul className="orders-lines">
               {detail.data.items.map((line, i) => (
