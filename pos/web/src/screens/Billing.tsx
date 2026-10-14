@@ -22,7 +22,6 @@ import {
   Button, Card, EmptyState, ErrorNote, Field, Input, NumberStepper, Segmented, Select, Sheet, Spinner, Toast,
 } from "../components/ui";
 import { PrintArea, type ReceiptData } from "../components/Receipt";
-import { thankCustomer } from "../lib/thankYou";
 import type { CatalogItem, Category, Kind, TableRow, TableSession } from "../lib/types";
 import { DishPhoto } from "../components/DishPhoto";
 import "./Billing.css";
@@ -315,17 +314,10 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
     if (!docked) setBillOpen(true);
   }
 
-  /** Mount the receipts, then print once the browser has laid them out.
-   *  `afterPrint` runs once the print call has returned — the thank-you
-   *  message goes out only after the receipt has actually been printed. */
-  function printReceipts(receipts: ReceiptData[], afterPrint?: () => void) {
+  /** Mount the receipts, then print once the browser has laid them out. */
+  function printReceipts(receipts: ReceiptData[]) {
     setToPrint(receipts);
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        window.print();
-        afterPrint?.();
-      }),
-    );
+    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
   }
 
   /* "Try again" must repeat the cashier's choice. It always retried as a plain
@@ -349,7 +341,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
       if (!(await pushSession())) return;
 
       const out = await action.run(() =>
-        callable<{ bills: Array<{ id: string; bill_no: string }> }>("billing", "settleTable", {
+        callable<{ bills: Array<{ bill_no: string }> }>("billing", "settleTable", {
           session_id: sessionId,
           payment_method: method,
           discount: discountNum,
@@ -358,13 +350,8 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
       if (out) {
         const nos = out.bills.map((b) => b.bill_no);
         // Built before the lines are cleared — the receipt is made from what
-        // was just settled, not from the emptied screen. A food + alcohol
-        // table is two bills but one customer, so one thank-you for both.
-        if (doPrint) {
-          const ids = out.bills.map((b) => b.id);
-          const phone = customerPhone;
-          printReceipts(buildReceipts(nos), () => thankCustomer(ids, phone));
-        }
+        // was just settled, not from the emptied screen.
+        if (doPrint) printReceipts(buildReceipts(nos));
         flash(`Settled — ${nos.join(" and ")}`);
         setLines([]);
         setSessionId(null);
@@ -377,7 +364,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
       }
     } else {
       const out = await action.run(() =>
-        callable<{ id: string; bill_no: string; deduplicated?: boolean }>("billing", "createBill", {
+        callable<{ bill_no: string; deduplicated?: boolean }>("billing", "createBill", {
           type: isBar ? "ALCOHOL" : "FOOD",
           items: lines.map((l) => ({
             item_id: l.item_id,
@@ -405,10 +392,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
       if (out) {
         // Banked. The next sale is a new sale and needs its own key.
         clientRef.current = null;
-        if (doPrint) {
-          const phone = customerPhone;
-          printReceipts(buildReceipts([out.bill_no]), () => thankCustomer([out.id], phone));
-        }
+        if (doPrint) printReceipts(buildReceipts([out.bill_no]));
         // `deduplicated` means this exact cart had already been billed and the
         // server returned the original rather than charging twice. Say so, so
         // nobody takes the money a second time.
