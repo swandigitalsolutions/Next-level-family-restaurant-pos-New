@@ -87,20 +87,21 @@ test("a food line saved to a table never picks up tax, whatever tax_rate the cli
 
 test("a counter FOOD bill ignores a tax_percent sent by the client", async () => {
   const { food } = await menu();
-  const res = await b("createBill", { type: "FOOD", items: [{ item_id: food, name: "Biryani", price: 100, qty: 1 }], tax_percent: 18 });
+  const res = await b("createBill", { type: "FOOD", items: [{ item_id: food, name: "Biryani", price: 260, qty: 1 }], tax_percent: 18 });
   assert.equal(res.status, 200);
   const bill = (await (await getPool()).query("SELECT tax, grand_total FROM bills WHERE id=$1", [res.body.id])).rows[0];
   assert.equal(Number(bill.tax), 0);
-  assert.equal(Number(bill.grand_total), 100);
+  assert.equal(Number(bill.grand_total), 260);
 });
 
 /* ── Table sessions: validation and state ──────────────────────────────── */
 
-test("a negative price cannot be saved to a table (it would settle into a negative bill)", async () => {
+test("a negative price sent for a table line is ignored: the menu price is saved", async () => {
   const { food, tableId } = await menu();
   const opened = await b("openTable", { table_id: tableId });
   const res = await q("saveTableSession", { id: opened.body.session.id, items: [{ item_kind: "food", item_id: food, item_name: "Biryani", price: -500, qty: 1 }] });
-  assert.equal(res.status, 422);
+  assert.equal(res.status, 200);
+  assert.equal(res.body.subtotal, 260, "it would otherwise settle into a bill that pays the guest");
 });
 
 test("a settled table session cannot be rewritten", async () => {
@@ -123,9 +124,17 @@ test("saving to a session that does not exist is a 404, not a 500", async () => 
 
 /* ── Money that does not fit the column is a validation error ──────────── */
 
-test("an absurd price is refused with a message, not a database overflow", async () => {
+test("an absurd price sent by the till is ignored, not stored or overflowed", async () => {
   const { food } = await menu();
   const res = await b("createBill", { type: "FOOD", items: [{ item_id: food, name: "Biryani", price: 1e9, qty: 1 }] });
+  assert.equal(res.status, 200);
+  const bill = (await (await getPool()).query("SELECT grand_total FROM bills WHERE id=$1", [res.body.id])).rows[0];
+  assert.equal(Number(bill.grand_total), 260);
+});
+
+test("an absurd quantity is still refused with a message, not a database overflow", async () => {
+  const { food } = await menu();
+  const res = await b("createBill", { type: "FOOD", items: [{ item_id: food, name: "Biryani", price: 260, qty: 1e9 }] });
   assert.equal(res.status, 422);
 });
 
@@ -145,13 +154,14 @@ test("junk paging arguments are clamped instead of reaching SQL", async () => {
 
 test("listOrders pages in SQL: a deep offset returns the right page without loading every bill", async () => {
   const { food } = await menu();
+  // Told apart by quantity: the price always comes from the menu (₹260).
   for (let i = 0; i < 5; i++) {
-    await b("createBill", { type: "FOOD", items: [{ item_id: food, name: "Biryani", price: 10 + i, qty: 1 }] });
+    await b("createBill", { type: "FOOD", items: [{ item_id: food, name: "Biryani", price: 260, qty: 1 + i }] });
   }
   const page = await q("listOrders", { limit: 2, offset: 2 });
   assert.equal(page.status, 200);
   assert.equal(page.body.total, 5);
-  assert.deepEqual(page.body.orders.map((o: any) => o.grand_total), [12, 11]);
+  assert.deepEqual(page.body.orders.map((o: any) => o.grand_total), [780, 520]);
 });
 
 /* ── Public QR route: garbage in is a 400 ──────────────────────────────── */

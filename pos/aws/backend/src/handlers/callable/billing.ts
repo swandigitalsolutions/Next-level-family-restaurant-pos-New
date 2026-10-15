@@ -17,7 +17,8 @@ import { readStockSnapshots, applyStockWrites } from "../../lib/stock";
 import { buildBillRow, insertBill } from "../../lib/billDoc";
 import { auditInTx } from "../../lib/audit";
 import { getPool, withTransaction } from "../../lib/db";
-import { computeRolling } from "../../lib/statsService";
+import { priceFromCatalog, Kind } from "../../lib/catalogPrices";
+import { refreshRollingSoon } from "../../lib/statsService";
 
 const OPERATIONAL = ["billing", "manager", "admin"] as const;
 
@@ -43,6 +44,17 @@ async function findBillByClientRef(clientRef: string) {
   return row ? { id: row.id, type: row.type, bill_no: row.bill_no } : null;
 }
 
+/* Bill-writing transactions run at READ COMMITTED, not the SERIALIZABLE
+   default. Everything they read-modify-write is row-locked first — stock rows
+   (readStockSnapshots, FOR UPDATE, in id order), the bill counter (peekCounter,
+   FOR UPDATE) and the table session (FOR UPDATE) — and under READ COMMITTED a
+   locked row is re-read at its latest committed value, so numbering stays
+   gap-free and stock stays exact. Under SERIALIZABLE the same lock wait ended
+   in "could not serialize access" instead: every simultaneous bill of one type
+   aborted and retried, and a burst of them ran out of retries — a third of the
+   bills failed in a 30-till load test. */
+const BILL_TX = { isolation: "READ COMMITTED" as const };
+
 const toSessionLine = (i: any): SessionLine => ({
   itemKind: i.kind === "alcohol" ? "alcohol" : "food",
   itemId: i.itemId ?? i.item_id ?? null,
@@ -65,7 +77,9 @@ export const handler = dispatch({
       throw new HttpError(422, "invalid-argument", "type must be FOOD, ALCOHOL or CAFE");
     }
     const caller = assertRole(event as any, type === "CAFE" ? ["cafe_billing", "billing", "manager", "admin"] : [...OPERATIONAL]);
-    const rawItems = Array.isArray(body?.items) ? body.items : [];
+    // Price, name and tax come from the menu, never from the till — see lib/catalogPrices.
+    const allowedKinds: Kind[] = type === "FOOD" ? ["food"] : type === "CAFE" ? ["cafe"] : ["alcohol"];
+    const rawItems = await priceFromCatalog(await getPool(), Array.isArray(body?.items) ? body.items : [], allowedKinds);
     const isAlc = type === "ALCOHOL";
     const computed = isAlc
       ? computeAlcoholBill(rawItems, body?.discount)
@@ -114,7 +128,7 @@ export const handler = dispatch({
         await applyStockWrites(client, stockSnaps, computed.items.map((l: any) => ({ itemId: l.itemId, delta: -l.qty })));
         await auditInTx(client, { actorUid: caller.uid, actorUsername: caller.username || null, actorRole: caller.role, action: "bill.create", entityType: type === "FOOD" ? "food_bill" : type === "CAFE" ? "cafe_bill" : "alcohol_bill", entityId: billId, details: { bill_no: billNo, grand_total: computed.grandTotal } });
         return billNo;
-      });
+      }, BILL_TX);
     } catch (e: any) {
       // Two retries of one sale raced each other and the loser's INSERT hit
       // the unique index. That is the intended outcome, not an error: hand
@@ -127,7 +141,7 @@ export const handler = dispatch({
     }
     // Best-effort dashboard refresh — never let a stats failure roll back or
     // fail a bill that has already committed.
-    computeRolling().catch((e) => console.error("stats refresh failed (non-fatal)", e));
+    refreshRollingSoon();
 
     return { id: billId, type, bill_no: billNo };
   },
@@ -205,9 +219,43 @@ export const handler = dispatch({
       await auditInTx(client, { actorUid: caller.uid, actorUsername: caller.username || null, actorRole: caller.role, action: "table.settle", entityType: "table_session", entityId: sessionId, details: { table_no: sess.table_no, grand_total: settlement.grandTotal, discount: settlement.discount } });
 
       return { table_no: sess.table_no, session_id: sessionId, bills, subtotal: settlement.subtotal, tax: settlement.tax, discount: settlement.discount, grand_total: settlement.grandTotal, payment_method: paymentMethod };
-    });
-    computeRolling().catch((e) => console.error("stats refresh failed (non-fatal)", e));
+    }, BILL_TX);
+    refreshRollingSoon();
     return result;
+  },
+
+  /**
+   * Free a table that was opened but has nothing on it.
+   *
+   * Tapping a table on the till opens it. Tap the wrong one — or open it to
+   * look — and it stayed "occupied" on every till for the rest of the night:
+   * an empty table cannot be settled, and nothing else closed it. Only an
+   * EMPTY session can be released; anything with a line on it is a sale and
+   * goes through Settle. The session row is removed rather than marked, since
+   * it never held anything; a foreign key from any bill, ticket or QR order
+   * would refuse the delete, which is the backstop.
+   */
+  async releaseTable(body, event) {
+    const caller = assertRole(event as any, [...OPERATIONAL]);
+    const sessionId = String(body?.session_id ?? "");
+    if (!sessionId) throw new HttpError(422, "invalid-argument", "session_id is required");
+    try {
+      return await withTransaction(async (client) => {
+        const res = await client.query("SELECT * FROM table_sessions WHERE id=$1 FOR UPDATE", [sessionId]);
+        if (!res.rowCount || res.rows[0].status !== "open") throw new HttpError(404, "not-found", "Open table session not found");
+        const sess = res.rows[0];
+        if (Array.isArray(sess.items) && sess.items.length > 0) {
+          throw new HttpError(409, "failed-precondition", "This table has items on it — settle it instead.");
+        }
+        await client.query("UPDATE restaurant_tables SET status='available', open_session_id=NULL, updated_at=now() WHERE id=$1 AND open_session_id=$2", [sess.table_id, sessionId]);
+        await client.query("DELETE FROM table_sessions WHERE id=$1", [sessionId]);
+        await auditInTx(client, { actorUid: caller.uid, actorUsername: caller.username || null, actorRole: caller.role, action: "table.release", entityType: "table_session", entityId: sessionId, details: { table_no: sess.table_no } });
+        return { table_no: sess.table_no, released: true };
+      });
+    } catch (e: any) {
+      if (e?.code === "23503") throw new HttpError(409, "failed-precondition", "This table has orders against it — settle it instead.");
+      throw e;
+    }
   },
 
   /**
@@ -314,7 +362,7 @@ export const handler = dispatch({
     });
 
     // The day's takings just changed, so the dashboard has to be rebuilt.
-    computeRolling().catch((e) => console.error("stats refresh failed (non-fatal)", e));
+    refreshRollingSoon();
     return result;
   },
 });

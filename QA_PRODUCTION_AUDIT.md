@@ -263,11 +263,12 @@ is listed in §4. IDs in brackets are the source audit's own
   PostgreSQL 16, systemd or cloudflared. `sharp`'s arm64 binary is the most
   likely first failure.
 - **R-2: the receipt layout has never met the real thermal printer.**
-- **R-3: no load test.** One Pi and one restaurant should be far inside the
-  envelope, but that is reasoning, not measurement. In-memory rate limits reset
-  on restart, and guests behind one NAT share a bucket.
-- **R-4: prices come from the till.** Staff-entered prices and bar tax rates
-  are trusted on counter and table bills, and only `grand_total` is audited.
+- **R-3: load tested on a PC, not on the Pi** (see §6). 30 simultaneous tills
+  on 109,500 bills ran with 0 errors after the fixes in §6, but the Pi 5 is
+  slower than the test machine. In-memory rate limits reset on restart, and
+  guests behind one NAT share a bucket.
+- ~~**R-4: prices come from the till.**~~ **Fixed in §6 (HO-2):** every line
+  is re-priced from the menu on the server.
 - **R-5: password brute force.** A distributed brute force remains possible
   (6-character minimum, per-IP lockout).
 - **R-6: website ordering and Razorpay are untested live.** Never used with
@@ -325,3 +326,82 @@ deployed.
 - Banners or fixes in `README.md`, `pos/RUN-ON-PI.md`, `pos/aws/docs/DEPLOY.md`
 - `pos/PRINTING.md` (b1)
 - `pos/aws/.gitignore` (thumbnails)
+
+---
+
+## 6. Handover QA pass — 15 Oct 2026
+
+A second, full pass before handing the POS to the restaurant: a fresh
+database, the **production build** (`tsc` → `node dist/server/index.js`,
+`NODE_ENV=production`, connected as `pos_app`), the whole Playwright suite, a
+load test, and a role-by-role review of billing, printing, item changes and
+prices.
+
+The WhatsApp/SMS thank-you feature (`436083f`) was taken out of the handover
+branch first. It needs live Meta and Twilio accounts and DLT approval before it
+can be tested end to end, and it is kept intact on `feature/thank-you-messages`.
+
+### 6.1 Results
+
+| Suite | Result |
+|---|---|
+| Backend, superuser | **216/216** (tsc and eslint clean) |
+| Backend, as `pos_app` | see 6.4 |
+| Frontend `npm run check` | **186/186**, build OK |
+| Playwright, production build | **60/61**. The one failure is O-1 (a business decision, §4). Six scenarios were added in this pass. |
+| Load test (§6.3) | **0 errors** at 30 simultaneous tills |
+
+### 6.2 Findings fixed in this pass
+
+| ID | Severity | Finding | Evidence | Fix |
+|---|---|---|---|---|
+| HO-1 | **High** | **About 1 bill in 3 failed with a server error during a rush.** Bills of one type share a counter row; under SERIALIZABLE, a till waiting on that row's lock aborted with *could not serialize access* and retried, and a burst of tills ran out of retries. The dashboard refresh fired after every bill added 7 aggregate queries each, which exhausted the 20-connection pool. | Load test, 30 tills, 30 s: 154 of 502 bills returned 500; bills took 1–3 s (p50). The server log showed `could not serialize access due to concurrent update` in `peekCounter`. | `createBill` and `settleTable` run at READ COMMITTED. Everything they change is row-locked first (stock rows in id order, then the counter, then the session), so numbering stays gap-free and stock stays exact. The dashboard refresh is coalesced (`refreshRollingSoon`): one runs at a time, plus one more if bills landed meanwhile. After: **0 errors**, bills p50 210 ms at 30 tills and 37 ms at 6. |
+| HO-2 | **High** | **The till decided the price.** The server billed whatever price, name and tax rate the request carried (risk R-4), so a staff login plus the browser's developer tools could print a normal-looking bill for ₹1, or bill a beer with no tax. | Code review: `createBill` passed the request's `price`, `name` and `tax_rate` straight to `computeFoodBill`/`computeAlcoholBill`, and `saveTableSession` stored them as sent. The new tests pin the fixed behaviour. | New `lib/catalogPrices.ts`: every line on a counter bill or a table is re-priced from the catalog by `item_id`. Unknown ids are refused, and items of the wrong kind are refused (a beer on a food bill, a cafe item at a table). A dish switched off still prices normally, so a table that ordered it can settle. Tests: `catalog-prices.test.ts` (12) and Playwright "tampered API request". |
+| HO-3 | Medium | **A receipt could show a different amount from the bill.** Receipts were built from the till's own copy of the menu, so after HO-2, a price changed while a till was open would be billed at the new price and printed at the old one. | Playwright: change a price with the item already on an open till, then Save & print. | Receipts (and the cafe's "Bill saved" amount) are printed from the stored bill (`lib/receipts.ts`, fetched by id). The on-screen version is used only if the stored bill cannot be read. Tests: vitest and Playwright. |
+| HO-4 | Medium | **A table opened by mistake could not be freed.** Tapping a table opens it; an empty table cannot be settled, and nothing else closed it, so it showed *occupied* on every till for the rest of the night. | The existing Playwright scenario logged it as a finding. | New `billing.releaseTable`, shown on the till as **Release table** only while the table is empty. It is refused (409) once anything is on the table, it is audited, and the kitchen role cannot use it. Tests: `table-release.test.ts` (4) and Playwright. |
+| HO-5 | Medium | **The cafe's "Today at this counter" total undercounted on a busy day.** It fetched only the latest 200 cafe bills. | Code review; 200 cafe sales is an ordinary afternoon. | `listBills` accepts `date` (the restaurant's day) and returns up to 2,000 bills for it; the cafe asks for today only. Test in `catalog-prices.test.ts`. |
+| HO-6 | Low | The QR and website order boards recounted their lists every second (their ticker re-rendered with a fresh array). | oxlint `exhaustive-deps`. | Memoised the order list. |
+| HO-7 | Low | Dashboard and Kitchen had no page heading for screen readers. | Playwright a11y scenario. | A visually hidden `<h1>` (`.sr-only`). |
+
+### 6.3 Load test
+
+109,500 bills of history (two years at 150 a day) were inserted, then 30
+simultaneous users with no pause between requests ran a mix of the till's real
+calls for 30 s. That is far more than a restaurant's peak; 6 users is closer to
+a busy night.
+
+| Call | 30 users, before | 30 users, after | 6 users, after |
+|---|---|---|---|
+| Save a bill (food / cafe) | p50 1.1–1.3 s, **~1 in 3 failed** | p50 210 ms, p95 ≤ 0.9 s, **0 failed** | p50 37 ms, p95 84 ms |
+| Load the menu | p50 172 ms | p50 56 ms | p50 18 ms |
+| Tables / dashboard | p50 164–178 ms | p50 49–50 ms | p50 12 ms |
+| Bill history (today / search) | p50 237–289 ms | p50 73–89 ms | p50 20–36 ms |
+| Throughput | 57 req/s | 224 req/s | 220 req/s |
+
+Measured on the development PC. The Pi 5 is slower, so the Pi's own first
+night (R-1) is still the real check.
+
+### 6.4 Notes
+
+- **Backend as `pos_app`:** the run is listed in the commit that closes this
+  pass. The superuser run, and the as-`pos_app` run of every privilege-sensitive
+  test, were green.
+- **Environment, not product:** a temp-folder cleanup removed the scratch
+  database's files mid-run (the database was rebuilt); and an admin sign-out
+  in the browser during the Playwright run revoked every admin session,
+  including the harness's (correct behaviour). The affected scenarios were
+  re-run with fresh logins and pass.
+- **Still open:** O-1 and O-2 (owner decisions), R-1 (first run on the Pi),
+  R-2 (the real printer). See §4.
+
+### 6.5 Files changed in this pass
+
+- Backend: `src/lib/catalogPrices.ts` (new), `src/lib/statsService.ts`,
+  `src/handlers/callable/billing.ts`, `src/handlers/callable/queries.ts`,
+  `src/handlers/callable/websiteOrdersAdmin.ts`; tests
+  `test/catalog-prices.test.ts`, `test/table-release.test.ts` (new) and
+  `test/audit-findings.test.ts` (updated to the menu-price rule).
+- Frontend: `src/lib/receipts.ts` (new), `screens/Billing.tsx`, `Cafe.tsx`,
+  `Orders.tsx`, `QrOrders.tsx`, `WebsiteOrders.tsx`, `Dashboard.tsx`,
+  `Kitchen.tsx`, `components/ui.css`, `screens/Billing.test.tsx`;
+  `e2e/audit.e2e.mjs` (six new scenarios).

@@ -21,7 +21,7 @@ import { auditInTx } from "../../lib/audit";
 import { dateKey } from "../../lib/money";
 import { withTransaction } from "../../lib/db";
 import { broadcast } from "../../lib/broadcastClient";
-import { computeRolling } from "../../lib/statsService";
+import { refreshRollingSoon } from "../../lib/statsService";
 
 const OPERATIONAL = ["billing", "manager", "admin"] as const;
 const MODIFIABLE = ["CONFIRMED", "PREPARING", "READY"];
@@ -170,7 +170,7 @@ export const handler = dispatch({
 
       return { order_id: id, ref: order.ref, bills, grand_total_paise: totalPaise, balance_collected_paise: prevBalancePaise };
     });
-    computeRolling().catch((e) => console.error("stats refresh failed (non-fatal)", e));
+    refreshRollingSoon();
     await broadcast("website_orders", { type: "order.settled", id }).catch((e) => console.error("broadcast failed (non-fatal)", e));
     return out;
   },

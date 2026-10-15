@@ -1323,4 +1323,134 @@ spec("guest menu: food items are not all labelled vegetarian", async ({ page }) 
   if (veg) await chicken.screenshot({ path: join(OUT, "veg-mark-on-meat.png") });
 });
 
+/* ═════════════════ handover: items, printing, prices, release ═════════════════ */
+
+const freeTable = async (prefer) => {
+  const all = await tables();
+  return all.find((t) => t.table_no === prefer && t.status !== "open") ?? all.find((t) => t.status !== "open" && /^T\d+$/.test(t.table_no));
+};
+const qtyGroup = (p, name) => p.locator(".till-cart").getByRole("group", { name: `Quantity of ${name}` });
+
+spec("table: add, increase, decrease and remove lines; saved lines survive a reload; settle bills exactly what was kept", async ({ page }) => {
+  const [a, b, c] = (await sellable("food")).slice(5, 8);
+  const t = await freeTable("T5");
+  const p = await page({ user: "cashier" });
+  await p.goto(`${BASE}/billing`);
+  await tableBtn(p, t.table_no).click();
+  await p.getByText(`Table ${t.table_no} is open.`).waitFor();
+  await addToBill(p, a.name, 2);
+  await addToBill(p, b.name, 1);
+  await addToBill(p, c.name, 1);
+  await qtyGroup(p, b.name).getByRole("button", { name: "One more" }).click(); // b: 1 -> 2
+  await qtyGroup(p, a.name).getByRole("button", { name: "One less" }).click(); // a: 2 -> 1
+  await qtyGroup(p, c.name).getByRole("button", { name: "One less" }).click(); // c: removed
+  check((await p.locator(".till-cart .till-lines li").count()) === 2, "a line taken to zero is removed");
+  await p.getByRole("button", { name: "Save to table" }).click();
+  await toastText(p);
+
+  const sess = (await call("cashier", "queries", "getTableSession", { id: (await tables()).find((x) => x.table_no === t.table_no).session_id })).body;
+  const saved = Object.fromEntries(sess.items.map((i) => [i.item_name, i.qty]));
+  check(saved[a.name] === 1 && saved[b.name] === 2 && !saved[c.name], `server holds exactly what is on screen: ${JSON.stringify(saved)}`);
+
+  await p.reload();
+  await tableBtn(p, t.table_no).click();
+  await p.waitForFunction(() => document.querySelectorAll(".till-cart .till-lines li").length === 2, null, { timeout: 8000 });
+  check((await qtyGroup(p, b.name).locator(".num").innerText()) === "2", "quantities survive a reload");
+
+  await openSettle(p);
+  await p.getByRole("dialog", { name: "Settle" }).getByRole("button", { name: "Save", exact: true }).click();
+  const no = (await toastText(p)).match(/(FOOD-\d+)/)?.[1];
+  const bill = (await call("admin", "queries", "listOrders", { type: "FOOD", date: "", search: no, limit: 5 })).body.orders[0];
+  check(Math.abs(bill.grand_total - (a.price + 2 * b.price)) < 0.01, `billed ${bill.grand_total} = ${a.price} + 2×${b.price}`);
+});
+
+spec("table: a table opened by mistake can be released while empty, not once it has items", async ({ page }) => {
+  const [a] = await sellable("food");
+  const t = await freeTable("T6");
+  const p = await page({ user: "cashier" });
+  await p.goto(`${BASE}/billing`);
+  await tableBtn(p, t.table_no).click();
+  await p.getByText(`Table ${t.table_no} is open.`).waitFor();
+  await p.getByRole("button", { name: "Release table" }).click();
+  check(/free again/.test(await toastText(p)), "confirms the table is free");
+  check((await tables()).find((x) => x.table_no === t.table_no).status !== "open", "table is free on the server");
+
+  await tableBtn(p, t.table_no).click();
+  await p.getByText(`Table ${t.table_no} is open.`).waitFor();
+  await addToBill(p, a.name, 1);
+  check((await p.getByRole("button", { name: "Release table" }).count()) === 0, "no Release once something is on the table");
+  await p.getByRole("button", { name: "Save to table" }).click();
+  await toastText(p);
+  const sid = (await tables()).find((x) => x.table_no === t.table_no).session_id;
+  check((await call("cashier", "billing", "releaseTable", { session_id: sid })).status === 409, "API refuses to release a table with items");
+  await call("cashier", "billing", "settleTable", { session_id: sid, payment_method: "Cash", discount: 0 });
+});
+
+spec("print: a mixed table prints two receipts whose amounts match the stored bills", async ({ page }) => {
+  const [a] = (await sellable("food")).slice(9, 10);
+  const t = await freeTable("T7");
+  const p = await page({ user: "cashier" });
+  await p.goto(`${BASE}/billing`);
+  await tableBtn(p, t.table_no).click();
+  await p.getByText(`Table ${t.table_no} is open.`).waitFor();
+  await addToBill(p, a.name, 1);
+  await p.getByRole("button", { name: "Save to table" }).click();
+  await toastText(p);
+  await p.goto(`${BASE}/alcohol`);
+  await tableBtn(p, t.table_no).click();
+  await p.waitForFunction(() => document.querySelectorAll(".till-lines li").length >= 1, null, { timeout: 8000 });
+  await addToBill(p, "Kingfisher Premium", 1);
+  await openSettle(p);
+  await p.getByRole("dialog", { name: "Settle" }).getByRole("button", { name: /Save & print/ }).click();
+  await p.waitForFunction(() => window.__prints === 1, null, { timeout: 10000 });
+  const receipts = await p.locator(".print-area .receipt").evaluateAll((els) =>
+    els.map((el) => ({ no: el.querySelector(".receipt-no")?.textContent?.trim(), total: el.querySelector(".receipt-grand .num")?.textContent?.trim() })),
+  );
+  check(receipts.length === 2, `two receipts, one per bill: ${JSON.stringify(receipts)}`);
+  for (const r of receipts) {
+    const bill = (await call("admin", "queries", "listOrders", { type: "all", date: "", search: r.no, limit: 5 })).body.orders[0];
+    check(bill && Number(r.total.replace(/,/g, "")) === bill.grand_total, `${r.no}: receipt ${r.total} = stored ${bill?.grand_total}`);
+  }
+});
+
+spec("prices: a price changed while a till is open bills and prints the NEW price, never the stale one", async ({ page }) => {
+  const [a] = (await sellable("food")).slice(11, 12);
+  const p = await page({ user: "cashier" });
+  await p.goto(`${BASE}/billing`);
+  await p.getByRole("tab", { name: "Direct sale" }).click();
+  await addToBill(p, a.name, 1); // the till loaded the OLD price
+  const newPrice = a.price + 15;
+  check((await call("admin", "catalogAdmin", "upsertCatalogItem", { id: a.id, kind: "food", price: newPrice })).status === 200, "manager changes the price");
+  try {
+    await openSettle(p);
+    await p.getByRole("dialog", { name: "Settle" }).getByRole("button", { name: /Save & print/ }).click();
+    await p.waitForFunction(() => window.__prints === 1, null, { timeout: 10000 });
+    // textContent: the print area is laid out but invisible on screen, so innerText is empty.
+    const total = (await p.locator(".print-area .receipt-grand .num").textContent()).replace(/,/g, "");
+    const no = (await p.locator(".print-area .receipt-no").textContent()).trim();
+    const bill = (await call("admin", "queries", "listOrders", { type: "FOOD", date: "", search: no, limit: 5 })).body.orders[0];
+    check(bill.grand_total === newPrice, `stored at the menu's new price ${newPrice} (got ${bill.grand_total})`);
+    check(Number(total) === newPrice, `receipt prints ${total}, the price actually charged`);
+  } finally {
+    await call("admin", "catalogAdmin", "upsertCatalogItem", { id: a.id, kind: "food", price: a.price });
+  }
+});
+
+spec("prices: a tampered API request cannot bill below the menu price", async () => {
+  const [a] = await sellable("food");
+  const r = await call("cashier", "billing", "createBill", { type: "FOOD", items: [{ item_id: a.id, name: a.name, price: 1, qty: 1 }], payment_method: "Cash" });
+  check(r.status === 200, `bill created (${r.status})`);
+  const bill = (await call("admin", "queries", "listOrders", { type: "FOOD", date: "", search: r.body.bill_no, limit: 5 })).body.orders[0];
+  check(bill.grand_total === a.price, `charged the menu price ${a.price}, not ₹1 (got ${bill.grand_total})`);
+});
+
+spec("kitchen: the kitchen screen never shows money", async ({ page }) => {
+  const p = await page({ user: "cook" });
+  await p.goto(`${BASE}/kitchen`);
+  await p.locator(".kds").waitFor();
+  await p.waitForTimeout(800);
+  const text = await p.locator("body").innerText();
+  check(!/₹|\bRs\.?\s?\d|\d+\.\d{2}\b/.test(text), "no rupee amounts anywhere on the kitchen screen");
+});
+
 await run();

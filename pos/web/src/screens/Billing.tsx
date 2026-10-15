@@ -22,6 +22,7 @@ import {
   Button, Card, EmptyState, ErrorNote, Field, Input, NumberStepper, Segmented, Select, Sheet, Spinner, Toast,
 } from "../components/ui";
 import { PrintArea, type ReceiptData } from "../components/Receipt";
+import { billToReceipt, fetchBills } from "../lib/receipts";
 import type { CatalogItem, Category, Kind, TableRow, TableSession } from "../lib/types";
 import { DishPhoto } from "../components/DishPhoto";
 import "./Billing.css";
@@ -245,6 +246,20 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
     }
   }
 
+  /** Free an empty table that was opened by mistake (billing.releaseTable). */
+  async function releaseTable() {
+    if (!sessionId) return;
+    const no = activeTable?.table_no;
+    const out = await action.run(() => callable("billing", "releaseTable", { session_id: sessionId }));
+    if (out) {
+      loadedSessionId.current = null;
+      setSessionId(null);
+      setLines([]);
+      tables.reload();
+      flash(`Table ${no ?? ""} is free again`);
+    }
+  }
+
   /** Push the working lines onto the session. Returns false if the write
    *  failed, so a caller that is about to bill can stop rather than charge
    *  for a stale basket. */
@@ -320,6 +335,17 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
     requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
   }
 
+  /* Print what the server STORED (lib/receipts): it prices every line from
+     the menu, so a till holding a price changed since it loaded would
+     otherwise print a slip that disagrees with the bill. The on-screen
+     receipt is the fallback only if the saved bills cannot be read. The
+     fallback is built now, before the caller clears the lines. */
+  async function printSaved(ids: string[], billNos: string[]) {
+    const fallback = buildReceipts(billNos);
+    const saved = await fetchBills(ids);
+    printReceipts(saved ? saved.map((b) => billToReceipt(b)) : fallback);
+  }
+
   /* "Try again" must repeat the cashier's choice. It always retried as a plain
      Save, so a Save & print that failed once billed on the retry and printed
      nothing — the customer waiting for a receipt never got one. Same fix as
@@ -341,7 +367,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
       if (!(await pushSession())) return;
 
       const out = await action.run(() =>
-        callable<{ bills: Array<{ bill_no: string }> }>("billing", "settleTable", {
+        callable<{ bills: Array<{ id: string; bill_no: string }> }>("billing", "settleTable", {
           session_id: sessionId,
           payment_method: method,
           discount: discountNum,
@@ -349,9 +375,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
       );
       if (out) {
         const nos = out.bills.map((b) => b.bill_no);
-        // Built before the lines are cleared — the receipt is made from what
-        // was just settled, not from the emptied screen.
-        if (doPrint) printReceipts(buildReceipts(nos));
+        if (doPrint) void printSaved(out.bills.map((b) => b.id), nos);
         flash(`Settled — ${nos.join(" and ")}`);
         setLines([]);
         setSessionId(null);
@@ -364,7 +388,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
       }
     } else {
       const out = await action.run(() =>
-        callable<{ bill_no: string; deduplicated?: boolean }>("billing", "createBill", {
+        callable<{ id: string; bill_no: string; deduplicated?: boolean }>("billing", "createBill", {
           type: isBar ? "ALCOHOL" : "FOOD",
           items: lines.map((l) => ({
             item_id: l.item_id,
@@ -392,7 +416,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
       if (out) {
         // Banked. The next sale is a new sale and needs its own key.
         clientRef.current = null;
-        if (doPrint) printReceipts(buildReceipts([out.bill_no]));
+        if (doPrint) void printSaved([out.id], [out.bill_no]);
         // `deduplicated` means this exact cart had already been billed and the
         // server returned the original rather than charging twice. Say so, so
         // nobody takes the money a second time.
@@ -595,6 +619,16 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
             <button type="button" className="till-link" onClick={saveSession} disabled={action.busy}>
               Save to table
             </button>
+            {/* Opened by mistake, or just to look: free it again. Only while
+                nothing is on it — anything with a line is a sale and settles. */}
+            {lines.length === 0 && (sessionLines?.length ?? 0) === 0 && (
+              <>
+                {" · "}
+                <button type="button" className="till-link" onClick={releaseTable} disabled={action.busy}>
+                  Release table
+                </button>
+              </>
+            )}
           </p>
         )}
 

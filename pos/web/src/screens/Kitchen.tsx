@@ -91,6 +91,7 @@ export function KitchenScreen() {
   return (
     <div className={`kds theme-kitchen${flash ? " is-flashing" : ""}`}>
       <header className="kds-top">
+        <h1 className="sr-only">Kitchen orders</h1>
         <div className="kds-counts">
           <span className="kds-count is-queued">
             <em className="num">{counts.QUEUED}</em> queued

@@ -213,6 +213,36 @@ describe("food till", () => {
     await waitFor(() => expect(print).toHaveBeenCalled());
     print.mockRestore();
   });
+
+  /* The server prices from the menu. A till that loaded the menu before a
+     price change shows the old price; the slip must carry what was BILLED. */
+  test("the receipt prints the saved bill's amounts, not a stale on-screen price", async () => {
+    const saved = {
+      id: "b1", bill_no: "FOOD-000043", type: "FOOD", source: "counter", customer_name: "-", customer_phone: "-",
+      subtotal: 130, discount: 0, tax: 0, grand_total: 130, payment_method: "Cash", status: "PAID",
+      created_at: "2026-10-14T15:00:00.000Z", website_order_no: null,
+      items: [{ item_name: "Masala Dosa", qty: 1, price: 130, line_total: 130 }],
+    };
+    const spy = makeCallable({ ...baseMap, "billing.createBill": { id: "b1", bill_no: "FOOD-000043", type: "FOOD" }, "queries.getBill": saved });
+    callable.fn = spy;
+    const print = vi.spyOn(window, "print").mockImplementation(() => {});
+
+    renderScreen(<BillingScreen kind="food" />);
+    await userEvent.click(screen.getByRole("tab", { name: /direct sale/i }));
+    await userEvent.click(await screen.findByText("Masala Dosa"));
+    await userEvent.click(await screen.findByRole("button", { name: /view bill/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /^settle/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /save & print/i }));
+
+    await waitFor(() => expect(spy.mock.calls.find((c) => c[1] === "getBill")?.[2]).toEqual({ id: "b1" }));
+    await waitFor(() => {
+      const area = document.querySelector(".print-area");
+      expect(area?.textContent).toContain("FOOD-000043");
+      expect(area?.textContent).toContain("130.00");
+    });
+    await waitFor(() => expect(print).toHaveBeenCalled());
+    print.mockRestore();
+  });
 });
 
 describe("the food + alcohol split", () => {
