@@ -17,6 +17,7 @@ import { money, todayKey } from "../lib/format";
 import { Button, Card, EmptyState, ErrorNote, Field, Input, NumberStepper, Segmented, Select, Sheet, Spinner, Toast } from "../components/ui";
 import { PrintArea, type ReceiptData } from "../components/Receipt";
 import { useMediaQuery } from "../lib/useMediaQuery";
+import { billToReceipt, fetchBills } from "../lib/receipts";
 import type { CatalogItem, Category, Bill } from "../lib/types";
 import "./Billing.css";
 
@@ -45,7 +46,11 @@ export function CafeScreen() {
 
   const categories = useQuery<Category[]>("queries", "listCategories", { kind: "cafe" });
   const items = useQuery<CatalogItem[]>("queries", "listCatalogItems", { kind: "cafe" });
-  const bills = useQuery<Bill[]>("queries", "listBills", { kind: "CAFE", limit: 200 });
+  /* Today's bills only, asked for by the restaurant's date. It used to fetch
+     the latest 200 CAFE bills and filter here, so on a busy day — 200 chais
+     is an ordinary afternoon — the counter's total silently came up short. */
+  const today = todayKey();
+  const bills = useQuery<Bill[]>("queries", "listBills", { kind: "CAFE", date: today, limit: 2000 });
 
   const visible = useMemo(() => {
     const all = items.data ?? [];
@@ -72,7 +77,6 @@ export function CafeScreen() {
   const itemCount = lines.reduce((a, l) => a + l.qty, 0);
 
   // Today's takings at this counter — the operator's only view of their day.
-  const today = todayKey();
   /* The restaurant's day, not UTC's: slicing the ISO string put every sale
      between midnight and 05:30 IST on the previous day. And a cancelled bill
      is listed (so the gap in numbers is explained) but is not money taken —
@@ -115,7 +119,7 @@ export function CafeScreen() {
   async function settle(doPrint: boolean) {
     lastPrintChoice.current = doPrint;
     const out = await action.run(() =>
-      callable<{ bill_no: string }>("billing", "createBill", {
+      callable<{ id: string; bill_no: string }>("billing", "createBill", {
         type: "CAFE",
         items: lines.map((l) => ({ item_id: l.item_id, name: l.item_name, item_name: l.item_name, price: l.price, qty: l.qty, tax_rate: 0 })),
         discount: discountNum,
@@ -125,31 +129,35 @@ export function CafeScreen() {
     );
     if (out) {
       clientRef.current = null; // banked; the next sale needs its own key
-      if (doPrint) {
-        /* Built from the lines still on screen, before they are cleared —
-           the slip has to say what was just sold, not what is left. */
-        setToPrint([
-          {
-            bill_no: out.bill_no,
-            created_at: new Date().toLocaleString("en-IN"),
-            type: "CAFE",
-            customer_name: "-",
-            customer_phone: "-",
-            payment_method: method,
-            items: lines.map((l) => ({ item_name: l.item_name, qty: l.qty, line_total: l.price * l.qty })),
-            subtotal,
-            tax: 0,
-            discount: discountNum,
-            grand_total: total,
-          },
-        ]);
-        requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
-      }
-      setToast(`Bill ${out.bill_no} — ${money(total)}`);
-      setTimeout(() => setToast(null), 2600);
+      /* The on-screen version, built before the lines are cleared — used only
+         if the saved bill cannot be read back. */
+      const fallback: ReceiptData = {
+        bill_no: out.bill_no,
+        created_at: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
+        type: "CAFE",
+        customer_name: "-",
+        customer_phone: "-",
+        payment_method: method,
+        items: lines.map((l) => ({ item_name: l.item_name, qty: l.qty, line_total: l.price * l.qty })),
+        subtotal,
+        tax: 0,
+        discount: discountNum,
+        grand_total: total,
+      };
       setLines([]);
       setDiscount("0");
       setBillOpen(false);
+      /* The slip and the toast show what the server STORED (lib/receipts): it
+         prices from the menu, so a price changed since this till loaded would
+         otherwise put one amount on paper and another in the books. */
+      const saved = (await fetchBills([out.id]))?.[0];
+      const receipt = saved ? billToReceipt(saved) : fallback;
+      if (doPrint) {
+        setToPrint([receipt]);
+        requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+      }
+      setToast(`Bill ${out.bill_no} — ${money(receipt.grand_total)}`);
+      setTimeout(() => setToast(null), 2600);
       bills.reload();
     }
   }

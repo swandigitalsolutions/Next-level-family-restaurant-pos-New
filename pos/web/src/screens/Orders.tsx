@@ -21,27 +21,11 @@ import { money, dateTime, titleCase, todayKey } from "../lib/format";
 import { Card, EmptyState, ErrorNote, Input, Pill, Segmented, Sheet, Spinner, Button, Field } from "../components/ui";
 import { PrintArea, type ReceiptData } from "../components/Receipt";
 import type { Bill, OrderSummary } from "../lib/types";
+import { billToReceipt } from "../lib/receipts";
 import "./Orders.css";
 
-/** A stored bill, as the printer needs it. */
-function toReceipt(bill: Bill): ReceiptData {
-  return {
-    bill_no: bill.bill_no,
-    created_at: bill.created_at ? dateTime(bill.created_at) : "",
-    type: bill.type,
-    customer_name: bill.customer_name,
-    customer_phone: bill.customer_phone,
-    payment_method: bill.payment_method,
-    items: bill.items.map((l) => ({ item_name: l.item_name, qty: l.qty, line_total: l.line_total })),
-    subtotal: bill.subtotal,
-    tax: bill.tax,
-    discount: bill.discount,
-    grand_total: bill.grand_total,
-    // Every print from history is a copy of a bill already handed over.
-    reprint: true,
-    cancelled: bill.voided ? { reason: bill.void_reason } : null,
-  };
-}
+/** Every print from history is a copy of a bill already handed over. */
+const toReceipt = (bill: Bill): ReceiptData => billToReceipt(bill, { reprint: true });
 
 type TypeFilter = "all" | "FOOD" | "ALCOHOL" | "CAFE";
 

@@ -56,6 +56,7 @@ export function DashboardScreen() {
 
   return (
     <div className="dash">
+      <h1 className="sr-only">Dashboard</h1>
       <section className="dash-tiles stagger">
         <Card className="dash-tile is-lead">
           <span className="dash-tile-label">Sales today</span>

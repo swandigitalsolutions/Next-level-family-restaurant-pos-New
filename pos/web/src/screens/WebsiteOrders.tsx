@@ -62,7 +62,8 @@ export function WebsiteOrdersScreen() {
 
   useRealtime(useCallback(() => reload(), [reload]));
 
-  const orders = data?.orders ?? [];
+  // Stable between refetches, so the once-a-second ticker does not recount.
+  const orders = useMemo(() => data?.orders ?? [], [data]);
   const counts = useMemo(() => {
     const out: Record<string, number> = { ALL: orders.length };
     for (const o of orders) out[o.status] = (out[o.status] ?? 0) + 1;

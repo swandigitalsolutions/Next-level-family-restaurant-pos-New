@@ -17,6 +17,7 @@ import { dateKey, round2, toFloat, toPositiveInt, ValidationError, MAX_BILL_AMOU
 import { getPool, withTransaction } from "../../lib/db";
 import { computeRolling } from "../../lib/statsService";
 import { posImageUrl } from "../../lib/assetUrl";
+import { priceFromCatalog } from "../../lib/catalogPrices";
 
 const channelOf = (kind: string, salesChannel: string) => salesChannel || (kind === "cafe" ? "OUTSIDE_CAFE" : "RESTAURANT");
 const catRow = (r: any) => ({ id: r.id, name: r.name, status: r.status, sort_order: r.sort_order, kind: r.kind, sales_channel: channelOf(r.kind, r.sales_channel) });
@@ -138,8 +139,12 @@ export const handler = dispatch({
   async saveTableSession(body, event) {
     assertRole(event as any, BILLING_ROLES as any);
     const id = String(body?.id ?? "");
-    const items = Array.isArray(body?.items) ? body.items : [];
-    if (items.length > MAX_BILL_LINES) throw new HttpError(422, "invalid-argument", `A table bill cannot have more than ${MAX_BILL_LINES} lines`);
+    const sent = Array.isArray(body?.items) ? body.items : [];
+    if (sent.length > MAX_BILL_LINES) throw new HttpError(422, "invalid-argument", `A table bill cannot have more than ${MAX_BILL_LINES} lines`);
+    if (sent.some((it: any) => !it || typeof it !== "object")) throw new ValidationError("That table contains an invalid line.");
+    /* Price, name, kind and tax come from the menu, never from the till (see
+       lib/catalogPrices). A table holds restaurant food and bar items only. */
+    const items = await priceFromCatalog(await getPool(), sent, ["food", "alcohol"]);
     /* Validated with the same rules as a counter bill: a negative price here
        used to be stored as-is and settled into a bill that paid the guest.
        Food is never taxed (README rule 2) — the old default of 5% applied to
@@ -177,7 +182,11 @@ export const handler = dispatch({
     const kind = String(body?.kind ?? "FOOD").toUpperCase();
     // The cafe till sees its own CAFE series and nothing of the restaurant's.
     if (caller.role === "cafe_billing" && kind !== "CAFE") throw new HttpError(403, "permission-denied", "You do not have permission to perform this action.");
-    const lim = intArg(body?.limit, 200, 1, 500);
+    /* One restaurant day (date_key, YYYY-MM-DD) is bounded, so it may ask for
+       all of it: the cafe counter totals its day from this list, and the old
+       cap of the latest 200 bills silently undercounted a busy afternoon. */
+    const date = typeof body?.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.date) ? body.date : null;
+    const lim = date ? intArg(body?.limit, 2000, 1, 2000) : intArg(body?.limit, 200, 1, 500);
     /* Bill history is the one place a cancelled bill must still be VISIBLE —
        it is the record of what happened, and hiding it would make the void
        untraceable from the screen people actually look at. The sales figures
@@ -185,8 +194,8 @@ export const handler = dispatch({
     const res = await pool.query(
       `SELECT b.*, v.reason AS void_reason, v.voided_at, v.voided_by_username
        FROM bills b LEFT JOIN bill_voids v ON v.bill_id = b.id
-       WHERE b.type=$1 ORDER BY b.created_at DESC LIMIT $2`,
-      [kind, lim],
+       WHERE b.type=$1 ${date ? "AND b.date_key=$3" : ""} ORDER BY b.created_at DESC LIMIT $2`,
+      date ? [kind, lim, date] : [kind, lim],
     );
     return res.rows.map(withVoid);
   },

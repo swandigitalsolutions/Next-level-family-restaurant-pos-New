@@ -10,9 +10,8 @@
  * output contract (`rolling` shape) as the Firestore version; same fields
  * the dashboard already renders.
  *
- * Call `computeRolling()` after every bill-writing transaction commits (same
- * call site as `onBillWrite` triggered before) and on-demand from the
- * dashboard GET endpoint.
+ * After a bill-writing transaction commits, call `refreshRollingSoon()`;
+ * the dashboard GET endpoint calls `computeRolling()` on demand.
  */
 import { getPool } from "./db";
 import { dateKey, round2 } from "./money";
@@ -35,6 +34,32 @@ function weekdayLabel(key: string): string {
    perfectly valid row in `bills`. Miss one and the dashboard quietly reports
    takings the till never took. */
 const NOT_VOIDED = "NOT EXISTS (SELECT 1 FROM bill_voids v WHERE v.bill_id = bills.id)";
+
+/* Coalesced refresh after a bill commits. computeRolling() runs seven
+   aggregate queries at once; firing it for EVERY bill meant a dinner rush of
+   simultaneous settles queued hundreds of statistics queries in front of the
+   bills themselves and exhausted the connection pool — measured at 30 tills:
+   bills took 1–3 s and a third of them failed. Now at most one refresh runs,
+   and bills that land while it runs trigger exactly one more afterwards, so
+   the dashboard still ends up current. */
+let refreshing = false;
+let refreshAgain = false;
+export function refreshRollingSoon(): void {
+  if (refreshing) {
+    refreshAgain = true;
+    return;
+  }
+  refreshing = true;
+  computeRolling()
+    .catch((e) => console.error("stats refresh failed (non-fatal)", e))
+    .finally(() => {
+      refreshing = false;
+      if (refreshAgain) {
+        refreshAgain = false;
+        refreshRollingSoon();
+      }
+    });
+}
 
 export async function computeRolling() {
   const pool = await getPool();
