@@ -101,6 +101,21 @@ export const handler = dispatch({
     const kind = kindOf(body?.kind);
     const id = body?.id ? String(body.id) : null;
 
+    /* Two live items with the same name on one till are two identical
+       buttons: the cashier cannot tell which is which, and the bill history
+       cannot either. The bar sells one drink at several sizes, so there the
+       bottle size is part of the name. Switched-off items do not count. */
+    async function assertUniqueName(k: string, name: string, bottleSize: string | null, exceptId: string | null) {
+      const clash = await pool.query(
+        `SELECT 1 FROM catalog WHERE kind=$1 AND status='active' AND name_lower=$2
+           AND coalesce(lower(bottle_size),'') = coalesce(lower($3),'') AND ($4::text IS NULL OR id <> $4) LIMIT 1`,
+        [k, lower(name), bottleSize, exceptId],
+      );
+      if (clash.rowCount) {
+        throw new HttpError(409, "already-exists", `"${name}"${bottleSize ? ` (${bottleSize})` : ""} is already on the menu.`);
+      }
+    }
+
     if (!id) {
       const name = String(body?.name ?? "").trim();
       if (!name) throw new HttpError(422, "invalid-argument", kind === "food" ? "Item name is required" : "Product name is required");
@@ -111,6 +126,7 @@ export const handler = dispatch({
       const taxRate = kind === "alcohol" ? taxRateOf(body?.tax_rate ?? 0) : 0;
       const catRes = await pool.query("SELECT name, sort_order FROM categories WHERE id=$1", [categoryId]);
       if (!catRes.rowCount) throw new HttpError(404, "not-found", "Category not found");
+      await assertUniqueName(kind, name, kind === "alcohol" ? String(body?.bottle_size ?? "").trim() || null : null, null);
 
       const newId = `item_${kind}_` + randomUUID();
       await pool.query(
@@ -148,6 +164,10 @@ export const handler = dispatch({
       const catRes = await pool.query("SELECT name, sort_order FROM categories WHERE id=$1", [categoryId]);
       if (!catRes.rowCount) throw new HttpError(404, "not-found", "Category not found");
       categoryName = catRes.rows[0].name; categorySort = catRes.rows[0].sort_order;
+    }
+    // Renaming, resizing, or switching back on can create a clash too.
+    if (status === "active" && (name !== cur.name || bottleSize !== (cur.bottle_size ?? null) || cur.status !== "active")) {
+      await assertUniqueName(cur.kind, name, bottleSize, id);
     }
 
     await pool.query(

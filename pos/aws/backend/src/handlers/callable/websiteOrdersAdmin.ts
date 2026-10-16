@@ -156,7 +156,10 @@ export const handler = dispatch({
         bills.push({ type: kind === "food" ? "FOOD" : "ALCOHOL", id: billId, bill_no: billNo });
       }
 
-      await applyStockWrites(client, stockSnaps, lines.map((l) => ({ itemId: l.itemId, delta: -l.qty })));
+      const oversold = await applyStockWrites(client, stockSnaps, lines.map((l) => ({ itemId: l.itemId, delta: -l.qty })));
+      for (const o of oversold) {
+        await auditInTx(client, { actorUid: caller.uid, actorUsername: caller.username || null, actorRole: caller.role, action: "stock.oversold", entityType: "catalog_item", entityId: o.itemId, details: { ref: order.ref, bill_nos: billNos, had: o.had, sold: o.sold } });
+      }
 
       const totalPaise = settledSubtotalPaise + settledTaxPaise;
       const prevBalancePaise = Math.max(0, totalPaise - (Number(order.paid_paise) || 0));

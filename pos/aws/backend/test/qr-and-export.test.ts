@@ -261,17 +261,25 @@ test("CSV export: renders the bills in range and validates its parameters", asyn
                     VALUES ('u_admin','adm','adm','Admin','','admin','active',now(),now())`);
   await seedBill(pool, { billNo: "FOOD-000001", type: "FOOD", customer: "Asha", total: 250, dateKey: "2026-01-10" });
   await seedBill(pool, { billNo: "ALC-000001", type: "ALCOHOL", customer: "Ravi", total: 400, dateKey: "2026-02-20" });
+  await seedBill(pool, { billNo: "CAFE-000001", type: "CAFE", customer: "-", total: 40, dateKey: "2026-03-05" });
 
   await withFakeVerifier({ "custom:role": "admin", sub: "u_admin", "custom:pos_uid": "u_admin", "cognito:username": "adm" }, async (exportReport) => {
     const all = await exportReport(exportEvent({ type: "all" }));
     assert.equal(all.statusCode, 200);
     assert.match(all.headers["Content-Type"], /text\/csv/);
     const lines = (all as any).body.split("\r\n");
-    assert.equal(lines.length, 3, "header + two bills");
+    assert.equal(lines.length, 4, "header + three bills");
     assert.ok(lines[0].startsWith("Type,Bill No,Date"));
 
     const food = await exportReport(exportEvent({ type: "food" }));
     assert.equal((food as any).body.split("\r\n").length, 2);
+
+    // The cafe till exports on its own (it used to be refused with a 400).
+    const cafe = await exportReport(exportEvent({ type: "cafe" }));
+    assert.equal(cafe.statusCode, 200);
+    const cafeLines = (cafe as any).body.split("\r\n");
+    assert.equal(cafeLines.length, 2);
+    assert.ok(cafeLines[1].includes("CAFE-000001"));
 
     const ranged = await exportReport(exportEvent({ type: "all", from: "2026-02-01", to: "2026-02-28" }));
     const rangedLines = (ranged as any).body.split("\r\n");

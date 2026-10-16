@@ -137,13 +137,26 @@ export function CatalogScreen() {
     await commitItem();
   }
 
+  /* The category a NEW item is saved under is the one its dropdown shows.
+     "+ Item" captured the first category at the moment of the tap; tapped
+     before the list loaded, that was "", while the dropdown still displayed
+     the first option — so Save failed with "category_id is required" on a
+     form that looked complete. An existing item keeps its own category even
+     if that category has since been switched off. */
+  const cats = categories.data ?? [];
+  const draftCategory = !draft
+    ? ""
+    : draft.id || cats.some((c) => c.id === draft.category_id)
+      ? draft.category_id
+      : cats[0]?.id ?? "";
+
   async function commitItem() {
     if (!draft) return;
     const payload: Record<string, unknown> = {
       id: draft.id,
       kind,
       name: draft.name.trim(),
-      category_id: draft.category_id,
+      category_id: draftCategory,
       price: Number(draft.price) || 0,
       description: draft.description.trim(),
       status: draft.status,
@@ -278,7 +291,7 @@ export function CatalogScreen() {
         footer={
           <>
             <Button onClick={() => setDraft(null)}>Cancel</Button>
-            <Button variant="primary" onClick={saveItem} disabled={action.busy || !draft?.name.trim()}>
+            <Button variant="primary" onClick={saveItem} disabled={action.busy || !draft?.name.trim() || !draftCategory}>
               Save
             </Button>
           </>
@@ -301,8 +314,11 @@ export function CatalogScreen() {
             <Field label="Name">
               <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
             </Field>
-            <Field label="Category">
-              <Select value={draft.category_id} onChange={(e) => setDraft({ ...draft, category_id: e.target.value })}>
+            <Field
+              label="Category"
+              error={!draftCategory && categories.data ? "This menu has no categories yet — add one with + Category first." : undefined}
+            >
+              <Select value={draftCategory} onChange={(e) => setDraft({ ...draft, category_id: e.target.value })}>
                 {(categories.data ?? []).map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}

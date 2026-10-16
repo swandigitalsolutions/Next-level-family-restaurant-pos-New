@@ -29,8 +29,18 @@ export async function readStockSnapshots(client: PoolClient, itemIds: Array<stri
 
 export interface StockDelta { itemId: string | number | null | undefined; delta: number }
 
-/** Write phase — call after readStockSnapshots, inside the same transaction. */
-export async function applyStockWrites(client: PoolClient, snapshots: Map<string, StockRow>, deltas: StockDelta[]): Promise<void> {
+/** A sale that took more than the recorded stock (the count was wrong). */
+export interface Oversold { itemId: string; had: number; sold: number }
+
+/** Write phase — call after readStockSnapshots, inside the same transaction.
+ *
+ * Selling beyond the recorded count is ALLOWED (owner decision O-1): the till
+ * already stops a cashier at the count, so a sale that still exceeds it means
+ * the count was wrong, and refusing would block a real customer at the bar.
+ * Stock floors at 0 and every such line is returned so the caller can put it
+ * in the audit log — the owner sees exactly which counts need fixing. */
+export async function applyStockWrites(client: PoolClient, snapshots: Map<string, StockRow>, deltas: StockDelta[]): Promise<Oversold[]> {
+  const oversold: Oversold[] = [];
   const byId = new Map<string, number>();
   for (const { itemId, delta } of deltas) {
     if (typeof itemId !== "string" || !itemId || !delta) continue;
@@ -40,7 +50,10 @@ export async function applyStockWrites(client: PoolClient, snapshots: Map<string
     const snap = snapshots.get(itemId);
     if (!snap) continue;
     if (snap.stockQty === null || snap.stockQty === undefined) continue; // not tracked
-    const next = Math.max(0, Number(snap.stockQty) + delta);
+    const had = Number(snap.stockQty);
+    if (delta < 0 && had + delta < 0) oversold.push({ itemId, had, sold: -delta });
+    const next = Math.max(0, had + delta);
     await client.query(`UPDATE catalog SET stock_qty = $2, updated_at = now() WHERE id = $1`, [itemId, next]);
   }
+  return oversold;
 }

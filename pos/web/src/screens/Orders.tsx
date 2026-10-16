@@ -15,7 +15,7 @@
  */
 import { useState } from "react";
 import { useQuery, useAction } from "../lib/useQuery";
-import { callable } from "../lib/api";
+import { callable, downloadReport } from "../lib/api";
 import { useSession } from "../lib/session";
 import { money, dateTime, titleCase, todayKey } from "../lib/format";
 import { Card, EmptyState, ErrorNote, Input, Pill, Segmented, Sheet, Spinner, Button, Field } from "../components/ui";
@@ -38,6 +38,7 @@ export function OrdersScreen() {
   const [voidFor, setVoidFor] = useState<Bill | null>(null);
   const [voidReason, setVoidReason] = useState("");
   const voidAction = useAction();
+  const exportAction = useAction();
   const { role } = useSession();
   const mayVoid = role === "admin" || role === "manager";
 
@@ -95,8 +96,16 @@ export function OrdersScreen() {
             Clear date
           </Button>
         )}
+        {/* The sales book for the accountant: exactly what the filters show
+            (till and day). It existed only as an API, so nobody could use it. */}
+        {mayVoid && (
+          <Button onClick={() => exportAction.run(() => downloadReport({ type: type.toLowerCase(), from: date, to: date }))} disabled={exportAction.busy}>
+            {exportAction.busy ? "Exporting…" : "Export CSV"}
+          </Button>
+        )}
       </Card>
 
+      {exportAction.error && <ErrorNote message={exportAction.error} />}
       {list.error && <ErrorNote message={list.error} onRetry={list.reload} />}
 
       {list.initial ? (

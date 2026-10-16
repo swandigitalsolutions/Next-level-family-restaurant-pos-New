@@ -102,6 +102,42 @@ async function request(path: string, init: RequestInit): Promise<any> {
   return body;
 }
 
+/**
+ * Download the sales CSV (admin and manager). The export endpoint is a GET
+ * that needs the session header, so a plain link cannot carry it: fetch it,
+ * then hand the browser the file. Throws ApiError with the server's message
+ * (e.g. "That range covers more than … bills").
+ */
+export async function downloadReport(params: { type: string; from?: string; to?: string }): Promise<string> {
+  const token = getToken();
+  const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v) as [string, string][]);
+  let res: Response;
+  try {
+    res = await fetch(`/api/reports/export?${qs}`, { headers: token ? { authorization: `Bearer ${token}` } : {} });
+  } catch {
+    throw new ApiError(0, "offline", "Cannot reach the POS server. Check this device's wifi.");
+  }
+  if (!res.ok) {
+    const body = await parse(res);
+    if (res.status === 401) {
+      setToken(null);
+      window.dispatchEvent(new Event(AUTH_LOST_EVENT));
+    }
+    const message = typeof body?.error === "string" ? body.error : body?.error?.message ?? `Export failed (${res.status})`;
+    throw new ApiError(res.status, "export-failed", message);
+  }
+  const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? "sales-report.csv";
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  return name;
+}
+
 /** Call a staff action. Throws ApiError on anything but 2xx. */
 export async function callable<T = any>(module: string, action: string, body: unknown = {}): Promise<T> {
   const token = getToken();

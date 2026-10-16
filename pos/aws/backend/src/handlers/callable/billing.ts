@@ -125,7 +125,10 @@ export const handler = dispatch({
           clientRef,
         });
         await insertBill(client, billId, row);
-        await applyStockWrites(client, stockSnaps, computed.items.map((l: any) => ({ itemId: l.itemId, delta: -l.qty })));
+        const oversold = await applyStockWrites(client, stockSnaps, computed.items.map((l: any) => ({ itemId: l.itemId, delta: -l.qty })));
+        for (const o of oversold) {
+          await auditInTx(client, { actorUid: caller.uid, actorUsername: caller.username || null, actorRole: caller.role, action: "stock.oversold", entityType: "catalog_item", entityId: o.itemId, details: { bill_no: billNo, had: o.had, sold: o.sold } });
+        }
         await auditInTx(client, { actorUid: caller.uid, actorUsername: caller.username || null, actorRole: caller.role, action: "bill.create", entityType: type === "FOOD" ? "food_bill" : type === "CAFE" ? "cafe_bill" : "alcohol_bill", entityId: billId, details: { bill_no: billNo, grand_total: computed.grandTotal } });
         return billNo;
       }, BILL_TX);
@@ -213,7 +216,10 @@ export const handler = dispatch({
         bills.push({ type: g.kind === "food" ? "FOOD" : "ALCOHOL", id: billId, bill_no: billNo });
       }
 
-      await applyStockWrites(client, stockSnaps, lines.map((l) => ({ itemId: l.itemId, delta: -l.qty })));
+      const oversold = await applyStockWrites(client, stockSnaps, lines.map((l) => ({ itemId: l.itemId, delta: -l.qty })));
+      for (const o of oversold) {
+        await auditInTx(client, { actorUid: caller.uid, actorUsername: caller.username || null, actorRole: caller.role, action: "stock.oversold", entityType: "catalog_item", entityId: o.itemId, details: { table_no: sess.table_no, bill_nos: bills.map((x) => x.bill_no), had: o.had, sold: o.sold } });
+      }
       await client.query("UPDATE table_sessions SET status='settled', settled_at=$2, settled_bill_ids=$3 WHERE id=$1", [sessionId, createdAt, billIds]);
       await client.query("UPDATE restaurant_tables SET status='available', open_session_id=NULL, updated_at=$2 WHERE id=$1", [sess.table_id, createdAt]);
       await auditInTx(client, { actorUid: caller.uid, actorUsername: caller.username || null, actorRole: caller.role, action: "table.settle", entityType: "table_session", entityId: sessionId, details: { table_no: sess.table_no, grand_total: settlement.grandTotal, discount: settlement.discount } });

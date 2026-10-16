@@ -35,9 +35,23 @@ test("createBill: stock never goes negative (floors at 0)", async () => {
   const pool = await getPool();
   const cat = await seedCategory(pool, "food");
   const item = await seedItem(pool, { kind: "food", categoryId: cat, name: "Special", price: 100, stockQty: 2 });
-  await call("createBill", { type: "FOOD", items: [{ item_id: item, name: "Special", price: 100, qty: 5 }] });
+  const res: any = await call("createBill", { type: "FOOD", items: [{ item_id: item, name: "Special", price: 100, qty: 5 }] });
+  assert.equal(res.statusCode, 200, "O-1: a sale beyond a wrong count is not refused");
   const row = (await pool.query("SELECT stock_qty FROM catalog WHERE id=$1", [item])).rows[0];
   assert.equal(row.stock_qty, 0);
+  // ...but the owner is told the count was wrong.
+  const audit = (await pool.query("SELECT details FROM audit_log WHERE action='stock.oversold' AND entity_id=$1", [item])).rows;
+  assert.equal(audit.length, 1);
+  assert.equal(audit[0].details.had, 2);
+  assert.equal(audit[0].details.sold, 5);
+});
+
+test("a sale within stock writes no oversold entry", async () => {
+  const pool = await getPool();
+  const cat = await seedCategory(pool, "food");
+  const item = await seedItem(pool, { kind: "food", categoryId: cat, name: "Special", price: 100, stockQty: 2 });
+  await call("createBill", { type: "FOOD", items: [{ item_id: item, name: "Special", price: 100, qty: 2 }] });
+  assert.equal((await pool.query("SELECT 1 FROM audit_log WHERE action='stock.oversold'")).rowCount, 0);
 });
 
 test("createBill CAFE: cafe_billing role allowed, billing/manager/admin also allowed", async () => {

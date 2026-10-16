@@ -64,6 +64,8 @@ export function CafeScreen() {
   const subtotal = lines.reduce((a, l) => a + l.price * l.qty, 0);
   const discountNum = Math.max(0, Number(discount) || 0);
   const total = Math.max(0, subtotal - discountNum);
+  // The server refuses a discount above the sale; say so before Save, not after.
+  const discountTooBig = lines.length > 0 && discountNum > Math.round(subtotal * 100) / 100 + 0.001;
 
   /* Change the basket and it becomes a different sale, so it gets a different
      idempotency key. Without this, correcting a line after a failed attempt
@@ -191,7 +193,7 @@ export function CafeScreen() {
         </ul>
       )}
 
-      <Field label="Discount (₹)">
+      <Field label="Discount (₹)" error={discountTooBig ? `The discount can be at most ${money(subtotal)}.` : undefined}>
         <Input value={discount} onChange={(e) => setDiscount(e.target.value)} inputMode="decimal" />
       </Field>
       <Field label="Payment method">
@@ -222,10 +224,10 @@ export function CafeScreen() {
      Same two-way choice as the food till. */
   const settleButtons = (
     <>
-      <Button onClick={() => settle(false)} disabled={action.busy || lines.length === 0}>
+      <Button onClick={() => settle(false)} disabled={action.busy || lines.length === 0 || discountTooBig}>
         {action.busy ? "Saving…" : "Save"}
       </Button>
-      <Button variant="primary" onClick={() => settle(true)} disabled={action.busy || lines.length === 0}>
+      <Button variant="primary" onClick={() => settle(true)} disabled={action.busy || lines.length === 0 || discountTooBig}>
         {action.busy ? "Settling…" : `Save & print ${money(total)}`}
       </Button>
     </>

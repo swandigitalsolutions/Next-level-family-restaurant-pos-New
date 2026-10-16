@@ -210,6 +210,8 @@ for (const user of Object.keys(PW)) {
     await uiLogin(p, user, PW[user]);
     await p.waitForURL(`**${LANDING[user]}`);
     if (user !== "cook") {
+      // The shell draws its nav just after the route changes; read it once it is there.
+      await p.locator("nav.shell-side a").first().waitFor();
       const nav = await navItems(p);
       check(JSON.stringify(nav) === JSON.stringify(NAV_EXPECTED[user]), `${user} nav = ${JSON.stringify(nav)}`);
     } else {
@@ -579,8 +581,10 @@ spec("tables: create, show QR, regenerate invalidates old token", async ({ page 
   await qr.getByRole("button", { name: "Close" }).click();
   const before = (await call("admin", "queries", "qrAdminTables")).body.find((t) => t.table_no === tno).qr_token;
   await card.getByRole("button", { name: "New code" }).click();
-  await toastText(p);
-  const after = (await call("admin", "queries", "qrAdminTables")).body.find((t) => t.table_no === tno).qr_token;
+  // Wait for THIS toast: the "added" toast from creating the table can still be
+  // on screen, and reading the token then raced the regeneration.
+  await p.locator(".ui-toast", { hasText: "New code for table" }).waitFor({ timeout: 8000 });
+  const after =(await call("admin", "queries", "qrAdminTables")).body.find((t) => t.table_no === tno).qr_token;
   check(before !== after, "token changed");
   const old = await fetch(`${BASE}/api/qr/menu/${before}`);
   check(old.status >= 400, `old token rejected (${old.status})`);
@@ -610,10 +614,16 @@ spec("billing: food direct sale, no tax, receipt printed", async ({ page }) => {
   const t = await toastText(p);
   const no = t.match(/(FOOD-\d+)/)?.[1];
   check(no, `toast carries bill no: ${t}`);
+  // The receipt is printed from the STORED bill (lib/receipts), fetched after
+  // the save, so it lands a moment after the toast — wait for it, then make
+  // sure it printed exactly once.
+  await p.waitForFunction(() => window.__prints >= 1, null, { timeout: 8000 }).catch(() => {});
+  await p.waitForTimeout(500);
   check((await p.evaluate(() => window.__prints)) === 1, "printed once");
   const bill = (await call("admin", "queries", "listOrders", { type: "FOOD", date: "", search: no, limit: 5 })).body.orders[0];
   check(bill && Math.abs(bill.grand_total - (a.price * 2 + b.price)) < 0.01, `total ${bill?.grand_total} = ${a.price * 2 + b.price}`);
-  const receipt = await p.locator(".print-area, [class*=receipt]").first().innerText().catch(() => "");
+  // textContent: the print area is laid out but invisible on screen, so innerText is empty.
+  const receipt = (await p.locator(".print-area").first().textContent().catch(() => "")) ?? "";
   soft(receipt.includes(no), "receipt DOM contains the bill number");
 });
 
@@ -675,14 +685,15 @@ spec("billing: discount greater than total is refused", async ({ page }) => {
   await addToBill(p, "Kingfisher Premium", 1);
   await p.getByLabel("Discount in rupees").fill("5000");
   const before = await billCount();
-  await openSettle(p);
-  await p.getByRole("dialog", { name: "Settle" }).getByRole("button", { name: "Save", exact: true }).click();
-  await p.waitForTimeout(1500);
-  const after = await billCount();
-  check(after === before, `no bill created for discount > total (${before} -> ${after})`);
-  const err = await p.getByRole("dialog", { name: "Settle" }).getByRole("alert").innerText().catch(() => "");
-  check(/NOT saved/.test(err), `error shown in the sheet: ${err}`);
-  soft(false === (await p.locator(".till-cart-foot button").innerText()).includes("₹0.00"), "UI shows 'Settle ₹0.00' for a discount above the total instead of flagging it before submit");
+  // Flagged on the till, before Settle — not a "Settle ₹0.00" that fails on Save.
+  check(await p.locator(".till-cart-foot button").isDisabled(), "Settle is disabled while the discount is too big");
+  const msg = await p.locator(".ui-field-error").innerText().catch(() => "");
+  check(/at most/.test(msg), `the reason is shown: ${msg}`);
+  // The server is still the backstop.
+  const kf = (await catalog("alcohol")).find((i) => i.name === "Kingfisher Premium");
+  const r = await call("cashier", "billing", "createBill", { type: "ALCOHOL", items: [{ item_id: kf.id, name: kf.name, price: kf.price, qty: 1 }], discount: 5000, payment_method: "Cash" });
+  check(r.status === 422, `server refuses it too (${r.status})`);
+  check((await billCount()) === before, "no bill created");
 });
 
 spec("billing: empty table cannot be settled", async ({ page }) => {
@@ -737,7 +748,8 @@ spec("cafe: Save and Save & print", async ({ page }) => {
   await p.locator(".till-bar").click();
   await dlg.getByRole("button", { name: /Save & print/ }).click();
   await toastText(p);
-  await p.waitForTimeout(300);
+  // Printed from the stored bill, fetched after the save — wait for it.
+  await p.waitForFunction(() => window.__prints >= 1, null, { timeout: 8000 }).catch(() => {});
   check((await p.evaluate(() => window.__prints)) === 1, "Save & print prints");
   // retry after a failed Save & print still prints
   await p.route("**/api/callable/billing/createBill", (r) => r.fulfill({ status: 500, contentType: "application/json", body: '{"error":{"code":"internal","message":"boom"}}' }), { times: 1 });
@@ -747,16 +759,16 @@ spec("cafe: Save and Save & print", async ({ page }) => {
   await dlg.getByRole("alert").waitFor();
   await dlg.getByRole("button", { name: "Try again" }).click();
   await toastText(p);
-  await p.waitForTimeout(300);
+  await p.waitForFunction(() => window.__prints >= 2, null, { timeout: 8000 }).catch(() => {});
   check((await p.evaluate(() => window.__prints)) === 2, "retry of Save & print prints");
-  // discount above the cafe total
+  // discount above the cafe total: flagged before Save, and Save is not offered
   await p.locator(".till-item", { hasText: cafe[0].name }).first().click();
   await p.locator(".till-bar").click();
   await dlg.getByLabel("Discount (₹)").fill("99999");
   const before = await billCount();
-  await dlg.getByRole("button", { name: "Save", exact: true }).click();
-  await p.waitForTimeout(1200);
-  check((await billCount()) === before, "cafe discount > total refused");
+  check(await dlg.getByRole("button", { name: "Save", exact: true }).isDisabled(), "Save is disabled while the discount is too big");
+  check(/at most/.test(await dlg.locator(".ui-field-error").innerText()), "the reason is shown");
+  check((await billCount()) === before, "no cafe bill created");
 });
 
 spec("billing: bar stock limit", async ({ page }) => {
@@ -766,27 +778,27 @@ spec("billing: bar stock limit", async ({ page }) => {
   await p.goto(`${BASE}/alcohol`);
   await p.getByRole("tab", { name: "Direct sale" }).click();
   await p.locator(".till-item", { hasText: "Budweiser" }).locator(".till-item-stock").getByText("2 left").waitFor();
+  // 1. The till stops the cashier at the recorded count.
   await addToBill(p, "Budweiser", 3);
   const qty = await p.locator(".till-lines li", { hasText: "Budweiser" }).locator(".ui-stepper .num").innerText();
-  soft(qty === "2", `till let the cashier add ${qty} Budweiser with only 2 in stock`);
+  check(qty === "2", `till caps Budweiser at the 2 in stock (shows ${qty})`);
+  // 2. Selling exactly the stock is a normal sale and marks it sold out.
   const before = await billCount();
   await openSettle(p);
   await p.getByRole("dialog", { name: "Settle" }).getByRole("button", { name: "Save", exact: true }).click();
-  await p.waitForTimeout(1500);
-  check((await billCount()) === before, "over-stock sale refused by server");
-  const err = await p.getByRole("dialog", { name: "Settle" }).getByRole("alert").innerText().catch(() => "");
-  check(/stock|left|only/i.test(err), `stock error shown: ${err}`);
-  // selling exactly the stock marks it sold out
-  await p.locator(".till-lines li", { hasText: "Budweiser" }).getByRole("button", { name: "One less" }).click().catch(() => {});
-  await p.getByRole("dialog", { name: "Settle" }).getByRole("button", { name: "Edit" }).click();
-  await p.locator(".till-lines li", { hasText: "Budweiser" }).getByRole("button", { name: "One less" }).click();
-  await openSettle(p);
-  await p.getByRole("dialog", { name: "Settle" }).getByRole("button", { name: "Save", exact: true }).click();
   await toastText(p);
+  check((await billCount()) === before + 1, "the 2 in stock are sold");
   await p.reload();
   await p.getByRole("tab", { name: "Direct sale" }).click();
-  const soldOut = p.locator(".till-item", { hasText: "Budweiser" });
-  check(await soldOut.isDisabled(), "Budweiser sold out and disabled");
+  check(await p.locator(".till-item", { hasText: "Budweiser" }).isDisabled(), "Budweiser sold out and disabled");
+  // 3. O-1: a sale that still exceeds the count (the count was wrong) is not
+  //    refused — service continues — and the oversell is in the audit log.
+  const r = await call("cashier", "billing", "createBill", { type: "ALCOHOL", items: [{ item_id: bud.id, name: "Budweiser", price: bud.price, qty: 1, tax_rate: bud.tax_rate }], payment_method: "Cash" });
+  check(r.status === 200, `a sale beyond a wrong count is not refused (${r.status})`);
+  const audit = (await call("admin", "queries", "auditLog", { limit: 50 })).body;
+  const rows = Array.isArray(audit) ? audit : audit.entries ?? audit.rows ?? [];
+  check(rows.some((e) => e.action === "stock.oversold" && (e.entity_id ?? e.entityId) === bud.id), "the oversell is recorded in the audit log");
+  await call("admin", "catalogAdmin", "upsertCatalogItem", { id: bud.id, kind: "alcohol", stock_qty: 2 });
 });
 
 /* ═════════════════ 5. QR guest flow ═════════════════ */
@@ -845,8 +857,14 @@ spec("qr: invalid token shows a friendly error", async ({ page }) => {
 spec("qr: a sold-out / inactive item cannot be ordered", async () => {
   const t = (await call("admin", "queries", "qrAdminTables")).body.find((x) => x.table_no === "T6");
   const bud = (await catalog("alcohol")).find((i) => i.name === "Budweiser");
-  const r = await fetch(`${BASE}/api/qr/orders`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: t.qr_token, customer_name: "x", items: [{ id: bud.id, kind: "alcohol", qty: 1 }] }) });
-  check(r.status >= 400, `sold-out item refused (${r.status})`);
+  // Sets its own precondition rather than relying on an earlier spec's sale.
+  await call("admin", "catalogAdmin", "upsertCatalogItem", { id: bud.id, kind: "alcohol", stock_qty: 0 });
+  try {
+    const r = await fetch(`${BASE}/api/qr/orders`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: t.qr_token, customer_name: "x", items: [{ id: bud.id, kind: "alcohol", qty: 1 }] }) });
+    check(r.status >= 400, `sold-out item refused (${r.status})`);
+  } finally {
+    await call("admin", "catalogAdmin", "upsertCatalogItem", { id: bud.id, kind: "alcohol", stock_qty: 2 });
+  }
 });
 
 /* ═════════════════ 6. boards, history, audit, export, dashboard ═════════════════ */
@@ -963,7 +981,7 @@ spec("audit log: admin and owner can read, entries present", async ({ page }) =>
   }
 });
 
-spec("csv export: API works for admin/manager, refused for others; no UI entry point", async ({ page }) => {
+spec("csv export: API works for admin/manager, refused for others; Bill history downloads it", async ({ page }) => {
   const r = await fetch(`${BASE}/api/reports/export?type=all`, { headers: { authorization: `Bearer ${await token("admin")}` } });
   const body = await r.text();
   check(r.ok && /csv/.test(r.headers.get("content-type") || ""), `export 200 csv (${r.status} ${r.headers.get("content-type")})`);
@@ -972,15 +990,24 @@ spec("csv export: API works for admin/manager, refused for others; no UI entry p
   const food = await (await fetch(`${BASE}/api/reports/export?type=food`, { headers: { authorization: `Bearer ${await token("manager")}` } })).text();
   check(!/ALCOHOL/.test(food.split("\n").slice(1).join("\n")), "type=food filter works");
   const cafe = await fetch(`${BASE}/api/reports/export?type=cafe`, { headers: { authorization: `Bearer ${await token("admin")}` } });
-  soft(cafe.ok, `type=cafe export is ${cafe.status} (cafe bills cannot be exported on their own)`);
+  check(cafe.ok, `type=cafe export works (${cafe.status})`);
+  check(!/\n(FOOD|ALCOHOL),/.test(await cafe.text()), "type=cafe holds only cafe bills");
   const own = await fetch(`${BASE}/api/reports/export`, { headers: { authorization: `Bearer ${await token("owner")}` } });
   check(own.status === 403, `owner export -> ${own.status}`);
+  // The button on Bill history downloads what the filters show.
   const p = await page({ user: "admin" });
-  for (const path of ["/dashboard", "/orders"]) {
-    await p.goto(`${BASE}${path}`);
-    await p.waitForTimeout(800);
-    soft((await p.getByText(/export|csv|download/i).count()) > 0, `a CSV export control on ${path}`);
-  }
+  await p.goto(`${BASE}/orders`);
+  await p.getByRole("tab", { name: "Cafe" }).click();
+  const [download] = await Promise.all([p.waitForEvent("download", { timeout: 10000 }), p.getByRole("button", { name: "Export CSV" }).click()]);
+  check(/^sales-report-cafe-.*\.csv$/.test(download.suggestedFilename()), `downloads ${download.suggestedFilename()}`);
+  const file = await download.path();
+  const csv = (await import("fs")).readFileSync(file, "utf8");
+  check(/^Type,Bill No/.test(csv), "the file is the sales CSV");
+  // A cashier sees bill history but no export.
+  const c = await page({ user: "cashier" });
+  await c.goto(`${BASE}/orders`);
+  await c.getByRole("heading", { name: "Bill history" }).waitFor();
+  check((await c.getByRole("button", { name: "Export CSV" }).count()) === 0, "no Export CSV for a cashier");
 });
 
 spec("dashboard: numbers match the bills", async ({ page }) => {

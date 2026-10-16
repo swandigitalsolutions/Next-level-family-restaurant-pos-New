@@ -157,6 +157,10 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
       ? Math.round(Math.min(100, discountInput) * (subtotal + tax)) / 100
       : discountInput;
   const grandTotal = Math.max(0, subtotal + tax - discountNum);
+  /* The server refuses a discount above the bill's pre-tax amount. Say so
+     here, before Settle, instead of showing "Settle ₹0.00" and failing on
+     Save. (A percentage over about 85% on a bar bill crosses this line.) */
+  const discountTooBig = lines.length > 0 && discountNum > Math.round(subtotal * 100) / 100 + 0.001;
   const itemCount = lines.reduce((a, l) => a + l.qty, 0);
   const tenderedNum = Math.max(0, Number(tendered) || 0);
 
@@ -502,6 +506,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
           </Field>
           <Field
             label="Discount"
+            error={discountTooBig ? `The discount can be at most ${money(subtotal)}, the bill before tax.` : undefined}
             hint={
               discountMode === "percent" && discountNum > 0
                 ? `${Math.min(100, discountInput)}% of ${money(subtotal + tax)} = ${money(discountNum)}`
@@ -715,7 +720,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
           </header>
           <div className="till-cart-body">{billBody}</div>
           <footer className="till-cart-foot">
-            <Button variant="primary" large block onClick={() => setSettleOpen(true)} disabled={lines.length === 0}>
+            <Button variant="primary" large block onClick={() => setSettleOpen(true)} disabled={lines.length === 0 || discountTooBig}>
               Settle {money(grandTotal)}
             </Button>
           </footer>
@@ -729,7 +734,7 @@ export function BillingScreen({ kind }: { kind: "food" | "alcohol" }) {
           footer={
             <>
               <Button onClick={() => setBillOpen(false)}>Keep adding</Button>
-              <Button variant="primary" onClick={() => setSettleOpen(true)} disabled={lines.length === 0}>
+              <Button variant="primary" onClick={() => setSettleOpen(true)} disabled={lines.length === 0 || discountTooBig}>
                 Settle {money(grandTotal)}
               </Button>
             </>

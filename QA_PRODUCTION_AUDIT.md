@@ -1,7 +1,7 @@
 # QA & Production Audit — Next Level POS
 
-**Audit date:** 27–28 Sep 2026
-**Branch:** `pos-phase1-ui-and-fixes`, on top of `42f4779`
+**Audit date:** 27–28 Sep 2026; handover pass 14–16 Oct 2026 (§6)
+**Branch:** `main`
 **Scope:** the whole repository, covering the self-hosted POS server
 (`pos/aws/backend`), the database schema and migrations (`pos/aws/db`), the
 React staff and guest app (`pos/web`), and the deployment documentation.
@@ -10,7 +10,11 @@ deployed.
 
 ## Verdict: **READY WITH CONDITIONS** (phase 1: in-restaurant POS)
 
-After the fixes below, no Critical or High issue is open. Every reproduced
+After the fixes below (and the handover pass in §6: backend 220/220 as
+superuser and as `pos_app`, web 187/187, Playwright 61/61, 0 errors under a
+30-till load test), no Critical or High issue is open. The two Medium items
+still open are not code: M-26 (put the tills on a staff-only network) and M-27
+(only matters once website ordering is switched on). Every reproduced
 defect is either fixed with a regression test or listed under
 [Open issues](#4-open-issues-and-risks) with the decision it needs.
 
@@ -36,9 +40,9 @@ defect is either fixed with a regression test or listed under
 | Severity | Found | Fixed | Open |
 |---|---|---|---|
 | Critical | 1 | 1 | 0 |
-| High | 13 | 13 (4 of them by corrected documentation) | 0 |
-| Medium | 29 | 23 | 6 (M-22 to M-27: two need a business decision, plus the network, a cleanup sweep, Node pinning, till-sent prices) |
-| Low | 37 | 12 | 25 (hygiene, UX and a11y polish, history cleanup; several only matter once website ordering is on) |
+| High | 13 (+2 in §6) | 13 (4 of them by corrected documentation) (+2 in §6) | 0 |
+| Medium | 29 (+8 in §6) | 27 (+8 in §6) | 2: M-26 (network) and M-27 (website ordering only). O-2 remains an optional owner preference. |
+| Low | 37 (+2 in §6) | 12 (+2 in §6) | 25 (hygiene, UX and a11y polish, history cleanup; several only matter once website ordering is on) |
 
 **Four lines of work.** Work was split across parallel audits: backend/API/DB,
 security, frontend/Playwright, and deployment. The lead folded the results
@@ -173,10 +177,10 @@ is listed in §4. IDs in brackets are the source audit's own
 | M-19 (perf) | Heavy dish photos, uncompressed and uncached bundle, uncompressed JSON (§2). | Fixed. |
 | M-20 [DEP-11] | After a front-end rebuild a stale tab got HTML for its JS: a blank screen. | Fixed (404 for missing assets); the guide requires a restart on deploy. |
 | M-21 [DEP-10] | Photo uploads were written into the git checkout, so they were not backed up and could clash with `git pull`. The Playwright uploads landed there too. | Doc: `ASSETS_DIR=/var/lib/pos/assets` plus backup in the guide. The test photos were removed. |
-| M-22 [DEP-14] | Node version not pinned (`engines` / `.nvmrc`); the toolchain needs ≥ 22.12. | Doc (guide §1); pinning is **open** (L-level hygiene). |
-| M-23 [BE-4] | Table-session prices and bar `tax_rate` come from the till, not the catalog (inherited Flask behaviour; staff-only). | Open, accepted risk (R-4). |
-| M-24 | **Bar stock is floored at 0 rather than refusing an over-sale**, so the server accepts selling 3 of 2 (the till UI already caps quantity at stock). | **Open: business decision** (O-1). |
-| M-25 [BE] | A percentage discount on bar and mixed bills is computed on subtotal + tax, while the server caps discount at subtotal, so any discount above about 84.7% at 18% tax is refused with 422. | **Open: business decision** (O-2). |
+| M-22 [DEP-14] | Node version not pinned (`engines` / `.nvmrc`); the toolchain needs ≥ 22.12. | **Fixed (handover):** `engines: node >=22.12` in both packages and `.nvmrc` = 22. |
+| M-23 [BE-4] | Table-session prices and bar `tax_rate` come from the till, not the catalog (inherited Flask behaviour; staff-only). | **Fixed (handover, HO-2):** every line is priced from the catalog on the server. |
+| M-24 | **Bar stock is floored at 0 rather than refusing an over-sale**, so the server accepts selling 3 of 2 (the till UI already caps quantity at stock). | **Decided and fixed (handover, HO-8):** an over-sale is accepted and audited as `stock.oversold`. |
+| M-25 [BE] | A percentage discount on bar and mixed bills is computed on subtotal + tax, while the server caps discount at subtotal, so any discount above about 84.7% at 18% tax is refused with 422. | **Mitigated (handover, HO-9):** the till says so before Settle. Applying a percentage before tax remains an owner preference (O-2). |
 | M-26 [DEP-9] | Staff traffic to the Pi is plain HTTP on the shared restaurant network. | **Open** (O-3): network separation or LAN TLS. |
 | M-27 | `idempotency.ts` points to a reaper script that does not exist; `website_order_idempotency` grows without limit. | **Open** (O-4); harmless while website ordering is off. |
 | M-28 | Website ordering and Razorpay were live-reachable although unused. | **Fixed** by the user's decision: server-side switch, off by default; staff board API closed; tests keep the feature covered. |
@@ -242,15 +246,16 @@ is listed in §4. IDs in brackets are the source audit's own
 ## 4. Open issues and risks
 
 **Needs a decision from the owner:**
-- **O-1: selling beyond recorded bar stock.** Today the server accepts it and
-  floors stock at 0; the till screen stops the cashier at the stock count.
-  - Refusing is stricter, but blocks a real sale whenever the count is wrong.
-  - Allowing keeps service moving, but the stock report can be wrong.
-  - Recommendation: keep allowing it, and write an audit entry when stock hits 0.
-- **O-2: percentage discount on taxed bills.** Decide whether a percentage
-  discount applies before tax (fix the till to compute on subtotal) or after
-  tax (let the server allow discount ≤ subtotal + tax). Today anything above
-  about 84.7% on a bar bill is refused.
+- ~~**O-1: selling beyond recorded bar stock.**~~ **Decided and done in §6
+  (HO-8):** the till stops the cashier at the count; a sale that still exceeds
+  it (the count was wrong) is accepted, stock floors at 0, and a
+  `stock.oversold` audit entry records what was short. Reversible: refusing
+  would be a one-line change in `lib/stock.ts`.
+- **O-2: percentage discount on taxed bills.** A percentage applies to the
+  taxed total, and the server allows at most the pre-tax amount, so above about
+  84.7% on a bar bill it is refused. Since HO-9 the till says so before Settle
+  instead of failing on Save. The owner may still want a percentage to apply
+  before tax, which would be a small change to the till.
 
 **Environment and process:**
 - **O-3:** plain HTTP on the LAN. Separate the staff network, or add LAN TLS
@@ -345,10 +350,10 @@ can be tested end to end, and it is kept intact on `feature/thank-you-messages`.
 
 | Suite | Result |
 |---|---|
-| Backend, superuser | **216/216** (tsc and eslint clean) |
-| Backend, as `pos_app` | see 6.4 |
-| Frontend `npm run check` | **186/186**, build OK |
-| Playwright, production build | **60/61**. The one failure is O-1 (a business decision, §4). Six scenarios were added in this pass. |
+| Backend, superuser | **220/220** (tsc and eslint clean) |
+| Backend, as `pos_app` | **220/220**, 0 skipped |
+| Frontend `npm run check` | **187/187**, build OK, oxlint 0 errors. Stable over 5 consecutive runs. |
+| Playwright, production build | **61/61 in one complete run** on a fresh database. Six scenarios were added in this pass, and five were corrected (see 6.4). |
 | Load test (§6.3) | **0 errors** at 30 simultaneous tills |
 
 ### 6.2 Findings fixed in this pass
@@ -362,6 +367,11 @@ can be tested end to end, and it is kept intact on `feature/thank-you-messages`.
 | HO-5 | Medium | **The cafe's "Today at this counter" total undercounted on a busy day.** It fetched only the latest 200 cafe bills. | Code review; 200 cafe sales is an ordinary afternoon. | `listBills` accepts `date` (the restaurant's day) and returns up to 2,000 bills for it; the cafe asks for today only. Test in `catalog-prices.test.ts`. |
 | HO-6 | Low | The QR and website order boards recounted their lists every second (their ticker re-rendered with a fresh array). | oxlint `exhaustive-deps`. | Memoised the order list. |
 | HO-7 | Low | Dashboard and Kitchen had no page heading for screen readers. | Playwright a11y scenario. | A visually hidden `<h1>` (`.sr-only`). |
+| HO-8 | Medium | **O-1 closed.** An oversell beyond a wrong bar count was accepted silently, so nobody learned the count was wrong. The Playwright "bar stock limit" scenario had also been failing for the wrong reason: the till correctly capped the sale at the 2 in stock, and the test then expected that legitimate sale to be refused. | Playwright run; reading the scenario's own soft check. | `applyStockWrites` reports any line that exceeds the count; bills, table settles and website settles write a `stock.oversold` audit entry for it. The scenario now checks the three real rules: the till caps at the count, selling the last ones marks the item sold out, and an oversell is accepted and audited. Tests in `billing.test.ts`. |
+| HO-9 | Medium | **A discount larger than the bill showed "Settle ₹0.00"** and failed only after Save. This also covered O-2: a percentage above about 85% on a bar bill crossed the server's limit. | Playwright soft finding. | The food, bar and cafe tills show *"The discount can be at most ₹…"* under the field and disable Settle until it is fixed. The server still refuses it (422) as the backstop. |
+| HO-10 | Medium | **The menu accepted two live dishes with the same name**, giving two identical till buttons. | Playwright soft finding: a second "E2E Dup" was stored. | `upsertCatalogItem` refuses (409) a name already live in that till's menu, on create, rename, or switching an item back on. On the bar the bottle size is part of the name, so one drink can still be sold at several sizes. Tests in `catalog-editor.test.ts` (3). |
+| HO-12 | Medium | **Adding a dish could fail on a form that looked complete.** "+ Item" captured the first category at the moment of the tap. Tapped before the category list had loaded (likely on the Pi or slow wifi), the dish had no category, while the dropdown still displayed the first one, so Save failed with *category_id is required*. | Playwright: `upsertCatalogItem` returned 422 and the *New item* dialog stayed open. | A new dish is saved under the category its dropdown shows. A menu with no categories says so, and Save is disabled. An existing dish keeps its own category even if that category has been switched off. vitest regression (verified to fail on the old code). |
+| HO-11 | Medium | **The CSV sales export had no button** (API only), and cafe bills could not be exported on their own (400). | Playwright soft findings. | **Export CSV** on Bill history (admin and manager) downloads exactly what the filters show (till and day); `type=cafe` is accepted. Tests in `qr-and-export.test.ts` and Playwright (real download, file checked, no button for a cashier). |
 
 ### 6.3 Load test
 
@@ -383,15 +393,23 @@ night (R-1) is still the real check.
 
 ### 6.4 Notes
 
-- **Backend as `pos_app`:** the run is listed in the commit that closes this
-  pass. The superuser run, and the as-`pos_app` run of every privilege-sensitive
-  test, were green.
+- **Test fixes, not product fixes:** five Playwright scenarios were wrong
+  rather than the app. Three read the page too early (the tables, cafe-nav and
+  print-count races), one depended on an earlier scenario's leftover stock (the
+  QR sold-out item), and one expected the over-discount Save to be clickable
+  after HO-9 made it disabled. Each was fixed to wait for the real signal or
+  to set up its own data. Vitest's per-test limit was raised from 5 s to 20 s:
+  slow jsdom typing tests were timing out at random (a different 0–7 of them
+  per run, never an assertion failure).
 - **Environment, not product:** a temp-folder cleanup removed the scratch
   database's files mid-run (the database was rebuilt); and an admin sign-out
   in the browser during the Playwright run revoked every admin session,
   including the harness's (correct behaviour). The affected scenarios were
   re-run with fresh logins and pass.
-- **Still open:** O-1 and O-2 (owner decisions), R-1 (first run on the Pi),
+- **Kept on purpose:** a dish may cost ₹0. Since HO-2 the till can only bill
+  menu items, so a complimentary item (water, a birthday dessert) needs a ₹0
+  menu entry. Every price change is audited.
+- **Still open:** O-2 (optional owner preference), R-1 (first run on the Pi),
   R-2 (the real printer). See §4.
 
 ### 6.5 Files changed in this pass

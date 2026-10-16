@@ -2,6 +2,9 @@
   "name": "nextlevel-pos-backend",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=22.12"
+  },
   "scripts": {
     "build": "tsc -p .",
     "lint": "eslint src --ext .ts",

@@ -74,7 +74,8 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
   const type = String(qs.type || "all").toLowerCase();
   const from = String(qs.from || "");
   const to = String(qs.to || "");
-  if (!["food", "alcohol", "all"].includes(type)) return json(400, { success: false, error: "type must be food, alcohol or all" });
+  // The cafe is its own till with its own bill series; its accountant needs it on its own too.
+  if (!["food", "alcohol", "cafe", "all"].includes(type)) return json(400, { success: false, error: "type must be food, alcohol, cafe or all" });
   if (from && !DATE_RE.test(from)) return json(400, { success: false, error: "from must be YYYY-MM-DD" });
   if (to && !DATE_RE.test(to)) return json(400, { success: false, error: "to must be YYYY-MM-DD" });
 

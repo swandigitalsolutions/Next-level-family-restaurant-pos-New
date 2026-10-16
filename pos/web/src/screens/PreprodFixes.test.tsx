@@ -94,6 +94,31 @@ describe("catalog editor", () => {
     expect(spy).not.toHaveBeenCalledWith("catalogAdmin", "upsertCatalogItem", expect.anything());
   });
 
+  /* Found by the handover Playwright run: "+ Item" tapped before the
+     categories arrived saved with category_id "" (422) while the dropdown
+     displayed the first category. */
+  test("+ Item tapped before the categories load still saves under the category shown", async () => {
+    let release!: (v: unknown) => void;
+    const late = new Promise((r) => (release = r));
+    const spy = makeCallable({
+      "queries.listCategories": () => late,
+      "queries.listCatalogItems": [item],
+      "catalogAdmin.upsertCatalogItem": { id: "i9", name: "Idli", price: 60, status: "active" },
+    });
+    callable.fn = spy;
+    renderScreen(<CatalogScreen />);
+    await userEvent.click(await screen.findByRole("button", { name: "+ Item" }));
+    release([cat]);
+    const dialog = screen.getByRole("dialog");
+    await waitFor(() => expect(within(dialog).getByRole("combobox")).toHaveValue("c1"));
+    await userEvent.type(within(dialog).getByLabelText(/^name/i), "Idli");
+    await userEvent.type(within(dialog).getByLabelText(/price/i), "60");
+    await userEvent.click(within(dialog).getByRole("button", { name: /^save$/i }));
+    await waitFor(() =>
+      expect(spy).toHaveBeenCalledWith("catalogAdmin", "upsertCatalogItem", expect.objectContaining({ name: "Idli", category_id: "c1" })),
+    );
+  });
+
   test("a failed availability toggle does not announce success", async () => {
     callable.fn = makeCallable({ "queries.listCategories": [cat], "queries.listCatalogItems": [item], "catalogAdmin.upsertCatalogItem": fail });
     renderScreen(<CatalogScreen />);
