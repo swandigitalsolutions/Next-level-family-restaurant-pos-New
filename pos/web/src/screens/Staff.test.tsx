@@ -4,7 +4,7 @@
  * do — and deactivation must be explained as "kept, not deleted".
  */
 import { describe, test, expect, beforeEach, vi } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderScreen, makeCallable, sessionUser } from "../test/render";
 import type { Staff } from "../lib/types";
@@ -115,6 +115,37 @@ describe("the role picker", () => {
         expect.objectContaining({ username: "cook1", full_name: "Suresh", role: "kitchen", password: "Kitchen#2026" }),
       ),
     );
+  });
+
+  test("a refusal is shown inside the open sheet, where the admin is looking", async () => {
+    callable.fn = makeCallable({
+      "staffAdmin.listStaff": { staff: [member()] },
+      "staffAdmin.createStaff": () => {
+        throw new Error("Password must be at least 8 characters");
+      },
+    });
+    renderScreen(<StaffScreen />);
+    await userEvent.click(await screen.findByRole("button", { name: /add a staff member/i }));
+    await userEvent.type(screen.getByLabelText(/full name/i), "Suresh");
+    await userEvent.type(screen.getByLabelText(/username/i), "cook1");
+    await userEvent.type(screen.getByLabelText(/^password/i), "short");
+    await userEvent.click(screen.getByRole("button", { name: /^save$/i }));
+
+    const dialog = screen.getByRole("dialog");
+    const alert = await within(dialog).findByRole("alert");
+    expect(alert).toHaveTextContent("Password must be at least 8 characters");
+    // Once only: not repeated on the page behind the sheet as well.
+    expect(screen.getAllByText("Password must be at least 8 characters")).toHaveLength(1);
+
+    // Closing the sheet takes the stale refusal with it.
+    await userEvent.click(within(dialog).getByRole("button", { name: /^cancel$/i }));
+    expect(screen.queryByText("Password must be at least 8 characters")).not.toBeInTheDocument();
+  });
+
+  test("the password field says how long a password must be", async () => {
+    renderScreen(<StaffScreen />);
+    await userEvent.click(await screen.findByRole("button", { name: /add a staff member/i }));
+    expect(screen.getByText(/at least 8 characters/i)).toBeInTheDocument();
   });
 
   test("a new account cannot be saved without a password", async () => {
