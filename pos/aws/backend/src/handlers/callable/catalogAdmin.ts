@@ -47,6 +47,27 @@ const taxRateOf = (v: unknown): number => {
   return t;
 };
 
+/** JPEG, PNG or WEBP by their magic bytes, or null. */
+export function photoSignature(b: Buffer): "jpeg" | "png" | "webp" | null {
+  if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return "jpeg";
+  if (b.length >= 8 && b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "png";
+  if (b.length >= 12 && b.toString("latin1", 0, 4) === "RIFF" && b.toString("latin1", 8, 12) === "WEBP") return "webp";
+  return null;
+}
+
+/* A dish photo is either one uploaded here (/assets/...) or an https link.
+   Anything else stored here is rendered as an <img> on every till and guest
+   phone, and handed to the public website: a javascript:/data: URL, an http
+   link the till's CSP will not load anyway, or a path out of /assets. */
+const SAFE_ASSET = /^\/assets\/[A-Za-z0-9][A-Za-z0-9._/-]*$/;
+const SAFE_LINK = /^https:\/\/[^\s"'<>\\]+$/i;
+export function imagePathOf(v: unknown): string | null {
+  const s = String(v ?? "").trim();
+  if (!s) return null;
+  if (s.length <= 500 && ((SAFE_ASSET.test(s) && !s.includes("..")) || SAFE_LINK.test(s))) return s;
+  throw new HttpError(422, "invalid-argument", "The photo must be one uploaded here, or an https:// link.");
+}
+
 export const handler = dispatch({
   async upsertCategory(body, event) {
     assertManager(event as any);
@@ -137,7 +158,7 @@ export const handler = dispatch({
          price, taxRate, stockQty, kind === "alcohol" ? String(body?.brand ?? "").trim() || null : null,
          kind === "alcohol" ? String(body?.bottle_size ?? "").trim() || null : null,
          kind !== "alcohol" ? String(body?.description ?? "").trim() || null : null,
-         String(body?.image_url ?? "").trim() || null],
+         imagePathOf(body?.image_url)],
       );
       await writeAudit({ actorUid: caller.uid, actorUsername: caller.username || null, actorRole: caller.role, action: "menu.item.create", entityType: kind === "food" ? "food_item" : kind === "cafe" ? "cafe_item" : "alcohol_item", entityId: newId, details: { name, price } });
       return { id: newId, kind, name, price, status: "active" };
@@ -157,7 +178,10 @@ export const handler = dispatch({
     const brand = has("brand") ? String(body.brand ?? "").trim() || null : cur.brand ?? null;
     const bottleSize = has("bottle_size") ? String(body.bottle_size ?? "").trim() || null : cur.bottle_size ?? null;
     const status = has("status") ? statusOf(body.status) : cur.status;
-    const imagePath = has("image_url") ? String(body.image_url ?? "").trim() || null : cur.image_path ?? null;
+    // Checked only when it changes: the editor sends the stored value back on
+    // every save, and a price fix must not fail over an older photo path.
+    const sentImage = has("image_url") ? String(body.image_url ?? "").trim() || null : undefined;
+    const imagePath = sentImage === undefined || sentImage === (cur.image_path ?? null) ? cur.image_path ?? null : imagePathOf(sentImage);
 
     let categoryName = cur.category_name, categorySort = cur.category_sort;
     if (categoryId !== cur.category_id) {
@@ -225,6 +249,14 @@ export const handler = dispatch({
       throw new HttpError(413, "invalid-argument", `That photo is ${(input.length / 1048576).toFixed(1)}MB. Please use one under ${MAX_UPLOAD_BYTES / 1048576}MB.`);
     }
     if (declared && !ACCEPTED_TYPES.has(declared)) {
+      throw new HttpError(422, "invalid-argument", "Please upload a JPG, PNG or WEBP photo.");
+    }
+    /* The file signature first, before sharp sees a single byte. Asking sharp
+       for metadata() already PARSES the file with whichever decoder libvips
+       picks, so an SVG reached librsvg (CVE-2026-96889 was exactly that) just
+       to be told it was not a photo. A JPEG, PNG or WEBP signature also makes
+       libvips choose that decoder and no other. */
+    if (!photoSignature(input)) {
       throw new HttpError(422, "invalid-argument", "Please upload a JPG, PNG or WEBP photo.");
     }
 

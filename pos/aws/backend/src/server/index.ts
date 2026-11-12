@@ -246,7 +246,8 @@ export function buildServer(opts: ServerOptions = {}): { app: FastifyInstance; h
      every module, before being told 401. */
   const callableGate = async (req: CallableReq, reply: any) => {
     const { module } = target(req);
-    if (!CALLABLE_MODULES[module] || (module === "websiteOrdersAdmin" && !websiteOrdersOn)) {
+    // Own keys only: "constructor" or "__proto__" must be a 404, not Object.
+    if (!Object.hasOwn(CALLABLE_MODULES, module) || (module === "websiteOrdersAdmin" && !websiteOrdersOn)) {
       return reply.code(404).send({ error: { code: "not-found", message: `unknown module "${module}"` } });
     }
     const auth = await authenticate(req.headers.authorization);

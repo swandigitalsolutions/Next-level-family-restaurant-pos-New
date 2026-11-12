@@ -23,8 +23,11 @@ export function dispatch(actions: Record<string, ActionHandler>) {
   return async (event: APIGatewayProxyEventV2WithJWTAuthorizer): Promise<APIGatewayProxyResultV2> => {
     try {
       const action = event.pathParameters?.action || "";
-      const fn = actions[action];
-      if (!fn) return err(`unknown action "${action}"`, 404, "not-found");
+      // Own properties only. `actions` is a plain object, so a bare lookup of
+      // "constructor" or "toString" found Object.prototype's and ran it: any
+      // signed-in role got its own request echoed back, or a 500.
+      const fn = Object.hasOwn(actions, action) ? actions[action] : undefined;
+      if (typeof fn !== "function") return err(`unknown action "${action}"`, 404, "not-found");
       let body: any = {};
       if (event.body) {
         try {
