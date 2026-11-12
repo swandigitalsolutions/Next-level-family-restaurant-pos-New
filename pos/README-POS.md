@@ -18,7 +18,7 @@ pos/
 │   ├── src/handlers/       15 business-logic handlers, shared with the AWS track
 │   ├── src/lib/            money, authz, repo, pricing, werkzeug hashes …
 │   ├── src/server/         the self-hosted server: Fastify, JWT auth, WS hub
-│   └── test/               154 tests against a real PostgreSQL
+│   └── test/               232 tests against a real PostgreSQL
 ├── aws/db/migrations/    the schema (19 tables) + the privileges that make
 │                         bills immutable
 ├── web/                  the React front-end (Vite + TypeScript)
@@ -169,8 +169,8 @@ For the Pi, see [RUN-ON-PI.md](RUN-ON-PI.md).
 ## Tests
 
 ```bash
-cd aws/backend && npm test      # 154 tests, against posdb_test — see the note
-cd web && npm run check         # 162 tests + typecheck + build
+cd aws/backend && npm test      # 232 tests, against posdb_test — see the note
+cd web && npm run check         # 194 tests + typecheck + build
 ```
 
 > **The backend suite TRUNCATES every table it can reach**, as the superuser —

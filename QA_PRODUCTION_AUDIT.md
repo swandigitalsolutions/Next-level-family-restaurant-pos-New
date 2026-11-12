@@ -1,6 +1,7 @@
 # QA & Production Audit — Next Level POS
 
-**Audit date:** 27–28 Sep 2026; handover pass 14–16 Oct 2026 (§6)
+**Audit date:** 27–28 Sep 2026; handover pass 14–16 Oct 2026 (§6); re-test and
+security pass 12 Nov 2026 (§7)
 **Branch:** `main`
 **Scope:** the whole repository, covering the self-hosted POS server
 (`pos/aws/backend`), the database schema and migrations (`pos/aws/db`), the
@@ -423,3 +424,79 @@ night (R-1) is still the real check.
   `Orders.tsx`, `QrOrders.tsx`, `WebsiteOrders.tsx`, `Dashboard.tsx`,
   `Kitchen.tsx`, `components/ui.css`, `screens/Billing.test.tsx`;
   `e2e/audit.e2e.mjs` (six new scenarios).
+
+---
+
+## 7. Re-test and security pass — 12 Nov 2026
+
+The client is ready to take the software, so everything was run again from a
+fresh clone of `main` (6d47d73) before any change: on a new database, against
+the **production build** (`NODE_ENV=production`, connected as `pos_app`).
+Then came a security review of the code and its dependencies as they stand
+today, and a look at the cloud deployment the team has started preparing
+(a Supabase project and Vercel). The deployment write-up is
+[DEPLOYMENT_PLAN.md](DEPLOYMENT_PLAN.md).
+
+### 7.1 Results
+
+| Suite | Before any change (`main`) | After this pass |
+|---|---|---|
+| Backend (`npm test`) | **220/220** (superuser, `posdb_test`) | **232/232**, run **as `pos_app`** on a database set up like Supabase's, with 005 applied |
+| Frontend `npm run check` | **187/187**, typecheck and build OK | **194/194**, typecheck and build OK, oxlint 0 errors |
+| Browser (Playwright, 61 scenarios, production build) | **61/61** | **61/61**, on a fresh database with 001–005 applied |
+| `npm audit --omit=dev` | backend **6** (1 high: `sharp`), web 0 | backend **0**, web **0** |
+
+**The business flows behave as before:** food, bar and cafe tills; tables and
+split FOOD/ALC settlement; QR order → reception alarm → kitchen; the kitchen
+never sees money; bills are cancelled, never edited; prices come from the
+menu, not the till; staff roles and sign-out; CSV export; printing. No
+business-logic defect was found.
+
+The browser suite ran in the installed Microsoft Edge. Playwright's own
+Chromium download timed out from this machine, and Edge is the same
+engine.
+
+### 7.2 Findings and fixes
+
+| ID | Severity | Finding | Fix | Test |
+|---|---|---|---|---|
+| N-1 | **High** (on a cloud database) | **The connection to a hosted database was never encrypted.** `lib/db.ts` set `ssl: false` for every `DATABASE_URL` and ignored its `sslmode`. That is harmless on the Pi (loopback), but on Supabase the database password, every bill and every staff password hash would cross the internet in plain text, or the server could not connect at all once the host enforces SSL. | New `lib/dbTls.ts`. `sslmode=require/verify-ca/verify-full` (or `DB_SSL=true`) turns TLS on, always verifying the certificate (`DB_CA_BUNDLE`). In production the server **refuses to start** when pointed at a non-local database without TLS. The Pi's loopback URL is unchanged. | `db-tls.test.ts` (4). Checked live against a TLS-enabled Postgres: plain on loopback; TLS 1.3 with the CA; **refused** without it; the production start-up refusal. |
+| N-2 | **High** (on Supabase) | **Supabase's public Data API would have served the whole database.** Supabase grants `anon` and `authenticated` everything on tables in `public`, and the `anon` key is public by design. Reproduced on a Supabase-style database: after 001–004, `SET ROLE anon; SELECT password_hash FROM user_credentials` returned the hashes, and `anon` could delete users. | New migration **`005_supabase_lockdown.sql`**: revokes every privilege from `anon` and `authenticated`, now and for future tables; enables RLS on every table with a single `pos_app`-only policy. It does nothing where those roles do not exist (the Pi). The plan also says to switch the Data API off. | After 005: `anon` and `authenticated` are refused every table, RLS is on for 20/20 tables, and `pos_app` still cannot update `bills`. The full backend suite passes as `pos_app` on that database; the browser suite passes with 005 applied. |
+| N-3 | **High** (dependency) | **`sharp` < 0.35.5: librsvg advisory (CVE-2026-96889).** The photo upload asked sharp for `metadata()` before refusing a non-photo, so an SVG was **parsed by librsvg** just to be rejected. Reachable by an admin or manager login. | `sharp` 0.35.5. Uploads are now refused by **file signature** (JPEG/PNG/WEBP magic bytes) before sharp sees a byte. | `nov-2026-audit.test.ts`: signatures; an SVG with and without a `data:` prefix is refused; a real PNG still uploads. |
+| N-4 | Medium | **A till on a dead Wi-Fi link showed "connected" and silently stopped ringing.** Only a socket `close` turned the banner on, and a Wi-Fi drop never delivers one. The server noticed the dead till (ping), but the till could not notice the server (browsers hide pings). The October Playwright run recorded this as a soft finding ("offline banner within 20 s"). | The hub now sends a small `heartbeat` frame each 30 s. The till treats 75 s of silence as offline (banner, reconnect), goes offline at once when the device reports losing its network, and reconnects as soon as the network is back. Heartbeats never ring and never refresh a screen. | `realtime.test.ts` (5) and `nov-2026-audit.test.ts` (the hub sends heartbeats). The Playwright soft check now passes. |
+| N-5 | Medium | **Staff: a refusal was drawn behind the open sheet**, so "username taken" or a short password looked like Save doing nothing. Also a soft finding in October. | The error is shown inside whichever sheet is open, and cleared when a sheet opens or closes. | `Staff.test.tsx` (2). The Playwright soft check now passes. |
+| N-6 | Medium | **Moderate/low advisories in shipped dependencies:** `fastify` (header validation), `@fastify/static` → `glob`/`minimatch`, `fast-uri`. | `npm audit fix` (no breaking changes): fastify 5.12.8, @fastify/static 10.1.10. | Production `npm audit` is 0 for backend and web. |
+| N-7 | Low | **Any signed-in role could call `Object.prototype` members as API actions.** `/api/callable/constructor/x` returned the caller's whole request (headers, token); `/api/callable/billing/constructor` echoed the body; `toString` answered 200. The lookups used plain objects. | `Object.hasOwn` in `lib/callable.ts` and `server/index.ts`: such names are 404. | `nov-2026-audit.test.ts` (2). |
+| N-8 | Low | **A dish's photo link accepted any string** (`javascript:`, `data:`, `http:`, `/assets/../`). The till only renders it as an `<img>`, so there was no script execution, but it is shown on every till and guest phone and sent to the public website. | Must be an uploaded `/assets/...` path or an `https://` link. It is checked only when it changes, so editing a dish with an older link still saves. | `nov-2026-audit.test.ts` (2). |
+| N-9 | Low | **6-character minimum password.** Fine on a closed LAN; weak once the sign-in page is on the internet (plan B). | Minimum 8 for new passwords and resets (existing passwords keep working); the Staff screen says so. | `nov-2026-audit.test.ts`; `staff-lifecycle.test.ts` updated. |
+| N-10 | Low (dev tools) | **Advisories in tools that never ship:** web `vite`, `vitest`, `undici`, `source-map-js`; backend lint tools (`@typescript-eslint`, `esbuild`); the old one-off Firestore import script (`firebase-admin` → `uuid`). | Web fixed by `npm audit fix`. The backend lint tools and the Firestore script need major upgrades; they are left as they are, because neither is deployed or run in production. | Web `npm audit` (including dev) is 0. |
+
+### 7.3 Noted, not changed
+
+- **The repository is public** on GitHub, with its full history. Its history
+  contains the old Flask version's default passwords (`nextlevel@123`,
+  `owner@123`). No live secret was found in any commit (searched for keys,
+  tokens, URLs with passwords, private keys and `.env` files). **Make the
+  repository private**, and make sure no account migrated from the Flask
+  version still uses those passwords.
+- **The Supabase project the team created is in Tokyo** and is empty.
+  Recreate it in Mumbai (DEPLOYMENT_PLAN §2.1).
+- **Unchanged from §4:** R-1 (never run on a Pi), R-2 (never printed on the
+  real printer), R-6 (Razorpay never used live; website ordering stays off),
+  R-7 (tokens in `localStorage`). A ₹0 dish is still allowed on purpose (§6.4).
+- Two remaining soft notes from the browser suite are cosmetic: L-16 (the
+  photo button's long accessible name), and "opening a table to look at it
+  occupies it" (handled since HO-4 by **Release table**).
+
+### 7.4 Files changed in this pass
+
+- Backend: `src/lib/dbTls.ts` (new), `src/lib/db.ts`, `src/server/security.ts`,
+  `src/lib/callable.ts`, `src/server/index.ts`, `src/server/wsHub.ts`,
+  `src/handlers/callable/catalogAdmin.ts`, `src/handlers/callable/staffAdmin.ts`;
+  tests `test/db-tls.test.ts`, `test/nov-2026-audit.test.ts` (new),
+  `test/staff-lifecycle.test.ts`; `package-lock.json`.
+- Database: `migrations/005_supabase_lockdown.sql` (new); `package-lock.json`.
+- Frontend: `src/lib/realtime.ts`, `src/lib/realtime.test.ts`,
+  `src/screens/Staff.tsx`, `src/screens/Staff.test.tsx`; `package-lock.json`.
+- Docs: `DEPLOYMENT_PLAN.md` (new), `DEPLOYMENT_GUIDE.md` (005, pointer to the
+  plan), `README.md` (test counts, migration list), this section.
