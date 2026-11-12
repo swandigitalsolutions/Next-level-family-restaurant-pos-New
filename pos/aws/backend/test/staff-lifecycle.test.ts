@@ -118,8 +118,8 @@ test("a new account's password is stored as a Werkzeug hash, like the carried-ov
 
 test("a duplicate username is refused rather than shadowing someone", async () => {
   const boss = await admin();
-  await call(boss.token, "createStaff", { username: "taken", password: "A#2026", full_name: "Taken", role: "billing" });
-  const res = await raw(boss.token, "createStaff", { username: "taken", password: "B#2026", full_name: "Taken", role: "kitchen" });
+  await call(boss.token, "createStaff", { username: "taken", password: "Aa#20260", full_name: "Taken", role: "billing" });
+  const res = await raw(boss.token, "createStaff", { username: "taken", password: "Bb#20260", full_name: "Taken", role: "kitchen" });
   assert.ok(res.status >= 400, `expected a refusal, got ${res.status}`);
 });
 
@@ -129,7 +129,7 @@ test("only an admin can create staff — a manager cannot quietly hire", async (
   await writeCredential(uid, generatePasswordHash("Mgr#2026", "pbkdf2:sha256"), "mgr");
   const { body } = await loginAs("mgr", "Mgr#2026");
 
-  const res = await raw(body.token, "createStaff", { username: "sneaky", password: "X#2026", full_name: "Sneaky", role: "admin" });
+  const res = await raw(body.token, "createStaff", { username: "sneaky", password: "Xx#20260", full_name: "Sneaky", role: "admin" });
   assert.equal(res.status, 403);
 });
 

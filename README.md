@@ -97,7 +97,8 @@ docker run -d --name nlfr-pg -e POSTGRES_HOST_AUTH_METHOD=trust \
   -e POSTGRES_USER=postgres -e POSTGRES_DB=posdb -p 5432:5432 postgres:16-alpine
 
 # schema, privileges, and the real 202-dish menu
-# (production install: see DEPLOYMENT_GUIDE.md — all four migrations, 001–004)
+# (production install: see DEPLOYMENT_GUIDE.md — all four migrations, 001–004;
+#  on Supabase also 005, see DEPLOYMENT_PLAN.md)
 psql "$DB" -f pos/aws/db/migrations/001_init.sql
 psql "$DB" -c "CREATE ROLE pos_app LOGIN PASSWORD 'change-me';"
 psql "$DB" -f pos/aws/db/migrations/002_privileges.sql
@@ -118,8 +119,8 @@ cd pos/web && npm install && npm run dev
 ## Tests
 
 ```bash
-cd pos/aws/backend && npm test    # 154 tests, against posdb_test — see below
-cd pos/web && npm run check       # 162 tests + typecheck + build
+cd pos/aws/backend && npm test    # 232 tests, against posdb_test — see below
+cd pos/web && npm run check       # 194 tests + typecheck + build
 ```
 
 Everything runs against a real PostgreSQL — nothing is mocked at the database

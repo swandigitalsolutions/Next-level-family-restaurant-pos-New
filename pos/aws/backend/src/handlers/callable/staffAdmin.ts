@@ -2,7 +2,7 @@
  * Staff account management — Lambda port of
  * firebase/functions/src/callable/staffAdmin.ts. All guardrails preserved:
  *   - username regex ^[a-z0-9_.]{3,32}$
- *   - password >= 6 chars
+ *   - password >= 8 chars (MIN_PASSWORD_LENGTH; existing passwords keep working)
  *   - role must be a valid 6-role value
  *   - the last ACTIVE admin can never be demoted/deactivated
  *   - you cannot deactivate your own account
@@ -21,6 +21,12 @@ import {
 import { createAuthUser, setStaffPassword, setRoleClaim, setDisabled } from "../../lib/cognitoAuth";
 
 const USERNAME_RE = /^[a-z0-9_.]{3,32}$/;
+
+/* 8, not 6. On the restaurant LAN a 6-character password sat behind a
+   per-address lockout nobody outside could reach; served from a cloud host
+   the sign-in page is on the internet, where many addresses can share the
+   guessing. Applies to new passwords and resets; existing ones keep working. */
+export const MIN_PASSWORD_LENGTH = 8;
 
 const publicUser = (u: UserProfile) => ({ id: u.uid, username: u.username, full_name: u.fullName, phone: u.phone, role: u.role, status: u.status });
 function validRole(r: string): r is Role { return (VALID_ROLES as readonly string[]).includes(r); }
@@ -42,7 +48,7 @@ export const handler = dispatch({
 
     if (!USERNAME_RE.test(username)) throw new HttpError(422, "invalid-argument", "Username must be 3-32 characters: lowercase letters, numbers, dot or underscore only");
     if (!fullName) throw new HttpError(422, "invalid-argument", "Full name is required");
-    if (password.length < 6) throw new HttpError(422, "invalid-argument", "Password must be at least 6 characters");
+    if (password.length < MIN_PASSWORD_LENGTH) throw new HttpError(422, "invalid-argument", `Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
     if (!validRole(role)) throw new HttpError(422, "invalid-argument", "Invalid role");
     if (await usernameTaken(username)) throw new HttpError(409, "already-exists", "A staff account with this username already exists");
 
@@ -87,7 +93,7 @@ export const handler = dispatch({
       throw new HttpError(409, "failed-precondition", "At least one active admin account must remain");
     }
     const wantsPasswordReset = password !== undefined && password !== "";
-    if (wantsPasswordReset && password!.length < 6) throw new HttpError(422, "invalid-argument", "Password must be at least 6 characters");
+    if (wantsPasswordReset && password!.length < MIN_PASSWORD_LENGTH) throw new HttpError(422, "invalid-argument", `Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
 
     const patch: Partial<Omit<UserProfile, "uid" | "createdAt">> = { fullName, phone, role: role as Role, status: status as "active" | "inactive" };
     await updateUserProfile(uid, patch);

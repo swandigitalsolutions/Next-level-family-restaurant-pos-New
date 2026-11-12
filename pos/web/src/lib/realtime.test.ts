@@ -4,7 +4,7 @@
  * (alarm on everything), so it is tested directly.
  */
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
-import { RealtimeClient } from "./realtime";
+import { RealtimeClient, STALE_AFTER_MS } from "./realtime";
 import { alarmEngine } from "../alarm/soundEngine";
 
 /** A controllable stand-in for the browser's WebSocket. */
@@ -153,5 +153,66 @@ describe("closing", () => {
 
   test("malformed JSON from the wire is ignored, not thrown", () => {
     expect(() => FakeSocket.last!.onmessage?.({ data: "{not json" })).not.toThrow();
+  });
+});
+
+/* On a Wi-Fi drop the browser never fires `close`: the till went on saying
+   "connected" while no alarm could reach it. */
+describe("a dead link is noticed even though the socket never closes", () => {
+  test("the hub's heartbeat neither rings nor reaches the boards", () => {
+    const seen = vi.fn();
+    client.onEvent(seen);
+    FakeSocket.last!.push({ type: "heartbeat", serverTime: "2026-11-12T15:00:00.000Z" });
+    expect(ring).not.toHaveBeenCalled();
+    expect(seen).not.toHaveBeenCalled();
+    expect(client.getState()).toBe("connected");
+  });
+
+  test("the device going offline shows offline at once and drops the socket", () => {
+    const socket = FakeSocket.last!;
+    window.dispatchEvent(new Event("offline"));
+    expect(client.getState()).toBe("offline");
+    expect(socket.closed).toBe(true);
+  });
+
+  test("the device coming back reconnects straight away, not after the backoff", () => {
+    window.dispatchEvent(new Event("offline"));
+    const dropped = FakeSocket.last;
+    window.dispatchEvent(new Event("online"));
+    expect(FakeSocket.last).not.toBe(dropped);
+    FakeSocket.last!.onopen?.();
+    expect(client.getState()).toBe("connected");
+  });
+
+  test("silence past the heartbeat window means offline, and a reconnect starts", () => {
+    vi.useFakeTimers();
+    try {
+      const watched = new RealtimeClient();
+      watched.connect("t");
+      const socket = FakeSocket.last!;
+      socket.onopen?.();
+      const states: string[] = [];
+      watched.onState((s) => states.push(s));
+      vi.advanceTimersByTime(60_000);
+      socket.push({ type: "heartbeat" });
+      vi.advanceTimersByTime(60_000);
+      expect(states).toEqual(["connected"]); // heartbeats arriving: alive
+      vi.advanceTimersByTime(STALE_AFTER_MS);
+      expect(states).toContain("offline"); // the banner shows
+      expect(socket.closed).toBe(true);
+      expect(FakeSocket.last).not.toBe(socket); // and it is already trying again
+      watched.disconnect();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("a signed-out client stops listening to the device's network", () => {
+    client.disconnect();
+    const before = FakeSocket.last;
+    window.dispatchEvent(new Event("offline"));
+    window.dispatchEvent(new Event("online"));
+    expect(FakeSocket.last).toBe(before);
+    expect(client.getState()).toBe("offline");
   });
 });

@@ -9,7 +9,7 @@
  * Accounts are deactivated, never deleted, because settled bills record who
  * created them and that trail must not break.
  */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useAction } from "../lib/useQuery";
 import { callable } from "../lib/api";
 import { useSession } from "../lib/session";
@@ -81,6 +81,26 @@ export function StaffScreen() {
     setTimeout(() => setToast(null), 2600);
   }
 
+  /* A refusal belongs where the person is looking. The sheet covers the page,
+     so an error written on the page (a username already taken, a password
+     too short) was invisible: Save seemed to do nothing. Open and close each
+     sheet with a clean slate, and show its errors inside it. */
+  const sheetOpen = draft !== null || resetting !== null;
+  // On a phone the admin has scrolled down to the roles and Save; the
+  // refusal sits at the top of the sheet, so bring it into view.
+  const sheetError = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (action.error && sheetOpen) sheetError.current?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+  }, [action.error, sheetOpen]);
+  function openDraft(next: Draft | null) {
+    action.clearError();
+    setDraft(next);
+  }
+  function openReset(next: { staff: Staff; password: string } | null) {
+    action.clearError();
+    setResetting(next);
+  }
+
   async function save() {
     if (!draft) return;
     const payload: Record<string, unknown> = {
@@ -138,11 +158,11 @@ export function StaffScreen() {
         <p>Who can sign in, and what each person is allowed to do.</p>
       </header>
 
-      <Button variant="primary" onClick={() => setDraft({ username: "", full_name: "", phone: "", role: "billing", password: "" })}>
+      <Button variant="primary" onClick={() => openDraft({ username: "", full_name: "", phone: "", role: "billing", password: "" })}>
         + Add a staff member
       </Button>
 
-      {action.error && <ErrorNote message={action.error} />}
+      {action.error && !sheetOpen && <ErrorNote message={action.error} />}
       {error && <ErrorNote message={error} onRetry={reload} />}
 
       {initial ? (
@@ -171,7 +191,7 @@ export function StaffScreen() {
                   <div className="stf-card-actions">
                     <Button
                       onClick={() =>
-                        setDraft({
+                        openDraft({
                           uid: member.id,
                           username: member.username,
                           full_name: member.full_name ?? "",
@@ -183,7 +203,7 @@ export function StaffScreen() {
                     >
                       Edit
                     </Button>
-                    <Button onClick={() => setResetting({ staff: member, password: "" })}>Password</Button>
+                    <Button onClick={() => openReset({ staff: member, password: "" })}>Password</Button>
                     <Button
                       variant={active ? "danger" : "secondary"}
                       onClick={() => toggleActive(member)}
@@ -202,12 +222,12 @@ export function StaffScreen() {
 
       <Sheet
         open={draft !== null}
-        onClose={() => setDraft(null)}
+        onClose={() => openDraft(null)}
         title={draft?.uid ? "Edit staff member" : "New staff member"}
         subtitle="Changing someone's role takes effect on their very next tap — they do not need to sign in again."
         footer={
           <>
-            <Button onClick={() => setDraft(null)}>Cancel</Button>
+            <Button onClick={() => openDraft(null)}>Cancel</Button>
             <Button
               variant="primary"
               onClick={save}
@@ -220,6 +240,7 @@ export function StaffScreen() {
       >
         {draft && (
           <>
+            <div ref={sheetError}>{action.error && <ErrorNote message={action.error} />}</div>
             <Field label="Full name">
               <Input value={draft.full_name} onChange={(e) => setDraft({ ...draft, full_name: e.target.value })} />
             </Field>
@@ -235,7 +256,7 @@ export function StaffScreen() {
               <Input value={draft.phone} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} inputMode="tel" />
             </Field>
             {!draft.uid && (
-              <Field label="Password" hint="Tell them this password directly. They can keep using it.">
+              <Field label="Password" hint="At least 8 characters. Tell them this password directly; they can keep using it.">
                 <Input value={draft.password} onChange={(e) => setDraft({ ...draft, password: e.target.value })} />
               </Field>
             )}
@@ -262,12 +283,12 @@ export function StaffScreen() {
 
       <Sheet
         open={resetting !== null}
-        onClose={() => setResetting(null)}
+        onClose={() => openReset(null)}
         title={`New password for ${resetting?.staff.username ?? ""}`}
         subtitle="Tell them the new password directly. Nobody is emailed."
         footer={
           <>
-            <Button onClick={() => setResetting(null)}>Cancel</Button>
+            <Button onClick={() => openReset(null)}>Cancel</Button>
             <Button variant="primary" onClick={resetPassword} disabled={action.busy || !resetting?.password}>
               Set password
             </Button>
@@ -275,9 +296,12 @@ export function StaffScreen() {
         }
       >
         {resetting && (
-          <Field label="New password">
-            <Input value={resetting.password} onChange={(e) => setResetting({ ...resetting, password: e.target.value })} />
-          </Field>
+          <>
+            <div ref={sheetError}>{action.error && <ErrorNote message={action.error} />}</div>
+            <Field label="New password" hint="At least 8 characters.">
+              <Input value={resetting.password} onChange={(e) => setResetting({ ...resetting, password: e.target.value })} />
+            </Field>
+          </>
         )}
       </Sheet>
 

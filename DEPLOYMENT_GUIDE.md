@@ -1,5 +1,9 @@
 # Deployment Guide — Next Level POS on a Raspberry Pi 5
 
+> **Choosing between the Pi and the cloud (Supabase + a VPS)?** Start with
+> [DEPLOYMENT_PLAN.md](DEPLOYMENT_PLAN.md). It compares the two and lists what
+> differs on a VPS; the steps below are shared by both.
+
 This takes a blank Pi 5 to a running POS that the tills, the kitchen screen and
 the table QR menus can use. Follow it top to bottom the first time. The last
 sections cover updates, rollback, and backups.
@@ -118,6 +122,9 @@ done
 - 001 cannot be re-run (it stops with "relation users already exists" and
   changes nothing). 002, 003 and 004 are safe to re-run; 002 re-asserts that
   cancelled-bill records stay unchangeable.
+- **`005_supabase_lockdown.sql` is for a Supabase database only** (see
+  [DEPLOYMENT_PLAN.md](DEPLOYMENT_PLAN.md)). On the Pi it finds no Supabase
+  roles and does nothing, so running it here is harmless but not needed.
 
 **Record what you applied.** Nothing tracks this automatically, so keep a
 table of your own:
