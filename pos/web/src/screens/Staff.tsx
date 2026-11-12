@@ -9,7 +9,7 @@
  * Accounts are deactivated, never deleted, because settled bills record who
  * created them and that trail must not break.
  */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useAction } from "../lib/useQuery";
 import { callable } from "../lib/api";
 import { useSession } from "../lib/session";
@@ -86,6 +86,12 @@ export function StaffScreen() {
      too short) was invisible: Save seemed to do nothing. Open and close each
      sheet with a clean slate, and show its errors inside it. */
   const sheetOpen = draft !== null || resetting !== null;
+  // On a phone the admin has scrolled down to the roles and Save; the
+  // refusal sits at the top of the sheet, so bring it into view.
+  const sheetError = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (action.error && sheetOpen) sheetError.current?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+  }, [action.error, sheetOpen]);
   function openDraft(next: Draft | null) {
     action.clearError();
     setDraft(next);
@@ -234,7 +240,7 @@ export function StaffScreen() {
       >
         {draft && (
           <>
-            {action.error && <ErrorNote message={action.error} />}
+            <div ref={sheetError}>{action.error && <ErrorNote message={action.error} />}</div>
             <Field label="Full name">
               <Input value={draft.full_name} onChange={(e) => setDraft({ ...draft, full_name: e.target.value })} />
             </Field>
@@ -291,7 +297,7 @@ export function StaffScreen() {
       >
         {resetting && (
           <>
-            {action.error && <ErrorNote message={action.error} />}
+            <div ref={sheetError}>{action.error && <ErrorNote message={action.error} />}</div>
             <Field label="New password" hint="At least 8 characters.">
               <Input value={resetting.password} onChange={(e) => setResetting({ ...resetting, password: e.target.value })} />
             </Field>

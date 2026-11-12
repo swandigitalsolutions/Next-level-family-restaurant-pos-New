@@ -124,6 +124,9 @@ describe("the role picker", () => {
         throw new Error("Password must be at least 8 characters");
       },
     });
+    // jsdom has no scrollIntoView.
+    const scrolled = vi.fn();
+    Element.prototype.scrollIntoView = scrolled;
     renderScreen(<StaffScreen />);
     await userEvent.click(await screen.findByRole("button", { name: /add a staff member/i }));
     await userEvent.type(screen.getByLabelText(/full name/i), "Suresh");
@@ -134,6 +137,8 @@ describe("the role picker", () => {
     const dialog = screen.getByRole("dialog");
     const alert = await within(dialog).findByRole("alert");
     expect(alert).toHaveTextContent("Password must be at least 8 characters");
+    // Scrolled to: on a phone the admin is at the bottom of the sheet, by Save.
+    await waitFor(() => expect(scrolled).toHaveBeenCalled());
     // Once only: not repeated on the page behind the sheet as well.
     expect(screen.getAllByText("Password must be at least 8 characters")).toHaveLength(1);
 
