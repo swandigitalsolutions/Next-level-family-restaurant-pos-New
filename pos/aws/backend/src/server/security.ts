@@ -12,6 +12,7 @@
  * counter is exactly as good as a shared store and has nothing to go down.
  */
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { dbTransportProblem } from "../lib/dbTls";
 
 /* ── which proxies to trust ──────────────────────────────────────────────── */
 
@@ -218,5 +219,9 @@ export function configProblems(env: NodeJS.ProcessEnv = process.env): string[] {
   if (production && keys.some((k) => k.length < 24)) {
     out.push("WEBSITE_API_KEYS: every key must be at least 24 characters in production (openssl rand -hex 32).");
   }
+  // A hosted database (Supabase) reached in plain TCP sends the password and
+  // every bill across the internet. The Pi's loopback Postgres is unaffected.
+  const transport = production ? dbTransportProblem(env) : null;
+  if (transport) out.push(transport);
   return out;
 }

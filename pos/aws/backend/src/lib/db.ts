@@ -9,6 +9,7 @@
  */
 import { Pool, PoolClient } from "pg";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
+import { urlWantsTls } from "./dbTls";
 
 let pool: Pool | undefined;
 let cachedSecret: { host: string; port: number; dbname: string; username: string; password: string } | undefined;
@@ -72,9 +73,10 @@ export async function getPool(): Promise<Pool> {
     database: s!.dbname,
     user: s!.username,
     password: s!.password,
-    // Real RDS Proxy always requires TLS; a local test Postgres started
-    // without SSL configured does not speak it at all.
-    ssl: process.env.DATABASE_URL ? false : buildTls(),
+    // Real RDS Proxy always requires TLS. With a DATABASE_URL the URL decides
+    // (see ./dbTls): the Pi's own Postgres on the loopback speaks plain TCP, a
+    // hosted one (Supabase) is reached with ?sslmode=verify-full.
+    ssl: process.env.DATABASE_URL ? (urlWantsTls(process.env.DATABASE_URL) ? buildTls() : false) : buildTls(),
     // Lambda wants a small per-container pool because RDS Proxy multiplexes
     // across many containers. The self-hosted server is the opposite case —
     // ONE process serves every terminal in the restaurant, so 5 would cap the
