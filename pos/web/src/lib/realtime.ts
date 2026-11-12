@@ -48,6 +48,17 @@ function eventKey(event: RealtimeEvent): string {
 type EventListener = (event: RealtimeEvent) => void;
 type StateListener = (state: ConnectionState) => void;
 
+/** Frames the hub sends for the connection itself, not for the screens. */
+const HOUSEKEEPING = new Set(["connected", "heartbeat"]);
+
+/**
+ * The hub sends a heartbeat every 30s (server/wsHub.ts). Silence for two and
+ * a half of them means the link is dead even though the socket never closed,
+ * which is exactly what a Wi-Fi drop looks like from inside the browser.
+ */
+export const STALE_AFTER_MS = 75_000;
+const WATCHDOG_EVERY_MS = 10_000;
+
 export class RealtimeClient {
   private socket: WebSocket | null = null;
   private token: string | null = null;
@@ -57,6 +68,10 @@ export class RealtimeClient {
   private retry = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private closedByUs = false;
+  /** When the last frame of any kind arrived on the current socket. */
+  private lastFrameAt = 0;
+  private watchdog: ReturnType<typeof setInterval> | null = null;
+  private listeningToNetwork = false;
 
   /**
    * Events already seen. On reconnect the boards re-fetch their state, and a
@@ -69,7 +84,63 @@ export class RealtimeClient {
   connect(token: string): void {
     this.token = token;
     this.closedByUs = false;
+    this.watchNetwork(true);
     this.open();
+  }
+
+  /* A till that loses Wi-Fi kept saying "connected", and kept not ringing,
+     because a socket on a dead network is never told it closed. Three ways to
+     find out sooner: the device says it went offline; the device says it is
+     back (reconnect now, not at the end of a 15s backoff); or the heartbeat
+     stops arriving. */
+  private watchNetwork(on: boolean): void {
+    if (on && !this.watchdog) {
+      this.watchdog = setInterval(this.checkAlive, WATCHDOG_EVERY_MS);
+    } else if (!on && this.watchdog) {
+      clearInterval(this.watchdog);
+      this.watchdog = null;
+    }
+    if (typeof window === "undefined" || on === this.listeningToNetwork) return;
+    this.listeningToNetwork = on;
+    if (on) {
+      window.addEventListener("offline", this.onDeviceOffline);
+      window.addEventListener("online", this.onDeviceOnline);
+    } else {
+      window.removeEventListener("offline", this.onDeviceOffline);
+      window.removeEventListener("online", this.onDeviceOnline);
+    }
+  }
+
+  private checkAlive = (): void => {
+    if (this.state === "connected" && Date.now() - this.lastFrameAt > STALE_AFTER_MS) this.abandon();
+  };
+
+  private onDeviceOffline = (): void => {
+    if (!this.closedByUs) this.abandon();
+  };
+
+  private onDeviceOnline = (): void => {
+    if (this.closedByUs || !this.reconnectTimer) return;
+    clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = null;
+    this.retry = 0;
+    this.open();
+  };
+
+  /** Drop the current socket without waiting for a close event that a dead
+   * network may never deliver, show offline, and start reconnecting. */
+  private abandon(): void {
+    const dead = this.socket;
+    this.socket = null;
+    if (dead) {
+      dead.onopen = dead.onmessage = dead.onclose = dead.onerror = null;
+      try {
+        dead.close();
+      } catch {
+        /* already closing */
+      }
+    }
+    this.scheduleReconnect();
   }
 
   private open(): void {
@@ -88,17 +159,21 @@ export class RealtimeClient {
 
     this.socket.onopen = () => {
       this.retry = 0;
+      this.lastFrameAt = Date.now();
       this.setState("connected");
     };
 
     this.socket.onmessage = (raw) => {
+      this.lastFrameAt = Date.now();
       let event: RealtimeEvent;
       try {
         event = JSON.parse(raw.data);
       } catch {
         return;
       }
-      if (event.type === "connected") return; // the hub's greeting
+      // The hub's greeting and its heartbeat keep the link honest; no screen
+      // should refresh, and nothing should ring, for either.
+      if (HOUSEKEEPING.has(event.type)) return;
 
       const key = eventKey(event);
       const isNew = !this.seen.has(key);
@@ -144,6 +219,7 @@ export class RealtimeClient {
 
   disconnect(): void {
     this.closedByUs = true;
+    this.watchNetwork(false);
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.reconnectTimer = null;
     try {

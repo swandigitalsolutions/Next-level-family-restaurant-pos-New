@@ -128,7 +128,15 @@ export class RealtimeHub {
           client.socket.ping();
         } catch {
           this.clients.delete(client);
+          continue;
         }
+        /* The ping above lets the SERVER notice a dead till. The till cannot
+           see protocol pings (browsers answer them silently), so it had no way
+           to notice a dead server: on a Wi-Fi drop the socket stays "open",
+           the screen says connected, and order alarms simply stop arriving.
+           This frame is what the till's watchdog listens for (web/src/lib/
+           realtime.ts); a few dozen bytes per till per interval. */
+        this.send(client, { type: "heartbeat", serverTime: new Date().toISOString() });
       }
     }, intervalMs);
     this.heartbeat.unref?.();
